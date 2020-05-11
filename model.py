@@ -950,6 +950,13 @@ class DCGAN(object):
         utils.show_all_variables()
 
     def train1(self):
+        def allclose(a, b):
+            assert type(a) == type(b)
+            if isinstance(a, np.ndarray):
+                return np.mean(np.abs(a-b)) < 1e-7
+            else:
+                return abs((a-b) / a) < 0.01
+
         def extension(filename):
             return os.path.splitext(filename)[-1]
 
@@ -1052,39 +1059,29 @@ class DCGAN(object):
             batch_idxs = min(len(self.data), self.config.train_size) // self.config.batch_size
 
             for idx in xrange(1):
-                # read image by batch
-                batch_files = self.data[idx*self.config.batch_size : (idx+1)*self.config.batch_size]
-                batch = [
-                    utils.get_image(batch_file,
-                            input_height=self.config.input_height,
-                            input_width=self.config.input_width,
-                            resize_height=self.config.output_height,
-                            resize_width=self.config.output_width,
-                            crop=self.config.crop,
-                            grayscale=self.grayscale) for batch_file in batch_files]
-                if self.grayscale:
-                    batch_images = np.array(batch).astype(np.float32)[:, :, :, None]
-                else:
-                    batch_images = np.array(batch).astype(np.float32)
+                # batch_files = self.data[idx*self.config.batch_size : (idx+1)*self.config.batch_size]
+                # batch = [
+                #     utils.get_image(batch_file,
+                #             input_height=self.config.input_height,
+                #             input_width=self.config.input_width,
+                #             resize_height=self.config.output_height,
+                #             resize_width=self.config.output_width,
+                #             crop=self.config.crop,
+                #             grayscale=self.grayscale) for batch_file in batch_files]
+                # if self.grayscale:
+                #     batch_images = np.array(batch).astype(np.float32)[:, :, :, None]
+                # else:
+                #     batch_images = np.array(batch).astype(np.float32)
 
-                # init z by batch
-                # batch_z = np.random.uniform(-1, 1,
-                #         [self.config.batch_size, self.z_dim]).astype(np.float32)
+                # batch_z = np.random.normal(size=(self.config.batch_size, self.z_dim))
+                # checksum_save({
+                #     'batch_files': batch_files,
+                #     'batch_images': batch_images,
+                #     'batch_z': batch_z,
+                # })
 
-                batch_z = np.random.normal(size=(self.config.batch_size, self.z_dim))
-                checksum_save({
-                    'batch_files': batch_files,
-                    'batch_images': batch_images,
-                    'batch_z': batch_z,
-                })
-
-                (restore_batch_files, restore_batch_images, restore_batch_z) = checksum_load(
+                (batch_files, batch_images, batch_z) = checksum_load(
                     'batch_files.pkl', 'batch_images.npy', 'batch_z.npy')
-                assert np.allclose(batch_images, restore_batch_images)
-                assert np.allclose(batch_z, restore_batch_z)
-                for out, tar in zip(restore_batch_files, batch_files):
-                    assert out == tar
-                print('assertion successed!')
 
                 if self.config.if_focal_loss:
                     # batch_classes = np.floor(np.random.uniform(0, 1,
@@ -1097,64 +1094,64 @@ class DCGAN(object):
                     batch_classes = np.array(batch_classes).reshape((self.config.batch_size, 1))
                     batch_z = np.concatenate((batch_z, batch_classes), axis=1)
 
-                # Update D network
-                if self.config.use_D_origin:
-                    _ = self.sess.run([self.d_optim],
-                        feed_dict={self.inputs: batch_images, self.z: batch_z})
+                # # Update D network
+                # if self.config.use_D_origin:
+                #     _ = self.sess.run([self.d_optim],
+                #         feed_dict={self.inputs: batch_images, self.z: batch_z})
 
-                if self.config.use_D_patch:
-                    _ = self.sess.run([self.d_optim_patch],
-                                                   feed_dict={self.inputs: batch_images, self.z: batch_z})
+                # if self.config.use_D_patch:
+                #     _ = self.sess.run([self.d_optim_patch],
+                #                                    feed_dict={self.inputs: batch_images, self.z: batch_z})
 
-                if self.config.use_D_patch2:
-                    _ = self.sess.run([self.d_optim_patch2],
-                                                   feed_dict={self.inputs: batch_images, self.z: batch_z})
+                # if self.config.use_D_patch2:
+                #     _ = self.sess.run([self.d_optim_patch2],
+                #                                    feed_dict={self.inputs: batch_images, self.z: batch_z})
 
-                if self.config.use_D_patch2_2:
-                    _ = self.sess.run([self.d_optim_patch2_2],
-                                                   feed_dict={self.inputs: batch_images, self.z: batch_z})
-                if self.config.use_D_patch3:
-                    _ = self.sess.run([self.d_optim_patch3],
-                                                   feed_dict={self.inputs: batch_images, self.z: batch_z})
+                # if self.config.use_D_patch2_2:
+                #     _ = self.sess.run([self.d_optim_patch2_2],
+                #                                    feed_dict={self.inputs: batch_images, self.z: batch_z})
+                # if self.config.use_D_patch3:
+                #     _ = self.sess.run([self.d_optim_patch3],
+                #                                    feed_dict={self.inputs: batch_images, self.z: batch_z})
 
-                if self.config.use_patchGAN_D_full == True and self.config.G_num == 2:
-                    _ = self.sess.run([self.d_optim_patchGAN],
-                                                   feed_dict={self.inputs: batch_images, self.z: batch_z})
+                # if self.config.use_patchGAN_D_full == True and self.config.G_num == 2:
+                #     _ = self.sess.run([self.d_optim_patchGAN],
+                #                                    feed_dict={self.inputs: batch_images, self.z: batch_z})
 
-                summary_str_d_sum = self.sess.run(self.d_sum,
-                                               feed_dict={self.inputs: batch_images, self.z: batch_z})
-                self.writer.add_summary(summary_str_d_sum, counter)
+                # summary_str_d_sum = self.sess.run(self.d_sum,
+                #                                feed_dict={self.inputs: batch_images, self.z: batch_z})
+                # self.writer.add_summary(summary_str_d_sum, counter)
 
-                if self.config.if_focal_loss:
-                    _ = self.sess.run(self.d_optim2,
-                        feed_dict={self.inputs: batch_images, self.z: batch_z})
+                # if self.config.if_focal_loss:
+                #     _ = self.sess.run(self.d_optim2,
+                #         feed_dict={self.inputs: batch_images, self.z: batch_z})
 
-                # Update G network
-                if self.config.G_num == 2:
-                    _, _, summary_str = self.sess.run([self.g1_optim, self.g2_optim, self.g_sum],
-                        feed_dict={self.z: batch_z, self.inputs: batch_images})
-                else:
-                    _, summary_str = self.sess.run([self.g_optim, self.g_sum],
-                        feed_dict={self.z: batch_z})
-                self.writer.add_summary(summary_str, counter)
+                # # Update G network
+                # if self.config.G_num == 2:
+                #     _, _, summary_str = self.sess.run([self.g1_optim, self.g2_optim, self.g_sum],
+                #         feed_dict={self.z: batch_z, self.inputs: batch_images})
+                # else:
+                #     _, summary_str = self.sess.run([self.g_optim, self.g_sum],
+                #         feed_dict={self.z: batch_z})
+                # self.writer.add_summary(summary_str, counter)
 
-                # Update E network
-                if self.config.E_stage1:
-                    _ = self.sess.run([self.e_optim],
-                                               feed_dict={self.z: batch_z})
+                # # Update E network
+                # if self.config.E_stage1:
+                #     _ = self.sess.run([self.e_optim],
+                #                                feed_dict={self.z: batch_z})
 
-                    if self.config.if_focal_loss and self.config.E2_stage1:
-                        _ = self.sess.run([self.e_optim2],
-                                            feed_dict={self.inputs: batch_images, self.z: batch_z})
+                #     if self.config.if_focal_loss and self.config.E2_stage1:
+                #         _ = self.sess.run([self.e_optim2],
+                #                             feed_dict={self.inputs: batch_images, self.z: batch_z})
 
-                # Run g_optim twice to make sure that d_loss does not go to zero (different from paper)
-                if self.config.G_num == 2:
-                    _, _, summary_str = self.sess.run([self.g1_optim, self.g2_optim, self.g_sum],
-                        feed_dict={self.z: batch_z, self.inputs: batch_images})
-                else:
-                    _, summary_str = self.sess.run([self.g_optim, self.g_sum],
-                        feed_dict={self.z: batch_z})
-                self.writer.add_summary(summary_str, counter)
+                # # Run g_optim twice to make sure that d_loss does not go to zero (different from paper)
+                # if self.config.G_num == 2:
+                #     _, _, summary_str = self.sess.run([self.g1_optim, self.g2_optim, self.g_sum],
+                #         feed_dict={self.z: batch_z, self.inputs: batch_images})
+                # else:
+                #     _, summary_str = self.sess.run([self.g_optim, self.g_sum],
+                #         feed_dict={self.z: batch_z})
+                # self.writer.add_summary(summary_str, counter)
 
                 if self.config.type is "dcgan":
                     errD_fake = self.d_loss_fake.eval({self.z: batch_z})
@@ -1202,23 +1199,16 @@ class DCGAN(object):
                 outputL = self.sess.run(self.G1,
                         feed_dict={self.z: batch_z, self.inputs: batch_images})
 
-                checksum_save({
-                    "outputL": outputL,
-                    "errD_fake": errD_fake,
-                    "errD_real": errD_real,
-                    "errG": errG,
-                })
                 restore_outputL, restore_errD_fake, restore_errD_real, restore_errG = checksum_load(
                     "outputL.npy", "errD_fake.pkl", "errD_real.pkl", "errG.pkl",)
-                assert np.allclose(restore_outputL, outputL)
-                assert errD_fake == restore_errD_fake
-                assert errD_real == restore_errD_real
-                assert errG == restore_errG
-                # if np.mod(counter, self.config.save_checkpoint_frequency) == 2:
-                if self.config.E_stage1:
-                    self.save(self.saver2, self.config.checkpoint_dir + "/stage1_AddE", self.model_dir, counter)
-                else:
-                    self.save(self.saver, self.config.checkpoint_dir+"/stage1", self.model_dir, counter)
+                allclose(restore_outputL, outputL)
+                allclose(restore_errD_fake, errD_fake)
+                allclose(restore_errD_real, errD_real)
+                allclose(restore_errG, errG)
+                # if self.config.E_stage1:
+                #     self.save(self.saver2, self.config.checkpoint_dir + "/stage1_AddE", self.model_dir, counter)
+                # else:
+                #     self.save(self.saver, self.config.checkpoint_dir+"/stage1", self.model_dir, counter)
                 exit()
 
     def test1(self, num):
