@@ -2,6 +2,7 @@
 # defination of dcgan
 
 from __future__ import division
+from __future__ import print_function
 import os
 import time
 import math
@@ -948,6 +949,27 @@ class DCGAN(object):
         utils.show_all_variables()
 
     def train1(self):
+        def checksum_save_input(input_dict):
+            checksum_path = utils.checksum_path
+            utils.enforce_exists(checksum_path)
+            for key, val in input_dict:
+                if isinstance(val, np.array):
+                    np.save(os.path.join(checksum_path, key) + '.npy', val)
+                else:
+                    raise NotImplementedError
+
+        def checksum_load_input(*names):
+            checksum_path = utils.checksum_path
+            result = []
+            for name in names:
+                path = os.path.join(checksum_path, name) + '.npy'
+                if not os.path.exists(path):
+                    print('missing loading item: {}'.format(path))
+                    raise ValueError
+                result.append(np.load(path))
+            return result
+
+
         self.build_model1()
 
         # load data
@@ -975,7 +997,7 @@ class DCGAN(object):
             raise Exception("[!] No data found in '" + data_path + "'")
         if len(self.data) < self.config.batch_size:
             raise Exception("[!] Entire dataset size is less than the configured batch_size")
-        
+
         self.grayscale = (self.c_dim == 1)
 
 
@@ -988,7 +1010,7 @@ class DCGAN(object):
         # init summary writer
         self.writer = networks.SummaryWriter("./logs", self.sess.graph)
         # self.writer = networks.SummaryWriter("./logs_2", self.sess.graph)
-    
+
         # load model if exist
         counter = 1
         start_time = time.time()
@@ -1007,7 +1029,7 @@ class DCGAN(object):
         for epoch in xrange(self.config.epoch):
             np.random.shuffle(self.data)
             batch_idxs = min(len(self.data), self.config.train_size) // self.config.batch_size
-            
+
             for idx in xrange(0, int(batch_idxs)):
                 # read image by batch
                 batch_files = self.data[idx*self.config.batch_size : (idx+1)*self.config.batch_size]
@@ -1029,6 +1051,13 @@ class DCGAN(object):
                 #         [self.config.batch_size, self.z_dim]).astype(np.float32)
 
                 batch_z = np.random.normal(size=(self.config.batch_size, self.z_dim))
+                checksum_save_input({
+                    'batch_images': batch_images,
+                    'batch_z': batch_z,
+                })
+                restore_batch_images, restore_batch_z = checksum_load_input('batch_images', 'batch_z')
+                assert np.allclose(batch_images, restore_batch_images)
+                assert np.allclose(batch_z, restore_batch_z)
 
                 if self.config.if_focal_loss:
                     # batch_classes = np.floor(np.random.uniform(0, 1,
@@ -1178,7 +1207,7 @@ class DCGAN(object):
 
         # test
         batch_idxs = min(num, self.config.train_size) // self.config.batch_size
-        
+
         for idx in xrange(0, int(batch_idxs)):
             # init z by batch
             batch_z = np.random.uniform(-1, 1,
@@ -1444,7 +1473,7 @@ class DCGAN(object):
             raise Exception("[!] No data found in '" + data_path + "'")
         if len(self.data) < self.config.batch_size:
             raise Exception("[!] Entire dataset size is less than the configured batch_size")
-        
+
         self.grayscale = (self.c_dim == 1)
 
         # init var
@@ -1455,7 +1484,7 @@ class DCGAN(object):
 
         # init summary writer
         self.writer = networks.SummaryWriter("./logs", self.sess.graph)
-    
+
         # load model if exist
         counter = 1
         start_time = time.time()
@@ -1482,7 +1511,7 @@ class DCGAN(object):
         for epoch in xrange(self.config.epoch):
             np.random.shuffle(self.data)
             batch_idxs = min(len(self.data), self.config.train_size) // self.config.batch_size
-            
+
             for idx in xrange(0, int(batch_idxs)):
                 # read image by batch
                 batch_files = self.data[idx*self.config.batch_size : (idx+1)*self.config.batch_size]
@@ -1507,7 +1536,7 @@ class DCGAN(object):
                 _, summary_str = self.sess.run([self.e_optim, self.e_sum],
                     feed_dict={self.inputs: batch_images, self.masks: batch_masks})
                 self.writer.add_summary(summary_str, counter)
-                
+
                 errG = self.g_loss.eval({self.inputs: batch_images})
                 errC = self.c_loss.eval({self.inputs: batch_images, self.masks: batch_masks})
                 errL1 = self.l1_loss.eval({self.inputs: batch_images, self.masks: batch_masks})
@@ -1562,7 +1591,7 @@ class DCGAN(object):
             raise Exception("[!] No data found in '" + data_path + "'")
         if len(self.data) < self.config.batch_size and self.config.output_form is "batch":
             raise Exception("[!] Entire dataset size is less than the configured batch_size")
-        
+
         self.grayscale = (self.c_dim == 1)
 
         # init var
@@ -1570,7 +1599,7 @@ class DCGAN(object):
             tf.global_variables_initializer().run()
         except:
             tf.initialize_all_variables().run()
-    
+
         # load model if exist
         counter = 1
         start_time = time.time()
@@ -1608,7 +1637,7 @@ class DCGAN(object):
             batch_size_tmp = 1
 
         batch_idxs = min(len(self.data), self.config.train_size) // batch_size_tmp
-        
+
         for idx in xrange(0, int(batch_idxs)):
             # read image by batch
             batch_files = self.data[idx*batch_size_tmp : (idx+1)*batch_size_tmp]
@@ -1709,7 +1738,7 @@ class DCGAN(object):
         if ckpt and ckpt.model_checkpoint_path:
             ckpt_name = os.path.basename(ckpt.model_checkpoint_path)
             saver.restore(self.sess, os.path.join(checkpoint_dir, ckpt_name))
-            
+
             counter = int(next(re.finditer("(\d+)(?!.*\d)",ckpt_name)).group(0))
             print(" [*] Success to read {}".format(ckpt_name))
             return True, counter

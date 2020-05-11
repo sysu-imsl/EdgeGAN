@@ -13,6 +13,11 @@ def makedirs(path):
     if not os.path.exists(path):
         os.makedirs(path)
 
+def enforce_exists(path):
+    if not os.path.exists(path):
+        os.system('mkdir -p ' + path)
+
+checksum_path = 'checksum'
 
 pp = pprint.PrettyPrinter()
 
@@ -167,8 +172,8 @@ def to_json(output_path, *layers):
 
                 lines += """
           var layer_%s = {
-            "layer_type": "fc", 
-            "sy": 1, "sx": 1, 
+            "layer_type": "fc",
+            "sy": 1, "sx": 1,
             "out_sx": 1, "out_sy": 1,
             "stride": 1, "pad": 0,
             "out_depth": %s, "in_depth": %s,
@@ -193,7 +198,7 @@ def to_json(output_path, *layers):
 
                 lines += """
           var layer_%s = {
-            "layer_type": "deconv", 
+            "layer_type": "deconv",
             "sy": 5, "sx": 5,
             "out_sx": %s, "out_sy": %s,
             "stride": 2, "pad": 1,
