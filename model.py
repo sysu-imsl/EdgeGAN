@@ -92,11 +92,7 @@ class DCGAN(object):
                                                num_filters=self.df_dim,
                                                use_resnet=self.config.if_resnet_d)
 
-        if self.config.use_D_patch2_2 is True:
-            self.discriminator_patch2_2 = Discriminator('D_patch2_2', is_train=True,
-                                               norm=self.config.D_norm,
-                                               num_filters=self.df_dim,
-                                               use_resnet=self.config.if_resnet_d)
+
 
         if self.config.use_D_patch3 is True:
             self.discriminator_patch3 = Discriminator('D_patch3', is_train=True,
@@ -177,111 +173,40 @@ class DCGAN(object):
 
 
         if self.config.use_D_patch2:
-            if self.config.conditional_D2 == "full_concat_w":
-            #   TODO: Resize the input
-                self.resized_inputs = tf.image.resize_images(self.inputs, [self.config.sizeOfIn_patch2, self.config.sizeOfIn_patch2 * 2], method=2)
-                self.patch2_D, self.patch2_D_logits = self.discriminator_patch2(self.resized_inputs)
-                self.resized_inputs_image = self.resized_inputs
-
-                self.resized_G = tf.image.resize_images(self.G, [self.config.sizeOfIn_patch2, self.config.sizeOfIn_patch2 * 2],
-                                                method=2)
-                self.patch2_D_, self.patch2_D_logits_ = self.discriminator_patch2(self.resized_G, reuse=True)
-                self.resized_G_image = self.resized_G
-            elif self.config.conditional_D2 == "full_concat_n":
-                left_i = self.inputs[:, :, 0:int(self.config.output_width/2), :]
-                right_i = self.inputs[:, :, int(self.config.output_width/2):self.config.output_width, :]
-                left_i = tf.image.resize_images(left_i, [self.config.sizeOfIn_patch2, self.config.sizeOfIn_patch2], method=2)
-                right_i = tf.image.resize_images(right_i, [self.config.sizeOfIn_patch2, self.config.sizeOfIn_patch2],
-                                                method=2)
-                self.resized_inputs_image = right_i
-                self.resized_inputs = tf.concat([left_i, right_i], 3)
-                self.patch2_D, self.patch2_D_logits = self.discriminator_patch2(self.resized_inputs)
-
-                left_G = self.G[:, :, 0:int(self.config.output_width / 2), :]
-                right_G = self.G[:, :, int(self.config.output_width / 2):self.config.output_width, :]
-                left_G = tf.image.resize_images(left_G, [self.config.sizeOfIn_patch2, self.config.sizeOfIn_patch2],
-                                                method=2)
-                right_G = tf.image.resize_images(right_G, [self.config.sizeOfIn_patch2, self.config.sizeOfIn_patch2],
-                                                 method=2)
-                self.resized_G_image = right_G
-                self.resized_G = tf.concat([left_G, right_G], 3)
-                self.patch2_D_, self.patch2_D_logits_ = self.discriminator_patch2(self.resized_G, reuse=True)
-            elif self.config.conditional_D2 == "single_right":
-                right_i = self.inputs[:, :, int(self.config.output_width / 2):self.config.output_width, :]
-                right_i = tf.image.resize_images(right_i, [self.config.sizeOfIn_patch2, self.config.sizeOfIn_patch2],
-                                                 method=2)
-                self.resized_inputs = right_i
-                self.resized_inputs_image = self.resized_inputs
-                self.patch2_D, self.patch2_D_logits = self.discriminator_patch2(self.resized_inputs)
-
-                self.resized_G2_p2 = tf.image.resize_images(self.G2,
-                                                            [self.config.sizeOfIn_patch2,
-                                                                self.config.sizeOfIn_patch2],
-                                                            method=2)
-                self.patch2_D_, self.patch2_D_logits_ = self.discriminator_patch2(self.resized_G2_p2, reuse=True)
-
-        if self.config.use_D_patch2_2 == True:
             right_i = self.inputs[:, :, int(self.config.output_width / 2):self.config.output_width, :]
-            right_i = tf.image.resize_images(right_i, [self.config.sizeOfIn_patch2_2, self.config.sizeOfIn_patch2_2],
-                                             method=2)
-            self.resized_inputs_p2_2 = right_i
-            self.resized_inputs_p2_2_image = self.resized_inputs_p2_2
-            self.patch2_2_D, self.patch2_2_D_logits = self.discriminator_patch2_2(self.resized_inputs_p2_2)
+            right_i = tf.image.resize_images(right_i, [self.config.sizeOfIn_patch2, self.config.sizeOfIn_patch2],
+                                                method=2)
+            self.resized_inputs = right_i
+            self.resized_inputs_image = self.resized_inputs
+            self.patch2_D, self.patch2_D_logits = self.discriminator_patch2(self.resized_inputs)
 
-            self.resized_G2_p2_2 = tf.image.resize_images(self.G2,
-                                                        [self.config.sizeOfIn_patch2_2,
-                                                            self.config.sizeOfIn_patch2_2],
+            self.resized_G2_p2 = tf.image.resize_images(self.G2,
+                                                        [self.config.sizeOfIn_patch2,
+                                                            self.config.sizeOfIn_patch2],
                                                         method=2)
-            self.patch2_2_D_, self.patch2_2_D_logits_ = self.discriminator_patch2_2(self.resized_G2_p2_2, reuse=True)
+            self.patch2_D_, self.patch2_D_logits_ = self.discriminator_patch2(self.resized_G2_p2, reuse=True)
+
 
 
         if self.config.use_D_patch3:
             #   TODO: Resize the input
-            if self.config.conditional_D3 == "full_concat_w":
-                self.resized_inputs_p3 = tf.image.resize_images(self.inputs, [self.config.sizeOfIn_patch3, self.config.sizeOfIn_patch3 * 2], method=2)
-                self.patch3_D, self.patch3_D_logits = self.discriminator_patch3(self.resized_inputs_p3)
-                self.resized_inputs_p3_image = self.resized_inputs_p3
 
-                self.resized_G_p3 = tf.image.resize_images(self.G, [self.config.sizeOfIn_patch3, self.config.sizeOfIn_patch3 * 2],
+            left_i = self.inputs[:, :, 0:int(self.config.output_width / 2), :]
+            left_i = tf.image.resize_images(left_i, [self.config.sizeOfIn_patch3, self.config.sizeOfIn_patch3],
+                                            method=2)
+
+            right_i = self.inputs[:, :, int(self.config.output_width / 2):self.config.output_width, :]
+            right_i = tf.image.resize_images(right_i, [self.config.sizeOfIn_patch3, self.config.sizeOfIn_patch3],
                                                 method=2)
-                self.patch3_D_, self.patch3_D_logits_ = self.discriminator_patch3(self.resized_G_p3, reuse=True)
-                self.resized_G_p3_image = self.resized_G_p3
-            elif self.config.conditional_D3 == "full_concat_n":
-                left_i = self.inputs[:, :, 0:int(self.config.output_width/2), :]
-                right_i = self.inputs[:, :, int(self.config.output_width/2):self.config.output_width, :]
-                left_i = tf.image.resize_images(left_i, [self.config.sizeOfIn_patch3, self.config.sizeOfIn_patch3], method=2)
-                right_i = tf.image.resize_images(right_i, [self.config.sizeOfIn_patch3, self.config.sizeOfIn_patch3],
+            self.resized_inputs_p3 = left_i
+
+            self.resized_inputs_p3_image = self.resized_inputs_p3
+            self.patch3_D, self.patch3_D_logits = self.discriminator_patch3(self.resized_inputs_p3)
+
+            self.resized_G1_p3 = tf.image.resize_images(self.G1,
+                                                [self.config.sizeOfIn_patch3, self.config.sizeOfIn_patch3],
                                                 method=2)
-                self.resized_inputs_p3_image = right_i
-                self.resized_inputs_p3 = tf.concat([left_i, right_i], 3)
-                self.patch3_D, self.patch3_D_logits = self.discriminator_patch3(self.resized_inputs_p3)
-
-                left_G = self.G[:, :, 0:int(self.config.output_width / 2), :]
-                right_G = self.G[:, :, int(self.config.output_width / 2):self.config.output_width, :]
-                left_G = tf.image.resize_images(left_G, [self.config.sizeOfIn_patch3, self.config.sizeOfIn_patch3],
-                                                method=2)
-                right_G = tf.image.resize_images(right_G, [self.config.sizeOfIn_patch3, self.config.sizeOfIn_patch3],
-                                                 method=2)
-                self.resized_G_p3_image = right_G
-                self.resized_G_p3 = tf.concat([left_G, right_G], 3)
-                self.patch3_D_, self.patch3_D_logits_ = self.discriminator_patch3(self.resized_G_p3, reuse=True)
-            elif self.config.conditional_D3 == "single_right":
-                left_i = self.inputs[:, :, 0:int(self.config.output_width / 2), :]
-                left_i = tf.image.resize_images(left_i, [self.config.sizeOfIn_patch3, self.config.sizeOfIn_patch3],
-                                                method=2)
-
-                right_i = self.inputs[:, :, int(self.config.output_width / 2):self.config.output_width, :]
-                right_i = tf.image.resize_images(right_i, [self.config.sizeOfIn_patch3, self.config.sizeOfIn_patch3],
-                                                 method=2)
-                self.resized_inputs_p3 = left_i
-
-                self.resized_inputs_p3_image = self.resized_inputs_p3
-                self.patch3_D, self.patch3_D_logits = self.discriminator_patch3(self.resized_inputs_p3)
-
-                self.resized_G1_p3 = tf.image.resize_images(self.G1,
-                                                    [self.config.sizeOfIn_patch3, self.config.sizeOfIn_patch3],
-                                                    method=2)
-                self.patch3_D_, self.patch3_D_logits_ = self.discriminator_patch3(self.resized_G1_p3, reuse=True)
+            self.patch3_D_, self.patch3_D_logits_ = self.discriminator_patch3(self.resized_G1_p3, reuse=True)
 
         z_recon, z_recon_mu, z_recon_log_sigma = self.encoder(self.G1)
 
@@ -368,25 +293,9 @@ class DCGAN(object):
             self.d_loss_patch2 = 0
             self.g_loss_patch2 = 0
 
-        if self.config.use_D_patch2_2:
-            self.d_loss_patch2_2 = tf.reduce_mean(self.patch2_2_D_logits_ - self.patch2_2_D_logits)
 
-            alpha_dist = tf.contrib.distributions.Uniform(low=0., high=1.)
-            alpha = alpha_dist.sample((self.config.batch_size, 1, 1, 1))
-
-            #TODO: Not know whtether it's true
-            interpolated = self.resized_inputs_p2_2 + alpha * (self.resized_G2_p2_2 - self.resized_inputs_p2_2)
-
-            inte_logit = self.discriminator_patch2_2(interpolated, reuse=True)
-            gradients = tf.gradients(inte_logit, [interpolated, ])[0]
-            grad_l2 = tf.sqrt(tf.reduce_sum(tf.square(gradients), axis=[1, 2, 3]))
-            gradient_penalty = tf.reduce_mean((grad_l2 - 1) ** 2)
-
-            self.d_loss_patch2_2 += self.config.lambda_gp * gradient_penalty
-            self.g_loss_patch2_2 = tf.reduce_mean(self.patch2_2_D_logits_ * -1)
-        else:
-            self.d_loss_patch2_2 = 0
-            self.g_loss_patch2_2 = 0
+        self.d_loss_patch2_2 = 0
+        self.g_loss_patch2_2 = 0
 
         if self.config.use_D_patch3:
             self.d_loss_patch3 = tf.reduce_mean(self.patch3_D_logits_ - self.patch3_D_logits)
