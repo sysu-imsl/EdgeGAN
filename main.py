@@ -26,7 +26,6 @@ flags.DEFINE_string("checkpoint_dir", "checkpoint_gpwgan_instanceEGD_noOriginD_p
 flags.DEFINE_string("data_dir", "./data", "Root directory of dataset [data]")
 flags.DEFINE_string("sample_dir", "samples_gpwgan_instanceEGD_noOriginD_patch2_128_patch3_128_patchGAN_insN_wgan_2G", "Directory name to save the image samples [samples]")
 flags.DEFINE_boolean("train", False, "True for training, False for testing [False]")
-flags.DEFINE_integer("stage", 1, "1 for train stage 1, and 2 for train stage 2")
 flags.DEFINE_integer("save_checkpoint_frequency", 500, "frequency for saving checkpoint")
 flags.DEFINE_boolean("crop", False, "True for training, False for testing [False]")
 flags.DEFINE_integer("generate_test_images", 100, "Number of images to generate during test. [100]")
@@ -169,32 +168,18 @@ def main(_):
     makedirs(FLAGS.sample_dir + "/stage1_AddE_random/" + FLAGS.dataset + '/')
     makedirs(FLAGS.sample_dir + "/stage1_AddE_specified/" + FLAGS.dataset + '/' + str(FLAGS.test_label) + '/')
 
-    #gpu_options = tf.GPUOptions(per_process_gpu_memory_fraction=0.333)
     run_config = tf.ConfigProto()
     run_config.gpu_options.allow_growth = True
 
     with tf.Session(config=run_config) as sess:
-    # with tf.Session() as sess:
         dcgan = DCGAN(sess, FLAGS)
 
         if FLAGS.train:
-            if FLAGS.stage == 1:
-                dcgan.train1()
-            else:
-                dcgan.train2()
+            dcgan.train1()
         else:
-            if FLAGS.stage == 1:
-                if FLAGS.Test_allLabel:
-                    for label in xrange(0, FLAGS.num_classes):
-                        FLAGS.test_label = label
-                        if FLAGS.output_form is "batch":
-                            makedirs(FLAGS.sample_dir + "/stage1_AddE_specified/" + FLAGS.dataset + '/' + str(
-                                FLAGS.test_label) + '/')
-                        else:
-                            makedirs(FLAGS.sample_dir + "/stage1_AddE_specified/" + FLAGS.dataset + '_singleTest/' + str(
-                                FLAGS.test_label) + '/')
-                        dcgan.test2()
-                elif FLAGS.E_stage1 and not FLAGS.Random_test:
+            if FLAGS.Test_allLabel:
+                for label in xrange(0, FLAGS.num_classes):
+                    FLAGS.test_label = label
                     if FLAGS.output_form is "batch":
                         makedirs(FLAGS.sample_dir + "/stage1_AddE_specified/" + FLAGS.dataset + '/' + str(
                             FLAGS.test_label) + '/')
@@ -202,24 +187,20 @@ def main(_):
                         makedirs(FLAGS.sample_dir + "/stage1_AddE_specified/" + FLAGS.dataset + '_singleTest/' + str(
                             FLAGS.test_label) + '/')
                     dcgan.test2()
-                elif FLAGS.Random_test and FLAGS.E_stage1 and FLAGS.Test_singleLabel:
-                    dcgan.test1(FLAGS.num_classes * FLAGS.batch_size)
+            elif FLAGS.E_stage1 and not FLAGS.Random_test:
+                if FLAGS.output_form is "batch":
+                    makedirs(FLAGS.sample_dir + "/stage1_AddE_specified/" + FLAGS.dataset + '/' + str(
+                        FLAGS.test_label) + '/')
                 else:
-                    dcgan.test1(10*FLAGS.batch_size)
-                # dcgan.test1(10 * FLAGS.batch_size)
-            else:
+                    makedirs(FLAGS.sample_dir + "/stage1_AddE_specified/" + FLAGS.dataset + '_singleTest/' + str(
+                        FLAGS.test_label) + '/')
                 dcgan.test2()
-                # dcgan.test1(10 * FLAGS.batch_size)
-      
-        # to_json("./web/js/layers.js", [dcgan.h0_w, dcgan.h0_b, dcgan.g_bn0],
-        #                 [dcgan.h1_w, dcgan.h1_b, dcgan.g_bn1],
-        #                 [dcgan.h2_w, dcgan.h2_b, dcgan.g_bn2],
-        #                 [dcgan.h3_w, dcgan.h3_b, dcgan.g_bn3],
-        #                 [dcgan.h4_w, dcgan.h4_b, None])
+            elif FLAGS.Random_test and FLAGS.E_stage1 and FLAGS.Test_singleLabel:
+                dcgan.test1(FLAGS.num_classes * FLAGS.batch_size)
+            else:
+                dcgan.test1(10*FLAGS.batch_size)
 
-        # # Below is codes for visualization
-        # OPTION = 1
-        # visualize(sess, dcgan, FLAGS, OPTION)
+
 
 if __name__ == '__main__':
     tf.app.run()
