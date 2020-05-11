@@ -134,3 +134,4 @@ logs/
 data/
 .vscode/
 checksum/
+*.pkl

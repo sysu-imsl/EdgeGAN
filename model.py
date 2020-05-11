@@ -17,6 +17,7 @@ import networks
 import utils
 
 import sys
+import pickle
 
 reload(sys)
 sys.setdefaultencoding('utf8')
@@ -949,24 +950,44 @@ class DCGAN(object):
         utils.show_all_variables()
 
     def train1(self):
-        def checksum_save_input(input_dict):
+        def extension(filename):
+            return os.path.splitext(filename)[-1]
+
+        def checksum_save(input_dict):
             checksum_path = utils.checksum_path
-            utils.enforce_exists(checksum_path)
+            utils.makedirs(checksum_path)
+            def save(filename, obj):
+                p = os.path.join(checksum_path, filename)
+                if isinstance(obj, np.ndarray):
+                    np.save(p + '.npy', val)
+                else:
+                    with open(p + '.pkl', 'wb') as f:
+                        pickle.dump(obj, f)
+
             for key, val in input_dict.items():
-                if isinstance(val, np.ndarray):
-                    np.save(os.path.join(checksum_path, key) + '.npy', val)
+                save(key, val)
+
+        def checksum_load(*names):
+            def load(filename):
+                if extension(path) == '.npy':
+                    return np.load(path)
+                elif extension(path) == '.pkl':
+                    with open(path, 'rb') as f:
+                        return pickle.load(f)
                 else:
                     raise NotImplementedError
 
-        def checksum_load_input(*names):
-            checksum_path = utils.checksum_path
-            result = []
-            for name in names:
-                path = os.path.join(checksum_path, name) + '.npy'
+            def enforce_exists(path):
                 if not os.path.exists(path):
                     print('missing loading item: {}'.format(path))
                     raise ValueError
-                result.append(np.load(path))
+
+            checksum_path = utils.checksum_path
+            result = []
+            for name in names:
+                path = os.path.join(checksum_path, name)
+                enforce_exists(path)
+                result.append(load(path))
             return result
 
 
@@ -1051,11 +1072,11 @@ class DCGAN(object):
                 #         [self.config.batch_size, self.z_dim]).astype(np.float32)
 
                 batch_z = np.random.normal(size=(self.config.batch_size, self.z_dim))
-                checksum_save_input({
+                checksum_save({
                     'batch_images': batch_images,
                     'batch_z': batch_z,
                 })
-                restore_batch_images, restore_batch_z = checksum_load_input('batch_images', 'batch_z')
+                restore_batch_images, restore_batch_z = checksum_load('batch_images.npy', 'batch_z.npy')
                 assert np.allclose(batch_images, restore_batch_images)
                 assert np.allclose(batch_z, restore_batch_z)
                 print('assertion successed!')
@@ -1173,11 +1194,22 @@ class DCGAN(object):
                         % (epoch, self.config.epoch, idx, batch_idxs,
                             time.time() - start_time, errD_fake+errD_real, errG))
 
-                if np.mod(counter, self.config.save_checkpoint_frequency) == 2:
-                    if self.config.E_stage1:
-                        self.save(self.saver2, self.config.checkpoint_dir + "/stage1_AddE", self.model_dir, counter)
-                    else:
-                        self.save(self.saver, self.config.checkpoint_dir+"/stage1", self.model_dir, counter)
+                checksum_save({
+                    "errD_fake": errD_fake,
+                    "errD_real": errD_real,
+                    "errG": errG,
+                })
+                restore_errD_fake, restore_errD_real, restore_errG = checksum_load(
+                    "errD_fake.pkl", "errD_real.pkl", "errG.pkl",)
+                assert errD_fake == restore_errD_fake
+                assert errD_real == restore_errD_real
+                assert errG == restore_errG
+                # if np.mod(counter, self.config.save_checkpoint_frequency) == 2:
+                if self.config.E_stage1:
+                    self.save(self.saver2, self.config.checkpoint_dir + "/stage1_AddE", self.model_dir, counter)
+                else:
+                    self.save(self.saver, self.config.checkpoint_dir+"/stage1", self.model_dir, counter)
+                exit()
 
     def test1(self, num):
         self.build_model1()

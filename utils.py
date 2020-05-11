@@ -13,10 +13,6 @@ def makedirs(path):
     if not os.path.exists(path):
         os.makedirs(path)
 
-def enforce_exists(path):
-    if not os.path.exists(path):
-        os.system('mkdir -p ' + path)
-
 checksum_path = 'checksum'
 
 pp = pprint.PrettyPrinter()
