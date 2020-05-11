@@ -105,14 +105,11 @@ def main(_):
         FLAGS.output_width = FLAGS.output_height
 
     dir_tmp = ''
-    if FLAGS.use_D_origin == True:
-        dir_tmp += 'originD'
-        if FLAGS.originD_inputForm == 'concat_n':
-            dir_tmp += "ConcatN_"
-        elif FLAGS.originD_inputForm == 'concat_w':
-            dir_tmp += "ConcatW_"
-    else:
-        dir_tmp += 'noOriginD_'
+    dir_tmp += 'originD'
+    if FLAGS.originD_inputForm == 'concat_n':
+        dir_tmp += "ConcatN_"
+    elif FLAGS.originD_inputForm == 'concat_w':
+        dir_tmp += "ConcatW_"
     if FLAGS.use_D_patch2 == True:
         dir_tmp += 'patch2_'
         dir_tmp += str(FLAGS.sizeOfIn_patch2)
