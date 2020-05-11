@@ -85,11 +85,6 @@ class DCGAN(object):
             self.discriminator = base_model.discriminator_model
 
         # multi-scale discriminators
-        if self.config.use_D_patch is True:
-            self.discriminator_patch = Discriminator_patch('D_patch', is_train=True,
-                                               norm=self.config.D_patch_norm,
-                                               num_filters=self.df_dim,
-                                               use_resnet=False)
 
         if self.config.use_D_patch2 is True:
             self.discriminator_patch2 = Discriminator('D_patch2', is_train=True,
@@ -180,10 +175,6 @@ class DCGAN(object):
         self.D_, self.D_logits_ = self.discriminator(self.G_all, reuse=True)
 
 
-        if self.config.use_D_patch:
-            self.patch_D, self.patch_D_logits = self.discriminator_patch(self.inputs)
-            self.G_all = tf.concat([self.G1, self.G2], 2)
-            self.patch_D_, self.patch_D_logits_ = self.discriminator_patch(self.G_all, reuse=True)
 
         if self.config.use_D_patch2:
             if self.config.conditional_D2 == "full_concat_w":
@@ -354,22 +345,8 @@ class DCGAN(object):
         self.d_loss += self.config.lambda_gp * gradient_penalty
         self.g_loss = tf.reduce_mean(self.D_logits_ * -1)
 
-        if self.config.use_D_patch:
-            self.d_loss_patch = tf.reduce_mean(self.patch_D_logits_ - self.patch_D_logits)
-
-            alpha_dist = tf.contrib.distributions.Uniform(low=0., high=1.)
-            alpha = alpha_dist.sample((self.config.batch_size, 1, 1, 1))
-            interpolated = self.inputs + alpha * (self.G - self.inputs)
-            inte_logit = self.discriminator_patch(interpolated, reuse=True)
-            gradients = tf.gradients(inte_logit, [interpolated, ])[0]
-            grad_l2 = tf.sqrt(tf.reduce_sum(tf.square(gradients), axis=[1, 2, 3]))
-            gradient_penalty = tf.reduce_mean((grad_l2 - 1) ** 2)
-
-            self.d_loss_patch += self.config.lambda_gp * gradient_penalty
-            self.g_loss_patch = tf.reduce_mean(self.patch_D_logits_ * -1)
-        else:
-            self.d_loss_patch = 0
-            self.g_loss_patch = 0
+        self.d_loss_patch = 0
+        self.g_loss_patch = 0
 
         if self.config.use_D_patch2:
             self.d_loss_patch2 = tf.reduce_mean(self.patch2_D_logits_ - self.patch2_D_logits)
@@ -472,9 +449,6 @@ class DCGAN(object):
 
         self.d_optim = tf.train.RMSPropOptimizer(self.config.learning_rate).minimize(
                                             self.d_loss, var_list=self.discriminator.var_list)
-        if self.config.use_D_patch:
-            self.d_optim_patch = tf.train.RMSPropOptimizer(self.config.learning_rate).minimize(
-                                                self.d_loss_patch, var_list=self.discriminator_patch.var_list)
         if self.config.use_D_patch2:
             self.d_optim_patch2 = tf.train.RMSPropOptimizer(self.config.learning_rate).minimize(
                                                 self.d_loss_patch2, var_list=self.discriminator_patch2.var_list)
@@ -537,13 +511,6 @@ class DCGAN(object):
         self.g_sum = networks.merge_summary([self.g_sum, self.d__sum_tmp])
         self.d_sum = networks.merge_summary([self.d_sum, self.d_sum_tmp])
 
-        if self.config.use_D_patch:
-            self.d_patch_sum = networks.histogram_summary("patch_d", self.patch_D)
-            self.d__patch_sum = networks.histogram_summary("patch_d_", self.patch_D_)
-            self.d_loss_patch_sum = networks.scalar_summary("d_loss_patch", self.d_loss_patch)
-            self.g_loss_patch_sum = networks.scalar_summary("g_loss_patch", self.g_loss_patch)
-            self.g_sum = networks.merge_summary([self.g_sum, self.d__patch_sum, self.g_loss_patch_sum])
-            self.d_sum = networks.merge_summary([self.d_sum, self.d_patch_sum, self.d_loss_patch_sum])
 
         if self.config.use_D_patch2:
             self.d_patch2_sum = networks.histogram_summary("patch2_d", self.patch2_D)
@@ -769,10 +736,7 @@ class DCGAN(object):
 
 
                 errD_fake_tmp1 = self.d_loss.eval({self.inputs: batch_images, self.z: batch_z})
-                if self.config.use_D_patch:
-                    errD_fake_tmp2 = self.d_loss_patch.eval({self.inputs: batch_images, self.z: batch_z})
-                else:
-                    errD_fake_tmp2 = 0
+                errD_fake_tmp2 = 0
                 if self.config.use_D_patch2:
                     errD_fake_tmp3 = self.d_loss_patch2.eval({self.inputs: batch_images, self.z: batch_z})
                 else:
