@@ -1054,6 +1054,7 @@ class DCGAN(object):
                 allclose(restore_errD_fake, errD_fake)
                 allclose(restore_errD_real, errD_real)
                 allclose(restore_errG, errG)
+                print('assert successed!')
                 # self.save(self.saver2, self.config.checkpoint_dir + "/stage1_AddE", self.model_dir, counter)
                 exit()
 
@@ -1142,14 +1143,6 @@ class DCGAN(object):
                                     image_size=self.config.input_height,
                                     latent_dim=self.z_dim,
                                     use_resnet=self.config.if_resnet_e)
-                if self.config.Test_encoderSketch:
-                    self.encoder2 = Encoder('E2', is_train=True,
-                                        norm=self.config.E_norm,
-                                        image_size=self.config.input_height,
-                                        latent_dim=self.config.num_classes,
-                                        use_resnet=self.config.if_resnet_e)
-                if self.config.Test_classifierSketch:
-                    self.discriminator2 = Discriminator2('D2', self.config.SPECTRAL_NORM_UPDATE_OPS)
             else:
                 # TODO latent_dim is corret?
                 self.encoder = Encoder('E', is_train=True,
@@ -1195,9 +1188,6 @@ class DCGAN(object):
 
         self.input_left = self.inputs[0:batch_size_mid,0:self.image_dims[0],0:int(self.image_dims[1]/2),0:self.image_dims[2]]
         z_encoded, z_encoded_mu, z_encoded_log_sigma = self.encoder(self.input_left)
-        # matrix_min = tf.reduce_min(z_encoded)
-        # matrix_max = tf.reduce_max(z_encoded)
-        # self.z = (z_encoded - matrix_min)*2/(matrix_max-matrix_min) -1
         self.z = z_encoded
         if self.config.if_focal_loss:
             if self.config.Test_singleLabel:
@@ -1206,106 +1196,9 @@ class DCGAN(object):
                 self.class_onehot = tf.one_hot(tf.cast(batch_classes[:, -1], dtype=tf.int32), self.config.num_classes,
                                                on_value=1., off_value=0., dtype=tf.float32)
                 self.z = tf.concat([z_encoded, self.class_onehot], 1)
-            elif self.config.Test_encoderSketch:
-                class_encoded, _, _ = self.encoder2(self.input_left)
-                self.class_onehot = tf.one_hot(tf.cast(tf.argmax(class_encoded, 1), dtype=tf.int32), self.config.num_classes,
-                                          on_value=1., off_value=0., dtype=tf.float32)
-                self.z = tf.concat([z_encoded, self.class_onehot], 1)
-            elif self.config.Test_classifierSketch:
-                self.input_right = self.inputs[0:batch_size_mid, 0:self.image_dims[0], int(self.image_dims[1] / 2):self.image_dims[1],
-                                  0:self.image_dims[2]]
-                _, _, class_encoded = self.discriminator2(
-                                            tf.transpose(self.input_right, [0, 3, 1, 2]),
-                                            num_classes=self.config.num_classes,
-                                            reuse=False, data_format='NCHW')
-                self.class_onehot = tf.one_hot(tf.cast(tf.argmax(class_encoded, 1), dtype=tf.int32),
-                                               self.config.num_classes,
-                                               on_value=1., off_value=0., dtype=tf.float32)
-                self.z = tf.concat([z_encoded, self.class_onehot], 1)
 
         self.G1 = self.generator1(self.z)
         self.G2 = self.generator2(self.z)
-        # self.D, self.D_logits = self.discriminator(self.inputs)
-        # if self.config.G_num == 2:
-        #     self.D_, self.D_logits_ = self.discriminator(tf.concat([self.G1, self.G2], 2), reuse=True)
-        # else:
-        #     self.D_, self.D_logits_ = self.discriminator(self.G, reuse=True)
-
-        # define loss
-        # self.d_loss_real = tf.reduce_mean(
-        #     networks.sigmoid_cross_entropy_with_logits(
-        #         self.D_logits, tf.ones_like(self.D)))
-        # self.d_loss_fake = tf.reduce_mean(
-        #     networks.sigmoid_cross_entropy_with_logits(
-        #         self.D_logits_, tf.zeros_like(self.D_)))
-        # self.d_loss = self.d_loss_real + self.d_loss_fake
-
-        # self.g_loss = tf.reduce_mean(
-        #     networks.sigmoid_cross_entropy_with_logits(
-        #         self.D_logits_, tf.ones_like(self.D_)))*self.config.stage2_g_loss
-        #
-        # # contexture loss
-        # prob_a = tf.multiply(self.masks, self.inputs)
-        # if self.config.G_num == 2:
-        #     prob_b = tf.multiply(self.masks, tf.concat([self.G1, self.G2], 2))
-        # else:
-        #     prob_b = tf.multiply(self.masks, self.G)
-        # self.c_loss = tf.reduce_mean(
-        #     tf.nn.softmax_cross_entropy_with_logits(labels=prob_a, logits=prob_b))*self.config.stage2_c_loss
-        #
-        # # l1 loss
-        # self.l1_loss = tf.reduce_mean(tf.abs(prob_a - prob_b))*self.config.stage2_l1_loss
-
-        # self.e_loss = self.g_loss+self.c_loss+self.l1_loss
-
-        # optimizer
-
-        # optimizer
-        # annotation for testing, cancel annotation when training stage 2
-        # if self.config.optim is "adam":
-        #     self.e_optim = tf.train.AdamOptimizer(self.config.learning_rate,
-        #                                           beta1=self.config.beta1).minimize(
-        #         self.e_loss, var_list=self.encoder.var_list)
-        # elif self.config.optim == "rmsprop":
-        #     self.e_optim = tf.train.RMSPropOptimizer(self.config.learning_rate).minimize(
-        #         self.e_loss, var_list=self.encoder.var_list)
-
-
-        # define sumary
-        # self.z_sum = networks.histogram_summary("z", self.z)
-        # self.inputs_sum = networks.image_summary("inputs", self.inputs)
-        # self.input_left_sum = networks.image_summary("input_left", self.input_left)
-        # self.masks_sum = networks.image_summary("masks", self.masks)
-        #
-        # self.d_sum = networks.histogram_summary("d", self.D)
-        # self.d__sum = networks.histogram_summary("d_", self.D_)
-        # if self.config.G_num == 2:
-        #     self.G_sum = networks.image_summary("G", self.G2)
-        # else:
-        #     self.G_sum = networks.image_summary("G", self.G)
-
-        # self.d_loss_real_sum = networks.scalar_summary("d_loss_real", self.d_loss_real)
-        # self.d_loss_fake_sum = networks.scalar_summary("d_loss_fake", self.d_loss_fake)
-
-        # self.c_loss_sum = networks.scalar_summary("c_loss", self.c_loss)
-        #
-        # self.g_loss_sum = networks.scalar_summary("g_loss", self.g_loss)
-        # # self.d_loss_sum = networks.scalar_summary("d_loss", self.d_loss)
-        # self.l1_loss_sum = networks.scalar_summary("l1_loss", self.l1_loss)
-        #
-        # self.e_loss_sum = networks.scalar_summary("e_loss", self.e_loss)
-
-        # self.g_sum = networks.merge_summary([self.z_sum, self.d__sum, self.G_sum,
-        #                         self.d_loss_fake_sum, self.g_loss_sum])
-        # self.d_sum = networks.merge_summary([self.z_sum, self.d_sum,
-        #                         self.d_loss_real_sum, self.d_loss_sum])
-        # self.e_sum = networks.merge_summary([self.z_sum, self.inputs_sum, self.input_left_sum, self.masks_sum, self.G_sum,
-        #                         self.g_loss_sum, self.c_loss_sum, self.l1_loss_sum, self.e_loss_sum])
-
-        # if self.config.G_num == 2:
-        #     self.saver = tf.train.Saver({v.op.name: v for v in self.generator1.var_list+self.generator2.var_list+self.discriminator.var_list})
-        # else:
-        #     self.saver = tf.train.Saver({v.op.name: v for v in self.generator.var_list+self.discriminator.var_list})
 
         self.saver2 = tf.train.Saver()
 
@@ -1414,24 +1307,15 @@ class DCGAN(object):
             outputR = self.sess.run(self.G2,
                                     feed_dict={self.inputs: batch_images})
 
-            if self.config.second_test == True:
-                batch_images_second = np.append(outputL, outputL, axis=2)
-                results_tmp = self.sess.run(self.G,
-                                        feed_dict={self.inputs: batch_images_second})
-                results = np.append(inputL, results, axis=2)
-                results = np.append(results, results_tmp, axis=2)
+            if self.config.output_combination == "inputL_outputR":
+                results = np.append(inputL, outputR, axis=2)
+            elif self.config.output_combination == "outputL_inputR":
+                results = np.append(outputL, inputR, axis=2)
+            elif self.config.output_combination == "outputR":
+                results = outputR
             else:
-                # result = np.hstack((batch_images[0], results[0]))
-                # results = list(result)
-                if self.config.output_combination == "inputL_outputR":
-                    results = np.append(inputL, outputR, axis=2)
-                elif self.config.output_combination == "outputL_inputR":
-                    results = np.append(outputL, inputR, axis=2)
-                elif self.config.output_combination == "outputR":
-                    results = outputR
-                else:
-                    results = np.append(batch_images, outputL, axis=2)
-                    results = np.append(results, outputR, axis=2)
+                results = np.append(batch_images, outputL, axis=2)
+                results = np.append(results, outputR, axis=2)
 
             image_frame_dim = int(math.ceil(batch_size_tmp**.5))
             if self.config.output_form == "batch":

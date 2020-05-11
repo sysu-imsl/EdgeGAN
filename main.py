@@ -35,7 +35,6 @@ flags.DEFINE_integer("G_num", 2, "setting 2 generators for edge and image genera
 # setting of testing
 flags.DEFINE_boolean("Random_test", False, "IS effect when E_stage1 is True.True for testing random z, else for input images")
 flags.DEFINE_boolean("Test_singleLabel", True, "IS effect when Random_test is True or False.True for testing single label. For multi-class model")
-flags.DEFINE_boolean("Test_encoderSketch", False, "True for getting class vector by using encoder2")
 flags.DEFINE_boolean("Test_classifierSketch", False, "True for getting class vector by using classifier")
 flags.DEFINE_integer("test_label", 3, "symbol of class, is effect when E_stage1 and Test_singleLabel are true, Random_test is false")
 flags.DEFINE_boolean("Test_allLabel", True, "Highest priority, True for testing all label, Test_singleLabel should be True. For multi-class model")
