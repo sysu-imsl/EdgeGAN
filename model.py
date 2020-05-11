@@ -100,8 +100,6 @@ class DCGAN(object):
                                                num_filters=self.df_dim,
                                                use_resnet=self.config.if_resnet_d)
 
-        if self.config.use_patchGAN_D_full == True:
-            self.discriminator_patchGAN = patchGAN_D("D_patchGAN", norm=self.config.patchGAN_D_norm, num_filters=64)
 
         if self.config.if_focal_loss:
             self.encoder = Encoder('E', is_train=True,
@@ -212,46 +210,9 @@ class DCGAN(object):
 
 
         # define loss
-        if self.config.use_patchGAN_D_full == True:
-            predict_fake, predict_fake_logit = self.discriminator_patchGAN(self.G1, self.G2)
-            predict_real, predict_real_logit = self.discriminator_patchGAN(self.inputs[:, :, 0:int(self.config.output_width / 2), :],
-                                                       self.inputs[:, :,
-                                                       int(self.config.output_width / 2):self.config.output_width, :])
-            if self.config.patchGAN_loss == "gpwgan":
-                self.d_loss_patchGAN = tf.reduce_mean(predict_fake_logit - predict_real_logit)
 
-                self.concat_out_n = tf.concat([self.G1, self.G2], 3)
-                left_in = self.inputs[:, :, 0:int(self.config.output_width / 2), :]
-                right_in = self.inputs[:, :, int(self.config.output_width / 2):self.config.output_width, :]
-                self.concat_in_n = tf.concat([left_in, right_in], 3)
-                alpha_dist = tf.contrib.distributions.Uniform(low=0., high=1.)
-                alpha = alpha_dist.sample((self.config.batch_size, 1, 1, 1))
-                interpolated1 = left_in + alpha * (self.G1 - left_in)
-                interpolated2 = right_in + alpha * (self.G2 - right_in)
-                interpolated = tf.concat([interpolated1, interpolated2], 3)
-                inte_logit_tmp1, inte_logit_tmp2 = self.discriminator_patchGAN(interpolated1, interpolated2)
-                inte_logit_tmp1_tmp = tf.reduce_mean(tf.reduce_mean(inte_logit_tmp1, axis=2, keep_dims=False), 1)
-                inte_logit_tmp2_tmp = tf.reduce_mean(tf.reduce_mean(inte_logit_tmp2, axis=2, keep_dims=False), 1)
-                inte_logit = tuple([inte_logit_tmp1_tmp, inte_logit_tmp2_tmp])
-                # inte_logit_tmp3 = tf.reduce_mean(inte_logit_tmp2, axis=2, keep_dims=False)
-                # inte_logit = tf.reduce_mean(inte_logit_tmp3, axis=0, keep_dims=False)
-                # gradients = tf.gradients(inte_logit, [interpolated, ])
-                gradients = tf.gradients(inte_logit, [interpolated, ])[0]
-                grad_l2 = tf.sqrt(tf.reduce_sum(tf.square(gradients), axis=[1, 2, 3]))
-                gradient_penalty = tf.reduce_mean((grad_l2 - 1) ** 2)
-
-                self.d_loss_patchGAN += self.config.lambda_gp * gradient_penalty
-                self.g_loss_patchGAN = tf.reduce_mean(predict_fake_logit * -1)
-            elif self.config.patchGAN_loss == "wgan":
-                self.d_loss_patchGAN = tf.reduce_mean(predict_fake_logit - predict_real_logit)
-                self.g_loss_patchGAN = tf.reduce_mean(predict_fake_logit * -1)
-            else:
-                EPS = 1e-12
-                self.d_loss_patchGAN = tf.reduce_mean(-(tf.log(predict_real + EPS) + tf.log(1 - predict_fake + EPS)))
-                self.g_loss_patchGAN = tf.reduce_mean(-tf.log(predict_fake + EPS))
-        else:
-            self.d_loss_patchGAN = 0
-            self.g_loss_patchGAN = 0
+        self.d_loss_patchGAN = 0
+        self.g_loss_patchGAN = 0
 
 
         self.d_loss_real = 0.0
@@ -350,10 +311,6 @@ class DCGAN(object):
         # self.g_loss = self.g_loss + self.zl_loss * self.config.stage1_zl_loss
 
         # optimizer
-        if self.config.use_patchGAN_D_full == True:
-            self.d_optim_patchGAN = tf.train.AdamOptimizer(self.config.learning_rate,
-                                                  beta1=self.config.beta1).minimize(
-                self.d_loss_patchGAN, var_list=self.discriminator_patchGAN.var_list)
 
 
         self.d_optim = tf.train.RMSPropOptimizer(self.config.learning_rate).minimize(
@@ -410,9 +367,6 @@ class DCGAN(object):
         self.g_sum = networks.merge_summary([self.z_sum, self.G1_sum, self.G2_sum,
                                             self.d_loss_fake_sum, self.zl_loss_sum, self.g_loss_sum,
                                             self.class_loss_sum, self.loss_g_ac_sum, self.g1_loss_sum, self.g2_loss_sum])
-        if self.config.use_patchGAN_D_full:
-            self.d_loss_patchGAN_sum = networks.scalar_summary("d_loss_patchGAN", self.d_loss_patchGAN)
-            self.g_sum = networks.merge_summary([self.g_sum, self.d_loss_patchGAN_sum])
         self.d_sum = networks.merge_summary([self.z_sum, self.inputs_sum,
                                              self.d_loss_real_sum, self.d_loss_sum, self.loss_d_ac_sum])
         self.d_sum_tmp = networks.histogram_summary("d", self.D)
@@ -657,18 +611,11 @@ class DCGAN(object):
                 errD_fake = errD_fake_tmp1 + errD_fake_tmp2 + errD_fake_tmp3 + errD_fake_tmp4
                 errD_real = errD_fake
                 errG = self.g1_loss.eval({self.z: batch_z, self.inputs: batch_images}) + self.g2_loss.eval({self.z: batch_z, self.inputs: batch_images})
-                if self.config.use_patchGAN_D_full == True:
-                    errD_patchGAN = self.d_loss_patchGAN.eval({self.inputs: batch_images, self.z: batch_z})
 
                 counter += 1
-                if self.config.use_patchGAN_D_full == True:
-                    print("Epoch: [%2d/%2d] [%4d/%4d] time: %4.4f, d_loss: %.8f, g_loss: %.8f, d_loss_patchGAN: %.8f" \
-                          % (epoch, self.config.epoch, idx, batch_idxs,
-                             time.time() - start_time, errD_fake + errD_real, errG, errD_patchGAN))
-                else:
-                    print("Epoch: [%2d/%2d] [%4d/%4d] time: %4.4f, d_loss: %.8f, g_loss: %.8f" \
-                        % (epoch, self.config.epoch, idx, batch_idxs,
-                            time.time() - start_time, errD_fake+errD_real, errG))
+                print("Epoch: [%2d/%2d] [%4d/%4d] time: %4.4f, d_loss: %.8f, g_loss: %.8f" \
+                    % (epoch, self.config.epoch, idx, batch_idxs,
+                        time.time() - start_time, errD_fake+errD_real, errG))
 
                 outputL = self.sess.run(self.G1,
                         feed_dict={self.z: batch_z, self.inputs: batch_images})

@@ -115,19 +115,6 @@ def main(_):
         dir_tmp += 'patch3_'
         dir_tmp += str(FLAGS.sizeOfIn_patch3)
         dir_tmp += '_'
-    if FLAGS.use_D_patch2_2 == True:
-        if FLAGS.D_patch2_2_loss != 1.0:
-            dir_tmp += str(FLAGS.D_patch2_2_loss)
-        dir_tmp += 'patch2_2_'
-        dir_tmp += str(FLAGS.sizeOfIn_patch2_2)
-        dir_tmp += '_'
-    if FLAGS.use_patchGAN_D_full == True:
-        dir_tmp += 'patchGAN_'
-        if FLAGS.patchGAN_D_norm == 'instance':
-            dir_tmp += 'insN_'
-        if FLAGS.patchGAN_loss == 'wgan' or FLAGS.patchGAN_loss == 'gpwgan':
-            dir_tmp += FLAGS.patchGAN_loss
-            dir_tmp += '_'
     dir_tmp += '2G'
     FLAGS.checkpoint_dir = 'checkpoint_' + FLAGS.type + '_instanceEGD' + '_' + dir_tmp
     FLAGS.sample_dir = 'samples_' + FLAGS.type + '_instanceEGD' + '_' + dir_tmp
