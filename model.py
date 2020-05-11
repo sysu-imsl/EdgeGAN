@@ -1199,13 +1199,18 @@ class DCGAN(object):
                         % (epoch, self.config.epoch, idx, batch_idxs,
                             time.time() - start_time, errD_fake+errD_real, errG))
 
+                outputL = self.sess.run(self.G1,
+                        feed_dict={self.z: batch_z, self.inputs: batch_images})
+
                 checksum_save({
+                    "outputL": outputL,
                     "errD_fake": errD_fake,
                     "errD_real": errD_real,
                     "errG": errG,
                 })
-                restore_errD_fake, restore_errD_real, restore_errG = checksum_load(
-                    "errD_fake.pkl", "errD_real.pkl", "errG.pkl",)
+                restore_outputL, restore_errD_fake, restore_errD_real, restore_errG = checksum_load(
+                    "outputL.npy", "errD_fake.pkl", "errD_real.pkl", "errG.pkl",)
+                assert np.allclose(restore_outputL, outputL)
                 assert errD_fake == restore_errD_fake
                 assert errD_real == restore_errD_real
                 assert errG == restore_errG
