@@ -167,28 +167,17 @@ class DCGAN(object):
                                                 labels=self.z[:, -1],
                                                 reuse=True, data_format='NCHW')
             else:
-                if self.config.classifier_inputForm is "image":
-                    _, _, self.D_logits2 = self.discriminator2(
-                                                    tf.transpose(self.inputs[:, :, int(self.image_dims[1]/2):, :], [0, 3, 1, 2]),
-                                                    num_classes=self.config.num_classes,
-                                                    labels=self.z[:, -1],
-                                                    reuse=False, data_format='NCHW')
-                    _, _, self.D_logits2_ = self.discriminator2(
-                        tf.transpose(self.G2, [0, 3, 1, 2]),
-                        num_classes=self.config.num_classes,
-                        labels=self.z[:, -1],
-                        reuse=True, data_format='NCHW')
-                elif self.config.classifier_inputForm is "edge":
-                    _, _, self.D_logits2 = self.discriminator2(
-                                                    tf.transpose(self.inputs[:, :, 0:int(self.image_dims[1]/2), :], [0, 3, 1, 2]),
-                                                    num_classes=self.config.num_classes,
-                                                    labels=self.z[:, -1],
-                                                    reuse=False, data_format='NCHW')
-                    _, _, self.D_logits2_ = self.discriminator2(
-                                                    tf.transpose(self.G[:, :, 0:int(self.image_dims[1]/2), :], [0, 3, 1, 2]),
-                                                    num_classes=self.config.num_classes,
-                                                    labels=self.z[:, -1],
-                                                    reuse=True, data_format='NCHW')
+                _, _, self.D_logits2 = self.discriminator2(
+                                                tf.transpose(self.inputs[:, :, int(self.image_dims[1]/2):, :], [0, 3, 1, 2]),
+                                                num_classes=self.config.num_classes,
+                                                labels=self.z[:, -1],
+                                                reuse=False, data_format='NCHW')
+                _, _, self.D_logits2_ = self.discriminator2(
+                    tf.transpose(self.G2, [0, 3, 1, 2]),
+                    num_classes=self.config.num_classes,
+                    labels=self.z[:, -1],
+                    reuse=True, data_format='NCHW')
+
 
         if self.config.use_D_origin:
             if self.config.originD_inputForm == "concat_w":
@@ -362,235 +351,106 @@ class DCGAN(object):
             self.d_loss_patchGAN = 0
             self.g_loss_patchGAN = 0
 
-        if self.config.type is "dcgan":
-            if self.config.use_D_origin:
-                self.d_loss_real = tf.reduce_mean(
-                    networks.sigmoid_cross_entropy_with_logits(
-                        self.D_logits, tf.ones_like(self.D)))
-                self.d_loss_fake = tf.reduce_mean(
-                    networks.sigmoid_cross_entropy_with_logits(
-                        self.D_logits_, tf.zeros_like(self.D_)))
-                self.d_loss = self.d_loss_real + self.d_loss_fake
-                self.g_loss = tf.reduce_mean(
-                    networks.sigmoid_cross_entropy_with_logits(
-                        self.D_logits_, tf.ones_like(self.D_)))
-            else:
-                self.d_loss = 0
-                self.g_loss = 0
 
-            # add patch discrimiative loss
-            if self.config.use_D_patch:
-                self.d_loss_real_p = tf.reduce_mean(
-                    networks.sigmoid_cross_entropy_with_logits(
-                        self.patch_D_logits, tf.ones_like(self.patch_D)))
-                self.d_loss_fake_p = tf.reduce_mean(
-                    networks.sigmoid_cross_entropy_with_logits(
-                        self.patch_D_logits_, tf.zeros_like(self.patch_D_)))
-                self.d_loss_patch = self.d_loss_real_p + self.d_loss_fake_p
-                self.g_loss_patch = tf.reduce_mean(
-                    networks.sigmoid_cross_entropy_with_logits(
-                        self.patch_D_logits_, tf.ones_like(self.patch_D_)))
-            else:
-                self.d_loss_patch = 0
-                self.g_loss_patch = 0
+        self.d_loss_real = 0.0
+        self.d_loss_fake = 0.0
 
-            # add patch2 discrimiative loss
-            if self.config.use_D_patch2:
-                self.d_loss_real_p2 = tf.reduce_mean(
-                    networks.sigmoid_cross_entropy_with_logits(
-                        self.patch2_D_logits, tf.ones_like(self.patch2_D)))
-                self.d_loss_fake_p2 = tf.reduce_mean(
-                    networks.sigmoid_cross_entropy_with_logits(
-                        self.patch2_D_logits_, tf.zeros_like(self.patch2_D_)))
-                self.d_loss_patch2 = self.d_loss_real_p2 + self.d_loss_fake_p2
-                self.g_loss_patch2 = tf.reduce_mean(
-                    networks.sigmoid_cross_entropy_with_logits(
-                        self.patch2_D_logits_, tf.ones_like(self.patch2_D_)))
-            else:
-                self.d_loss_patch2 = 0
-                self.g_loss_patch2 = 0
+        if self.config.use_D_origin:
+            self.d_loss = tf.reduce_mean(self.D_logits_ - self.D_logits)
 
-            if self.config.use_D_patch2_2:
-                self.d_loss_real_p2_2 = tf.reduce_mean(
-                    networks.sigmoid_cross_entropy_with_logits(
-                        self.patch2_2_D_logits, tf.ones_like(self.patch2_2_D)))
-                self.d_loss_fake_p2_2 = tf.reduce_mean(
-                    networks.sigmoid_cross_entropy_with_logits(
-                        self.patch2_2_D_logits_, tf.zeros_like(self.patch2_2_D_)))
-                self.d_loss_patch2_2 = self.d_loss_real_p2_2 + self.d_loss_fake_p2_2
-                self.g_loss_patch2_2 = tf.reduce_mean(
-                    networks.sigmoid_cross_entropy_with_logits(
-                        self.patch2_2_D_logits_, tf.ones_like(self.patch2_2_D_)))
-            else:
-                self.d_loss_patch2_2 = 0
-                self.g_loss_patch2_2 = 0
+            alpha_dist = tf.contrib.distributions.Uniform(low=0., high=1.)
+            alpha = alpha_dist.sample((self.config.batch_size, 1, 1, 1))
+            if self.config.originD_inputForm == "concat_w":
+                interpolated = self.inputs + alpha*(self.G_all-self.inputs)
+            elif self.config.originD_inputForm == "concat_n":
+                interpolated = self.concat_in_n + alpha * (self.concat_out_n - self.concat_in_n)
+            inte_logit = self.discriminator(interpolated, reuse=True)
+            gradients = tf.gradients(inte_logit, [interpolated,])[0]
+            grad_l2 = tf.sqrt(tf.reduce_sum(tf.square(gradients), axis=[1,2,3]))
+            gradient_penalty = tf.reduce_mean((grad_l2-1)**2)
 
-            # add patch3 discrimiative loss
-            if self.config.use_D_patch3:
-                self.d_loss_real_p3 = tf.reduce_mean(
-                    networks.sigmoid_cross_entropy_with_logits(
-                        self.patch3_D_logits, tf.ones_like(self.patch3_D)))
-                self.d_loss_fake_p3 = tf.reduce_mean(
-                    networks.sigmoid_cross_entropy_with_logits(
-                        self.patch3_D_logits_, tf.zeros_like(self.patch3_D_)))
-                self.d_loss_patch3 = self.d_loss_real_p3 + self.d_loss_fake_p3
-                self.g_loss_patch3 = tf.reduce_mean(
-                    networks.sigmoid_cross_entropy_with_logits(
-                        self.patch3_D_logits_, tf.ones_like(self.patch3_D_)))
-            else:
-                self.d_loss_patch3 = 0
-                self.g_loss_patch3 = 0
+            self.d_loss += self.config.lambda_gp * gradient_penalty
+            self.g_loss = tf.reduce_mean(self.D_logits_ * -1)
+        else:
+            self.d_loss = 0
+            self.g_loss = 0
 
-        elif self.config.type is "wgan":
-            self.d_loss_real = 0.0
-            self.d_loss_fake = 0.0
+        if self.config.use_D_patch:
+            self.d_loss_patch = tf.reduce_mean(self.patch_D_logits_ - self.patch_D_logits)
 
-            if self.config.use_D_origin:
-                self.d_loss = tf.reduce_mean(self.D_logits_ - self.D_logits)
-                self.g_loss = tf.reduce_mean(self.D_logits_*-1)
-            else:
-                self.d_loss = 0
-                self.g_loss = 0
+            alpha_dist = tf.contrib.distributions.Uniform(low=0., high=1.)
+            alpha = alpha_dist.sample((self.config.batch_size, 1, 1, 1))
+            interpolated = self.inputs + alpha * (self.G - self.inputs)
+            inte_logit = self.discriminator_patch(interpolated, reuse=True)
+            gradients = tf.gradients(inte_logit, [interpolated, ])[0]
+            grad_l2 = tf.sqrt(tf.reduce_sum(tf.square(gradients), axis=[1, 2, 3]))
+            gradient_penalty = tf.reduce_mean((grad_l2 - 1) ** 2)
 
-            # add patch discrimiative loss
-            if self.config.use_D_patch:
-                self.d_loss_patch = tf.reduce_mean(self.patch_D_logits_ - self.patch_D_logits)
-                self.g_loss_patch = tf.reduce_mean(self.patch_D_logits_ * -1)
-            else:
-                self.d_loss_patch = 0
-                self.g_loss_patch = 0
+            self.d_loss_patch += self.config.lambda_gp * gradient_penalty
+            self.g_loss_patch = tf.reduce_mean(self.patch_D_logits_ * -1)
+        else:
+            self.d_loss_patch = 0
+            self.g_loss_patch = 0
 
-            # add patch2 discrimiative loss
-            if self.config.use_D_patch2:
-                self.d_loss_patch2 = tf.reduce_mean(self.patch2_D_logits_ - self.patch2_D_logits)
-                self.g_loss_patch2 = tf.reduce_mean(self.patch2_D_logits_ * -1)
-            else:
-                self.d_loss_patch2 = 0
-                self.g_loss_patch2 = 0
+        if self.config.use_D_patch2:
+            self.d_loss_patch2 = tf.reduce_mean(self.patch2_D_logits_ - self.patch2_D_logits)
 
-            if self.config.use_D_patch2_2:
-                self.d_loss_patch2_2 = tf.reduce_mean(self.patch2_2_D_logits_ - self.patch2_2_D_logits)
-                self.g_loss_patch2_2 = tf.reduce_mean(self.patch2_2_D_logits_ * -1)
-            else:
-                self.d_loss_patch2_2 = 0
-                self.g_loss_patch2_2 = 0
+            alpha_dist = tf.contrib.distributions.Uniform(low=0., high=1.)
+            alpha = alpha_dist.sample((self.config.batch_size, 1, 1, 1))
 
-            # add patch3 discrimiative loss
-            if self.config.use_D_patch3:
-                self.d_loss_patch3 = tf.reduce_mean(self.patch3_D_logits_ - self.patch3_D_logits)
-                self.g_loss_patch3 = tf.reduce_mean(self.patch3_D_logits_ * -1)
-            else:
-                self.d_loss_patch3 = 0
-                self.g_loss_patch3 = 0
+            #TODO: Not know whtether it's true
+            interpolated = self.resized_inputs + alpha * (self.resized_G2_p2 - self.resized_inputs)
 
-            # if self.config.G_num == 2:
-            #     self.g1_loss = self.g_loss
-            #     self.g2_loss = self.config.D_origin_loss * self.g_loss + self.config.D_patch_loss * self.g_loss_patch \
-            #               + self.config.D_patch2_loss * self.g_loss_patch2 + self.config.D_patch3_loss * self.g_loss_patch3
-            # else:
-            #     self.g_loss = self.config.D_origin_loss * self.g_loss + self.config.D_patch_loss * self.g_loss_patch \
-            #               + self.config.D_patch2_loss * self.g_loss_patch2 + self.config.D_patch3_loss * self.g_loss_patch3
+            inte_logit = self.discriminator_patch2(interpolated, reuse=True)
+            gradients = tf.gradients(inte_logit, [interpolated, ])[0]
+            grad_l2 = tf.sqrt(tf.reduce_sum(tf.square(gradients), axis=[1, 2, 3]))
+            gradient_penalty = tf.reduce_mean((grad_l2 - 1) ** 2)
 
-        elif self.config.type is "gpwgan":
-            self.d_loss_real = 0.0
-            self.d_loss_fake = 0.0
+            self.d_loss_patch2 += self.config.lambda_gp * gradient_penalty
+            self.g_loss_patch2 = tf.reduce_mean(self.patch2_D_logits_ * -1)
+        else:
+            self.d_loss_patch2 = 0
+            self.g_loss_patch2 = 0
 
-            if self.config.use_D_origin:
-                self.d_loss = tf.reduce_mean(self.D_logits_ - self.D_logits)
+        if self.config.use_D_patch2_2:
+            self.d_loss_patch2_2 = tf.reduce_mean(self.patch2_2_D_logits_ - self.patch2_2_D_logits)
 
-                alpha_dist = tf.contrib.distributions.Uniform(low=0., high=1.)
-                alpha = alpha_dist.sample((self.config.batch_size, 1, 1, 1))
-                if self.config.originD_inputForm == "concat_w":
-                    interpolated = self.inputs + alpha*(self.G_all-self.inputs)
-                elif self.config.originD_inputForm == "concat_n":
-                    interpolated = self.concat_in_n + alpha * (self.concat_out_n - self.concat_in_n)
-                inte_logit = self.discriminator(interpolated, reuse=True)
-                gradients = tf.gradients(inte_logit, [interpolated,])[0]
-                grad_l2 = tf.sqrt(tf.reduce_sum(tf.square(gradients), axis=[1,2,3]))
-                gradient_penalty = tf.reduce_mean((grad_l2-1)**2)
+            alpha_dist = tf.contrib.distributions.Uniform(low=0., high=1.)
+            alpha = alpha_dist.sample((self.config.batch_size, 1, 1, 1))
 
-                self.d_loss += self.config.lambda_gp * gradient_penalty
-                self.g_loss = tf.reduce_mean(self.D_logits_ * -1)
-            else:
-                self.d_loss = 0
-                self.g_loss = 0
+            #TODO: Not know whtether it's true
+            interpolated = self.resized_inputs_p2_2 + alpha * (self.resized_G2_p2_2 - self.resized_inputs_p2_2)
 
-            if self.config.use_D_patch:
-                self.d_loss_patch = tf.reduce_mean(self.patch_D_logits_ - self.patch_D_logits)
+            inte_logit = self.discriminator_patch2_2(interpolated, reuse=True)
+            gradients = tf.gradients(inte_logit, [interpolated, ])[0]
+            grad_l2 = tf.sqrt(tf.reduce_sum(tf.square(gradients), axis=[1, 2, 3]))
+            gradient_penalty = tf.reduce_mean((grad_l2 - 1) ** 2)
 
-                alpha_dist = tf.contrib.distributions.Uniform(low=0., high=1.)
-                alpha = alpha_dist.sample((self.config.batch_size, 1, 1, 1))
-                interpolated = self.inputs + alpha * (self.G - self.inputs)
-                inte_logit = self.discriminator_patch(interpolated, reuse=True)
-                gradients = tf.gradients(inte_logit, [interpolated, ])[0]
-                grad_l2 = tf.sqrt(tf.reduce_sum(tf.square(gradients), axis=[1, 2, 3]))
-                gradient_penalty = tf.reduce_mean((grad_l2 - 1) ** 2)
+            self.d_loss_patch2_2 += self.config.lambda_gp * gradient_penalty
+            self.g_loss_patch2_2 = tf.reduce_mean(self.patch2_2_D_logits_ * -1)
+        else:
+            self.d_loss_patch2_2 = 0
+            self.g_loss_patch2_2 = 0
 
-                self.d_loss_patch += self.config.lambda_gp * gradient_penalty
-                self.g_loss_patch = tf.reduce_mean(self.patch_D_logits_ * -1)
-            else:
-                self.d_loss_patch = 0
-                self.g_loss_patch = 0
+        if self.config.use_D_patch3:
+            self.d_loss_patch3 = tf.reduce_mean(self.patch3_D_logits_ - self.patch3_D_logits)
 
-            if self.config.use_D_patch2:
-                self.d_loss_patch2 = tf.reduce_mean(self.patch2_D_logits_ - self.patch2_D_logits)
+            alpha_dist = tf.contrib.distributions.Uniform(low=0., high=1.)
+            alpha = alpha_dist.sample((self.config.batch_size, 1, 1, 1))
 
-                alpha_dist = tf.contrib.distributions.Uniform(low=0., high=1.)
-                alpha = alpha_dist.sample((self.config.batch_size, 1, 1, 1))
+            #TODO: Not know whtether it's true
+            interpolated = self.resized_inputs_p3 + alpha * (self.resized_G1_p3 - self.resized_inputs_p3)
 
-                #TODO: Not know whtether it's true
-                interpolated = self.resized_inputs + alpha * (self.resized_G2_p2 - self.resized_inputs)
+            inte_logit = self.discriminator_patch3(interpolated, reuse=True)
+            gradients = tf.gradients(inte_logit, [interpolated, ])[0]
+            grad_l2 = tf.sqrt(tf.reduce_sum(tf.square(gradients), axis=[1, 2, 3]))
+            gradient_penalty = tf.reduce_mean((grad_l2 - 1) ** 2)
 
-                inte_logit = self.discriminator_patch2(interpolated, reuse=True)
-                gradients = tf.gradients(inte_logit, [interpolated, ])[0]
-                grad_l2 = tf.sqrt(tf.reduce_sum(tf.square(gradients), axis=[1, 2, 3]))
-                gradient_penalty = tf.reduce_mean((grad_l2 - 1) ** 2)
-
-                self.d_loss_patch2 += self.config.lambda_gp * gradient_penalty
-                self.g_loss_patch2 = tf.reduce_mean(self.patch2_D_logits_ * -1)
-            else:
-                self.d_loss_patch2 = 0
-                self.g_loss_patch2 = 0
-
-            if self.config.use_D_patch2_2:
-                self.d_loss_patch2_2 = tf.reduce_mean(self.patch2_2_D_logits_ - self.patch2_2_D_logits)
-
-                alpha_dist = tf.contrib.distributions.Uniform(low=0., high=1.)
-                alpha = alpha_dist.sample((self.config.batch_size, 1, 1, 1))
-
-                #TODO: Not know whtether it's true
-                interpolated = self.resized_inputs_p2_2 + alpha * (self.resized_G2_p2_2 - self.resized_inputs_p2_2)
-
-                inte_logit = self.discriminator_patch2_2(interpolated, reuse=True)
-                gradients = tf.gradients(inte_logit, [interpolated, ])[0]
-                grad_l2 = tf.sqrt(tf.reduce_sum(tf.square(gradients), axis=[1, 2, 3]))
-                gradient_penalty = tf.reduce_mean((grad_l2 - 1) ** 2)
-
-                self.d_loss_patch2_2 += self.config.lambda_gp * gradient_penalty
-                self.g_loss_patch2_2 = tf.reduce_mean(self.patch2_2_D_logits_ * -1)
-            else:
-                self.d_loss_patch2_2 = 0
-                self.g_loss_patch2_2 = 0
-
-            if self.config.use_D_patch3:
-                self.d_loss_patch3 = tf.reduce_mean(self.patch3_D_logits_ - self.patch3_D_logits)
-
-                alpha_dist = tf.contrib.distributions.Uniform(low=0., high=1.)
-                alpha = alpha_dist.sample((self.config.batch_size, 1, 1, 1))
-
-                #TODO: Not know whtether it's true
-                interpolated = self.resized_inputs_p3 + alpha * (self.resized_G1_p3 - self.resized_inputs_p3)
-
-                inte_logit = self.discriminator_patch3(interpolated, reuse=True)
-                gradients = tf.gradients(inte_logit, [interpolated, ])[0]
-                grad_l2 = tf.sqrt(tf.reduce_sum(tf.square(gradients), axis=[1, 2, 3]))
-                gradient_penalty = tf.reduce_mean((grad_l2 - 1) ** 2)
-
-                self.d_loss_patch3 += self.config.lambda_gp * gradient_penalty
-                self.g_loss_patch3 = tf.reduce_mean(self.patch3_D_logits_ * -1)
-            else:
-                self.d_loss_patch3 = 0
-                self.g_loss_patch3 = 0
+            self.d_loss_patch3 += self.config.lambda_gp * gradient_penalty
+            self.g_loss_patch3 = tf.reduce_mean(self.patch3_D_logits_ * -1)
+        else:
+            self.d_loss_patch3 = 0
+            self.g_loss_patch3 = 0
 
         self.g1_loss = self.config.D_origin_loss * self.g_loss + self.config.D_patch3_loss * self.g_loss_patch3 + self.d_loss_patchGAN * self.config.D_patchGAN_loss
         self.g2_loss = self.config.D_origin_loss * self.g_loss + self.config.D_patch_loss * self.g_loss_patch \
@@ -696,48 +556,7 @@ class DCGAN(object):
             self.e_optim = tf.train.RMSPropOptimizer(self.config.learning_rate).minimize(
                                                 self.zl_loss, var_list=self.encoder.var_list)
         # ??? something not understood
-        if self.config.type is "wgan":
-            if self.config.use_D_origin:
-                clipped_var_c = [tf.assign(var, tf.clip_by_value(var, self.config.clamp_lower, self.config.clamp_upper))
-                                    for var in self.discriminator.var_list]
-                # merge the clip operations on critic variables
-                with tf.control_dependencies([self.d_optim]):
-                    self.d_optim = tf.tuple(clipped_var_c)
 
-            if self.config.use_D_patch:
-                clipped_var_c = [tf.assign(var, tf.clip_by_value(var, self.config.clamp_lower, self.config.clamp_upper))
-                                    for var in self.discriminator_patch.var_list]
-                # merge the clip operations on critic variables
-                with tf.control_dependencies([self.d_optim_patch]):
-                    self.d_optim_patch = tf.tuple(clipped_var_c)
-
-            if self.config.use_D_patch2:
-                clipped_var_c = [tf.assign(var, tf.clip_by_value(var, self.config.clamp_lower, self.config.clamp_upper))
-                                    for var in self.discriminator_patch2.var_list]
-                # merge the clip operations on critic variables
-                with tf.control_dependencies([self.d_optim_patch2]):
-                    self.d_optim_patch2 = tf.tuple(clipped_var_c)
-
-            if self.config.use_D_patch2_2:
-                clipped_var_c = [tf.assign(var, tf.clip_by_value(var, self.config.clamp_lower, self.config.clamp_upper))
-                                    for var in self.discriminator_patch2_2.var_list]
-                # merge the clip operations on critic variables
-                with tf.control_dependencies([self.d_optim_patch2_2]):
-                    self.d_optim_patch2_2 = tf.tuple(clipped_var_c)
-
-            if self.config.use_D_patch3:
-                clipped_var_c = [tf.assign(var, tf.clip_by_value(var, self.config.clamp_lower, self.config.clamp_upper))
-                                    for var in self.discriminator_patch3.var_list]
-                # merge the clip operations on critic variables
-                with tf.control_dependencies([self.d_optim_patch3]):
-                    self.d_optim_patch3 = tf.tuple(clipped_var_c)
-
-            if self.config.use_patchGAN_D_full == True and self.config.patchGAN_loss == "wgan":
-                clipped_var_c = [tf.assign(var, tf.clip_by_value(var, self.config.clamp_lower, self.config.clamp_upper))
-                                 for var in self.discriminator_patchGAN.var_list]
-                # merge the clip operations on critic variables
-                with tf.control_dependencies([self.d_optim_patchGAN]):
-                    self.d_optim_patchGAN = tf.tuple(clipped_var_c)
 
         # define sumary
         self.z_sum = networks.histogram_summary("z", self.z)
@@ -1008,32 +827,28 @@ class DCGAN(object):
                 #         feed_dict={self.z: batch_z})
                 # self.writer.add_summary(summary_str, counter)
 
-                if self.config.type is "dcgan":
-                    errD_fake = self.d_loss_fake.eval({self.z: batch_z})
-                    errD_real = self.d_loss_real.eval({self.inputs: batch_images})
-                    errG = self.g1_loss.eval({self.z: batch_z}) + self.g2_loss.eval({self.z: batch_z})
+
+                if self.config.use_D_origin:
+                    errD_fake_tmp1 = self.d_loss.eval({self.inputs: batch_images, self.z: batch_z})
                 else:
-                    if self.config.use_D_origin:
-                        errD_fake_tmp1 = self.d_loss.eval({self.inputs: batch_images, self.z: batch_z})
-                    else:
-                        errD_fake_tmp1 = 0
-                    if self.config.use_D_patch:
-                        errD_fake_tmp2 = self.d_loss_patch.eval({self.inputs: batch_images, self.z: batch_z})
-                    else:
-                        errD_fake_tmp2 = 0
-                    if self.config.use_D_patch2:
-                        errD_fake_tmp3 = self.d_loss_patch2.eval({self.inputs: batch_images, self.z: batch_z})
-                    else:
-                        errD_fake_tmp3 = 0
-                    if self.config.use_D_patch3:
-                        errD_fake_tmp4 = self.d_loss_patch3.eval({self.inputs: batch_images, self.z: batch_z})
-                    else:
-                        errD_fake_tmp4 = 0
-                    errD_fake = errD_fake_tmp1 + errD_fake_tmp2 + errD_fake_tmp3 + errD_fake_tmp4
-                    errD_real = errD_fake
-                    errG = self.g1_loss.eval({self.z: batch_z, self.inputs: batch_images}) + self.g2_loss.eval({self.z: batch_z, self.inputs: batch_images})
-                    if self.config.use_patchGAN_D_full == True:
-                        errD_patchGAN = self.d_loss_patchGAN.eval({self.inputs: batch_images, self.z: batch_z})
+                    errD_fake_tmp1 = 0
+                if self.config.use_D_patch:
+                    errD_fake_tmp2 = self.d_loss_patch.eval({self.inputs: batch_images, self.z: batch_z})
+                else:
+                    errD_fake_tmp2 = 0
+                if self.config.use_D_patch2:
+                    errD_fake_tmp3 = self.d_loss_patch2.eval({self.inputs: batch_images, self.z: batch_z})
+                else:
+                    errD_fake_tmp3 = 0
+                if self.config.use_D_patch3:
+                    errD_fake_tmp4 = self.d_loss_patch3.eval({self.inputs: batch_images, self.z: batch_z})
+                else:
+                    errD_fake_tmp4 = 0
+                errD_fake = errD_fake_tmp1 + errD_fake_tmp2 + errD_fake_tmp3 + errD_fake_tmp4
+                errD_real = errD_fake
+                errG = self.g1_loss.eval({self.z: batch_z, self.inputs: batch_images}) + self.g2_loss.eval({self.z: batch_z, self.inputs: batch_images})
+                if self.config.use_patchGAN_D_full == True:
+                    errD_patchGAN = self.d_loss_patchGAN.eval({self.inputs: batch_images, self.z: batch_z})
 
                 counter += 1
                 if self.config.use_patchGAN_D_full == True:
