@@ -54,32 +54,23 @@ class DCGAN(object):
     def build_model1(self):
         # Define models
         if self.config.model is "old":
-            if self.config.G_num == 2:
-                self.generator1 = Generator('G1', is_train=True,
-                                           norm=self.config.G_norm,
-                                           batch_size=self.config.batch_size,
-                                           output_height=self.config.output_height,
-                                           output_width=int(self.config.output_width/2),
-                                           input_dim=self.gf_dim,
-                                           output_dim=self.c_dim,
-                                           use_resnet=self.config.if_resnet_g)
-                self.generator2 = Generator('G2', is_train=True,
-                                           norm=self.config.G_norm,
-                                           batch_size=self.config.batch_size,
-                                           output_height=self.config.output_height,
-                                           output_width=int(self.config.output_width/2),
-                                           input_dim=self.gf_dim,
-                                           output_dim=self.c_dim,
-                                           use_resnet=self.config.if_resnet_g)
-            else:
-                self.generator = Generator('G', is_train=True,
-                                           norm=self.config.G_norm,
-                                           batch_size=self.config.batch_size,
-                                           output_height=self.config.output_height,
-                                           output_width=self.config.output_width,
-                                           input_dim=self.gf_dim,
-                                           output_dim=self.c_dim,
-                                           use_resnet=self.config.if_resnet_g)
+            self.generator1 = Generator('G1', is_train=True,
+                                        norm=self.config.G_norm,
+                                        batch_size=self.config.batch_size,
+                                        output_height=self.config.output_height,
+                                        output_width=int(self.config.output_width/2),
+                                        input_dim=self.gf_dim,
+                                        output_dim=self.c_dim,
+                                        use_resnet=self.config.if_resnet_g)
+            self.generator2 = Generator('G2', is_train=True,
+                                        norm=self.config.G_norm,
+                                        batch_size=self.config.batch_size,
+                                        output_height=self.config.output_height,
+                                        output_width=int(self.config.output_width/2),
+                                        input_dim=self.gf_dim,
+                                        output_dim=self.c_dim,
+                                        use_resnet=self.config.if_resnet_g)
+
         else:
             self.generator = base_model.generator_model
 
@@ -122,7 +113,7 @@ class DCGAN(object):
                                                num_filters=self.df_dim,
                                                use_resnet=self.config.if_resnet_d)
 
-        if self.config.G_num == 2 and self.config.use_patchGAN_D_full == True:
+        if self.config.use_patchGAN_D_full == True:
             self.discriminator_patchGAN = patchGAN_D("D_patchGAN", norm=self.config.patchGAN_D_norm, num_filters=64)
 
         if self.config.if_focal_loss:
@@ -158,17 +149,11 @@ class DCGAN(object):
         if self.config.if_focal_loss:
             self.class_onehot = tf.one_hot(tf.cast(self.z[:, -1], dtype=tf.int32), self.config.num_classes, on_value=1., off_value=0., dtype=tf.float32)
             self.z_onehot = tf.concat([self.z[:, 0:self.z_dim], self.class_onehot], 1)
-            if self.config.G_num == 2:
-                self.G1 = self.generator1(self.z_onehot)
-                self.G2 = self.generator2(self.z_onehot)
-            else:
-                self.G = self.generator(self.z_onehot)
+            self.G1 = self.generator1(self.z_onehot)
+            self.G2 = self.generator2(self.z_onehot)
         else:
-            if self.config.G_num == 2:
-                self.G1 = self.generator1(self.z)
-                self.G2 = self.generator2(self.z)
-            else:
-                self.G = self.generator(self.z)
+            self.G1 = self.generator1(self.z)
+            self.G2 = self.generator2(self.z)
         if self.config.if_focal_loss:
             if self.image_dims[0] == self.image_dims[1]:
                 _, _, self.D_logits2 = self.discriminator2(
@@ -188,18 +173,11 @@ class DCGAN(object):
                                                     num_classes=self.config.num_classes,
                                                     labels=self.z[:, -1],
                                                     reuse=False, data_format='NCHW')
-                    if self.config.G_num == 2:
-                        _, _, self.D_logits2_ = self.discriminator2(
-                            tf.transpose(self.G2, [0, 3, 1, 2]),
-                            num_classes=self.config.num_classes,
-                            labels=self.z[:, -1],
-                            reuse=True, data_format='NCHW')
-                    else:
-                        _, _, self.D_logits2_ = self.discriminator2(
-                                                        tf.transpose(self.G[:, :, int(self.image_dims[1]/2):, :], [0, 3, 1, 2]),
-                                                        num_classes=self.config.num_classes,
-                                                        labels=self.z[:, -1],
-                                                        reuse=True, data_format='NCHW')
+                    _, _, self.D_logits2_ = self.discriminator2(
+                        tf.transpose(self.G2, [0, 3, 1, 2]),
+                        num_classes=self.config.num_classes,
+                        labels=self.z[:, -1],
+                        reuse=True, data_format='NCHW')
                 elif self.config.classifier_inputForm is "edge":
                     _, _, self.D_logits2 = self.discriminator2(
                                                     tf.transpose(self.inputs[:, :, 0:int(self.image_dims[1]/2), :], [0, 3, 1, 2]),
@@ -215,34 +193,22 @@ class DCGAN(object):
         if self.config.use_D_origin:
             if self.config.originD_inputForm == "concat_w":
                 self.D, self.D_logits = self.discriminator(self.inputs)
-                if self.config.G_num == 2:
-                    self.G_all = tf.concat([self.G1, self.G2], 2)
-                    self.D_, self.D_logits_ = self.discriminator(self.G_all, reuse=True)
-                else:
-                    self.D_, self.D_logits_ = self.discriminator(self.G, reuse=True)
+                self.G_all = tf.concat([self.G1, self.G2], 2)
+                self.D_, self.D_logits_ = self.discriminator(self.G_all, reuse=True)
             elif self.config.originD_inputForm == "concat_n":
                 left_in = self.inputs[:, :, 0:int(self.config.output_width / 2), :]
                 right_in = self.inputs[:, :, int(self.config.output_width / 2):self.config.output_width, :]
                 self.concat_in_n = tf.concat([left_in, right_in], 3)
                 self.D, self.D_logits = self.discriminator(self.concat_in_n)
-                if self.config.G_num == 2:
-                    self.G_all = tf.concat([self.G1, self.G2], 2)
-                    self.concat_out_n = tf.concat([self.G1, self.G2], 3)
-                    self.D_, self.D_logits_ = self.discriminator(self.concat_out_n, reuse=True)
-                else:
-                    left_G = self.G[:, :, 0:int(self.config.output_width / 2), :]
-                    right_G = self.G[:, :, int(self.config.output_width / 2):self.config.output_width, :]
-                    self.concat_out_n = tf.concat([left_G, right_G], 3)
-                    self.D_, self.D_logits_ = self.discriminator(self.concat_out_n, reuse=True)
+                self.G_all = tf.concat([self.G1, self.G2], 2)
+                self.concat_out_n = tf.concat([self.G1, self.G2], 3)
+                self.D_, self.D_logits_ = self.discriminator(self.concat_out_n, reuse=True)
 
 
         if self.config.use_D_patch:
             self.patch_D, self.patch_D_logits = self.discriminator_patch(self.inputs)
-            if self.config.G_num == 2:
-                self.G_all = tf.concat([self.G1, self.G2], 2)
-                self.patch_D_, self.patch_D_logits_ = self.discriminator_patch(self.G_all, reuse=True)
-            else:
-                self.patch_D_, self.patch_D_logits_ = self.discriminator_patch(self.G, reuse=True)
+            self.G_all = tf.concat([self.G1, self.G2], 2)
+            self.patch_D_, self.patch_D_logits_ = self.discriminator_patch(self.G_all, reuse=True)
 
         if self.config.use_D_patch2:
             if self.config.conditional_D2 == "full_concat_w":
@@ -282,19 +248,11 @@ class DCGAN(object):
                 self.resized_inputs_image = self.resized_inputs
                 self.patch2_D, self.patch2_D_logits = self.discriminator_patch2(self.resized_inputs)
 
-                if self.config.G_num == 2:
-                    self.resized_G2_p2 = tf.image.resize_images(self.G2,
-                                                                [self.config.sizeOfIn_patch2,
-                                                                 self.config.sizeOfIn_patch2],
-                                                                method=2)
-                    self.patch2_D_, self.patch2_D_logits_ = self.discriminator_patch2(self.resized_G2_p2, reuse=True)
-                else:
-                    right_G = self.G[:, :, int(self.config.output_width / 2):self.config.output_width, :]
-                    right_G = tf.image.resize_images(right_G, [self.config.sizeOfIn_patch2, self.config.sizeOfIn_patch2],
-                                                     method=2)
-                    self.resized_G = right_G
-                    self.resized_G_image = self.resized_G
-                    self.patch2_D_, self.patch2_D_logits_ = self.discriminator_patch2(self.resized_G, reuse=True)
+                self.resized_G2_p2 = tf.image.resize_images(self.G2,
+                                                            [self.config.sizeOfIn_patch2,
+                                                                self.config.sizeOfIn_patch2],
+                                                            method=2)
+                self.patch2_D_, self.patch2_D_logits_ = self.discriminator_patch2(self.resized_G2_p2, reuse=True)
 
         if self.config.use_D_patch2_2 == True:
             right_i = self.inputs[:, :, int(self.config.output_width / 2):self.config.output_width, :]
@@ -304,12 +262,11 @@ class DCGAN(object):
             self.resized_inputs_p2_2_image = self.resized_inputs_p2_2
             self.patch2_2_D, self.patch2_2_D_logits = self.discriminator_patch2_2(self.resized_inputs_p2_2)
 
-            if self.config.G_num == 2:
-                self.resized_G2_p2_2 = tf.image.resize_images(self.G2,
-                                                            [self.config.sizeOfIn_patch2_2,
-                                                             self.config.sizeOfIn_patch2_2],
-                                                            method=2)
-                self.patch2_2_D_, self.patch2_2_D_logits_ = self.discriminator_patch2_2(self.resized_G2_p2_2, reuse=True)
+            self.resized_G2_p2_2 = tf.image.resize_images(self.G2,
+                                                        [self.config.sizeOfIn_patch2_2,
+                                                            self.config.sizeOfIn_patch2_2],
+                                                        method=2)
+            self.patch2_2_D_, self.patch2_2_D_logits_ = self.discriminator_patch2_2(self.resized_G2_p2_2, reuse=True)
 
 
         if self.config.use_D_patch3:
@@ -350,37 +307,21 @@ class DCGAN(object):
                 right_i = self.inputs[:, :, int(self.config.output_width / 2):self.config.output_width, :]
                 right_i = tf.image.resize_images(right_i, [self.config.sizeOfIn_patch3, self.config.sizeOfIn_patch3],
                                                  method=2)
-                if self.config.G_num == 2:
-                    self.resized_inputs_p3 = left_i
-                else:
-                    self.resized_inputs_p3 = right_i
+                self.resized_inputs_p3 = left_i
 
                 self.resized_inputs_p3_image = self.resized_inputs_p3
                 self.patch3_D, self.patch3_D_logits = self.discriminator_patch3(self.resized_inputs_p3)
 
-                if self.config.G_num == 2:
-                    self.resized_G1_p3 = tf.image.resize_images(self.G1,
-                                                     [self.config.sizeOfIn_patch3, self.config.sizeOfIn_patch3],
-                                                     method=2)
-                    self.patch3_D_, self.patch3_D_logits_ = self.discriminator_patch3(self.resized_G1_p3, reuse=True)
-                else:
-                    right_G = self.G[:, :, int(self.config.output_width / 2):self.config.output_width, :]
-                    right_G = tf.image.resize_images(right_G, [self.config.sizeOfIn_patch3, self.config.sizeOfIn_patch3],
-                                                     method=2)
-                    self.resized_G_p3 = right_G
-                    self.resized_G_p3_image = self.resized_G_p3
-                    self.patch3_D_, self.patch3_D_logits_ = self.discriminator_patch3(self.resized_G_p3, reuse=True)
+                self.resized_G1_p3 = tf.image.resize_images(self.G1,
+                                                    [self.config.sizeOfIn_patch3, self.config.sizeOfIn_patch3],
+                                                    method=2)
+                self.patch3_D_, self.patch3_D_logits_ = self.discriminator_patch3(self.resized_G1_p3, reuse=True)
 
-        if self.config.G_num == 2:
-            z_recon, z_recon_mu, z_recon_log_sigma = self.encoder(self.G1)
-        else:
-            self.G_left = self.G[0:self.config.batch_size, 0:self.image_dims[0], 0:int(self.image_dims[1] / 2),
-                                0:self.image_dims[2]]
-            z_recon, z_recon_mu, z_recon_log_sigma = self.encoder(self.G_left)
+        z_recon, z_recon_mu, z_recon_log_sigma = self.encoder(self.G1)
 
 
         # define loss
-        if self.config.G_num == 2 and self.config.use_patchGAN_D_full == True:
+        if self.config.use_patchGAN_D_full == True:
             predict_fake, predict_fake_logit = self.discriminator_patchGAN(self.G1, self.G2)
             predict_real, predict_real_logit = self.discriminator_patchGAN(self.inputs[:, :, 0:int(self.config.output_width / 2), :],
                                                        self.inputs[:, :,
@@ -500,16 +441,6 @@ class DCGAN(object):
                 self.d_loss_patch3 = 0
                 self.g_loss_patch3 = 0
 
-
-
-            # if self.config.G_num == 2:
-            #     self.g1_loss = self.g_loss + self.config.D_patch3_loss * self.g_loss_patch3
-            #     self.g2_loss = self.config.D_origin_loss * self.g_loss + self.config.D_patch_loss * self.g_loss_patch \
-            #               + self.config.D_patch2_loss * self.g_loss_patch2 + self.d_loss_patchGAN * self.config.D_patchGAN_loss
-            # else:
-            #     self.g_loss = self.config.D_origin_loss * self.g_loss + self.config.D_patch_loss * self.g_loss_patch \
-            #               + self.config.D_patch2_loss * self.g_loss_patch2 + self.config.D_patch3_loss * self.g_loss_patch3
-
         elif self.config.type is "wgan":
             self.d_loss_real = 0.0
             self.d_loss_fake = 0.0
@@ -569,16 +500,10 @@ class DCGAN(object):
 
                 alpha_dist = tf.contrib.distributions.Uniform(low=0., high=1.)
                 alpha = alpha_dist.sample((self.config.batch_size, 1, 1, 1))
-                if self.config.G_num == 2:
-                    if self.config.originD_inputForm == "concat_w":
-                        interpolated = self.inputs + alpha*(self.G_all-self.inputs)
-                    elif self.config.originD_inputForm == "concat_n":
-                        interpolated = self.concat_in_n + alpha * (self.concat_out_n - self.concat_in_n)
-                else:
-                    if self.config.originD_inputForm == "concat_w":
-                        interpolated = self.inputs + alpha*(self.G-self.inputs)
-                    elif self.config.originD_inputForm == "concat_n":
-                        interpolated = self.concat_in_n + alpha * (self.concat_out_n - self.concat_in_n)
+                if self.config.originD_inputForm == "concat_w":
+                    interpolated = self.inputs + alpha*(self.G_all-self.inputs)
+                elif self.config.originD_inputForm == "concat_n":
+                    interpolated = self.concat_in_n + alpha * (self.concat_out_n - self.concat_in_n)
                 inte_logit = self.discriminator(interpolated, reuse=True)
                 gradients = tf.gradients(inte_logit, [interpolated,])[0]
                 grad_l2 = tf.sqrt(tf.reduce_sum(tf.square(gradients), axis=[1,2,3]))
@@ -667,13 +592,9 @@ class DCGAN(object):
                 self.d_loss_patch3 = 0
                 self.g_loss_patch3 = 0
 
-        if self.config.G_num == 2:
-            self.g1_loss = self.config.D_origin_loss * self.g_loss + self.config.D_patch3_loss * self.g_loss_patch3 + self.d_loss_patchGAN * self.config.D_patchGAN_loss
-            self.g2_loss = self.config.D_origin_loss * self.g_loss + self.config.D_patch_loss * self.g_loss_patch \
-                      + self.config.D_patch2_loss * self.g_loss_patch2 + self.d_loss_patchGAN * self.config.D_patchGAN_loss + self.config.D_patch2_2_loss * self.g_loss_patch2_2
-        else:
-            self.g_loss = self.config.D_origin_loss * self.g_loss + self.config.D_patch_loss * self.g_loss_patch \
-                      + self.config.D_patch2_loss * self.g_loss_patch2 + self.config.D_patch3_loss * self.g_loss_patch3
+        self.g1_loss = self.config.D_origin_loss * self.g_loss + self.config.D_patch3_loss * self.g_loss_patch3 + self.d_loss_patchGAN * self.config.D_patchGAN_loss
+        self.g2_loss = self.config.D_origin_loss * self.g_loss + self.config.D_patch_loss * self.g_loss_patch \
+                    + self.config.D_patch2_loss * self.g_loss_patch2 + self.d_loss_patchGAN * self.config.D_patchGAN_loss + self.config.D_patch2_2_loss * self.g_loss_patch2_2
 
 
         # focal loss
@@ -683,10 +604,7 @@ class DCGAN(object):
                                             self.D_logits2_, tf.cast(self.z[:, -1], dtype=tf.int32),
                                             num_classes=self.config.num_classes)
 
-            if self.config.G_num == 2:
-                self.g2_loss += self.loss_g_ac
-            else:
-                self.g_loss += self.loss_g_ac
+            self.g2_loss += self.loss_g_ac
             # self.d_loss += self.loss_d_ac
         else:
             self.loss_g_ac = 0
@@ -707,7 +625,7 @@ class DCGAN(object):
         # self.g_loss = self.g_loss + self.zl_loss * self.config.stage1_zl_loss
 
         # optimizer
-        if self.config.use_patchGAN_D_full == True and self.config.G_num == 2:
+        if self.config.use_patchGAN_D_full == True:
             self.d_optim_patchGAN = tf.train.AdamOptimizer(self.config.learning_rate,
                                                   beta1=self.config.beta1).minimize(
                 self.d_loss_patchGAN, var_list=self.discriminator_patchGAN.var_list)
@@ -739,17 +657,12 @@ class DCGAN(object):
                                             beta1=self.config.beta1).minimize(
                                                 self.loss_d_ac, var_list=self.discriminator2.var_list)
 
-            if self.config.G_num == 2:
-                self.g1_optim = tf.train.AdamOptimizer(self.config.learning_rate,
-                                                       beta1=self.config.beta1).minimize(
-                    self.g1_loss, var_list=self.generator1.var_list)
-                self.g2_optim = tf.train.AdamOptimizer(self.config.learning_rate,
-                                                      beta1=self.config.beta1).minimize(
-                    self.g2_loss, var_list=self.generator2.var_list)
-            else:
-                self.g_optim = tf.train.AdamOptimizer(self.config.learning_rate,
-                                                      beta1=self.config.beta1).minimize(
-                    self.g_loss, var_list=self.generator.var_list)
+            self.g1_optim = tf.train.AdamOptimizer(self.config.learning_rate,
+                                                    beta1=self.config.beta1).minimize(
+                self.g1_loss, var_list=self.generator1.var_list)
+            self.g2_optim = tf.train.AdamOptimizer(self.config.learning_rate,
+                                                    beta1=self.config.beta1).minimize(
+                self.g2_loss, var_list=self.generator2.var_list)
 
             self.e_optim = tf.train.AdamOptimizer(self.config.learning_rate,
                                                 beta1=self.config.beta1).minimize(
@@ -775,14 +688,10 @@ class DCGAN(object):
                 self.d_optim2 = tf.train.RMSPropOptimizer(self.config.learning_rate).minimize(
                                                 self.loss_d_ac, var_list=self.discriminator2.var_list)
 
-            if self.config.G_num == 2:
-                self.g1_optim = tf.train.RMSPropOptimizer(self.config.learning_rate).minimize(
-                    self.g1_loss, var_list=self.generator1.var_list)
-                self.g2_optim = tf.train.RMSPropOptimizer(self.config.learning_rate).minimize(
-                    self.g2_loss, var_list=self.generator2.var_list)
-            else:
-                self.g_optim = tf.train.RMSPropOptimizer(self.config.learning_rate).minimize(
-                    self.g_loss, var_list=self.generator.var_list)
+            self.g1_optim = tf.train.RMSPropOptimizer(self.config.learning_rate).minimize(
+                self.g1_loss, var_list=self.generator1.var_list)
+            self.g2_optim = tf.train.RMSPropOptimizer(self.config.learning_rate).minimize(
+                self.g2_loss, var_list=self.generator2.var_list)
 
             self.e_optim = tf.train.RMSPropOptimizer(self.config.learning_rate).minimize(
                                                 self.zl_loss, var_list=self.encoder.var_list)
@@ -823,7 +732,7 @@ class DCGAN(object):
                 with tf.control_dependencies([self.d_optim_patch3]):
                     self.d_optim_patch3 = tf.tuple(clipped_var_c)
 
-            if self.config.G_num == 2 and self.config.use_patchGAN_D_full == True and self.config.patchGAN_loss == "wgan":
+            if self.config.use_patchGAN_D_full == True and self.config.patchGAN_loss == "wgan":
                 clipped_var_c = [tf.assign(var, tf.clip_by_value(var, self.config.clamp_lower, self.config.clamp_upper))
                                  for var in self.discriminator_patchGAN.var_list]
                 # merge the clip operations on critic variables
@@ -834,18 +743,14 @@ class DCGAN(object):
         self.z_sum = networks.histogram_summary("z", self.z)
         self.inputs_sum = networks.image_summary("inputs", self.inputs)
 
-        if self.config.G_num == 2:
-            self.G1_sum = networks.image_summary("G1", self.G1)
-            self.G2_sum = networks.image_summary("G2", self.G2)
-        else:
-            self.G_sum = networks.image_summary("G", self.G)
+        self.G1_sum = networks.image_summary("G1", self.G1)
+        self.G2_sum = networks.image_summary("G2", self.G2)
 
         self.d_loss_real_sum = networks.scalar_summary("d_loss_real", self.d_loss_real)
         self.d_loss_fake_sum = networks.scalar_summary("d_loss_fake", self.d_loss_fake)
 
-        if self.config.G_num == 2:
-            self.g1_loss_sum = networks.scalar_summary("g1_loss", self.g1_loss)
-            self.g2_loss_sum = networks.scalar_summary("g2_loss", self.g2_loss)
+        self.g1_loss_sum = networks.scalar_summary("g1_loss", self.g1_loss)
+        self.g2_loss_sum = networks.scalar_summary("g2_loss", self.g2_loss)
 
         self.g_loss_sum = networks.scalar_summary("g_loss", self.g_loss)
 
@@ -859,17 +764,12 @@ class DCGAN(object):
         self.loss_g_ac_sum = networks.scalar_summary("loss_g_ac", self.loss_g_ac)
         self.loss_d_ac_sum = networks.scalar_summary("loss_d_ac", self.loss_d_ac)
 
-        if self.config.G_num == 2:
-            self.g_sum = networks.merge_summary([self.z_sum, self.G1_sum, self.G2_sum,
-                                                self.d_loss_fake_sum, self.zl_loss_sum, self.g_loss_sum,
-                                                self.class_loss_sum, self.loss_g_ac_sum, self.g1_loss_sum, self.g2_loss_sum])
-            if self.config.use_patchGAN_D_full:
-                self.d_loss_patchGAN_sum = networks.scalar_summary("d_loss_patchGAN", self.d_loss_patchGAN)
-                self.g_sum = networks.merge_summary([self.g_sum, self.d_loss_patchGAN_sum])
-        else:
-            self.g_sum = networks.merge_summary([self.z_sum, self.G_sum,
-                                                 self.d_loss_fake_sum, self.g_loss_sum, self.zl_loss_sum,
-                                                 self.class_loss_sum, self.loss_g_ac_sum])
+        self.g_sum = networks.merge_summary([self.z_sum, self.G1_sum, self.G2_sum,
+                                            self.d_loss_fake_sum, self.zl_loss_sum, self.g_loss_sum,
+                                            self.class_loss_sum, self.loss_g_ac_sum, self.g1_loss_sum, self.g2_loss_sum])
+        if self.config.use_patchGAN_D_full:
+            self.d_loss_patchGAN_sum = networks.scalar_summary("d_loss_patchGAN", self.d_loss_patchGAN)
+            self.g_sum = networks.merge_summary([self.g_sum, self.d_loss_patchGAN_sum])
         self.d_sum = networks.merge_summary([self.z_sum, self.inputs_sum,
                                              self.d_loss_real_sum, self.d_loss_sum, self.loss_d_ac_sum])
         if self.config.use_D_origin:
@@ -890,10 +790,7 @@ class DCGAN(object):
             self.d_patch2_sum = networks.histogram_summary("patch2_d", self.patch2_D)
             self.d__patch2_sum = networks.histogram_summary("patch2_d_", self.patch2_D_)
             self.resized_inputs_sum = networks.image_summary("resized_inputs_image", self.resized_inputs_image)
-            if self.config.G_num == 2:
-                self.resized_G_sum = networks.image_summary("resized_G_image", self.resized_G2_p2)
-            else:
-                self.resized_G_sum = networks.image_summary("resized_G_image", self.resized_G_image)
+            self.resized_G_sum = networks.image_summary("resized_G_image", self.resized_G2_p2)
             self.d_loss_patch2_sum = networks.scalar_summary("d_loss_patch2", self.d_loss_patch2)
             self.g_loss_patch2_sum = networks.scalar_summary("g_loss_patch2", self.g_loss_patch2)
             self.g_sum = networks.merge_summary([self.g_sum, self.d__patch2_sum, self.resized_G_sum, self.g_loss_patch2_sum])
@@ -903,19 +800,13 @@ class DCGAN(object):
             self.d_patch3_sum = networks.histogram_summary("patch3_d", self.patch3_D)
             self.d__patch3_sum = networks.histogram_summary("patch3_d_", self.patch3_D_)
             self.resized_inputs_p3_sum = networks.image_summary("resized_inputs_p3_image", self.resized_inputs_p3_image)
-            if self.config.G_num == 2:
-                self.resized_G_p3_sum = networks.image_summary("resized_G_p3_image", self.resized_G1_p3)
-            else:
-                self.resized_G_p3_sum = networks.image_summary("resized_G_p3_image", self.resized_G_p3_image)
+            self.resized_G_p3_sum = networks.image_summary("resized_G_p3_image", self.resized_G1_p3)
             self.d_loss_patch3_sum = networks.scalar_summary("d_loss_patch3", self.d_loss_patch3)
             self.g_loss_patch3_sum = networks.scalar_summary("g_loss_patch3", self.g_loss_patch3)
             self.g_sum = networks.merge_summary([self.g_sum, self.d__patch3_sum, self.resized_G_p3_sum, self.g_loss_patch3_sum])
             self.d_sum = networks.merge_summary([self.d_sum, self.d_patch3_sum, self.resized_inputs_p3_sum, self.d_loss_patch3_sum])
 
-        if self.config.G_num == 2:
-            self.saver = tf.train.Saver({v.op.name: v for v in self.generator1.var_list + self.generator2.var_list})
-        else:
-            self.saver = tf.train.Saver({v.op.name: v for v in self.generator.var_list + self.discriminator.var_list})
+        self.saver = tf.train.Saver({v.op.name: v for v in self.generator1.var_list + self.generator2.var_list})
         self.saver2 = tf.train.Saver()
 
         utils.show_all_variables()
@@ -1120,10 +1011,7 @@ class DCGAN(object):
                 if self.config.type is "dcgan":
                     errD_fake = self.d_loss_fake.eval({self.z: batch_z})
                     errD_real = self.d_loss_real.eval({self.inputs: batch_images})
-                    if self.config.G_num == 2:
-                        errG = self.g1_loss.eval({self.z: batch_z}) + self.g2_loss.eval({self.z: batch_z})
-                    else:
-                        errG = self.g_loss.eval({self.z: batch_z})
+                    errG = self.g1_loss.eval({self.z: batch_z}) + self.g2_loss.eval({self.z: batch_z})
                 else:
                     if self.config.use_D_origin:
                         errD_fake_tmp1 = self.d_loss.eval({self.inputs: batch_images, self.z: batch_z})
@@ -1143,15 +1031,12 @@ class DCGAN(object):
                         errD_fake_tmp4 = 0
                     errD_fake = errD_fake_tmp1 + errD_fake_tmp2 + errD_fake_tmp3 + errD_fake_tmp4
                     errD_real = errD_fake
-                    if self.config.G_num == 2:
-                        errG = self.g1_loss.eval({self.z: batch_z, self.inputs: batch_images}) + self.g2_loss.eval({self.z: batch_z, self.inputs: batch_images})
-                        if self.config.use_patchGAN_D_full == True:
-                            errD_patchGAN = self.d_loss_patchGAN.eval({self.inputs: batch_images, self.z: batch_z})
-                    else:
-                        errG = self.g_loss.eval({self.z: batch_z})
+                    errG = self.g1_loss.eval({self.z: batch_z, self.inputs: batch_images}) + self.g2_loss.eval({self.z: batch_z, self.inputs: batch_images})
+                    if self.config.use_patchGAN_D_full == True:
+                        errD_patchGAN = self.d_loss_patchGAN.eval({self.inputs: batch_images, self.z: batch_z})
 
                 counter += 1
-                if self.config.G_num == 2 and self.config.use_patchGAN_D_full == True:
+                if self.config.use_patchGAN_D_full == True:
                     print("Epoch: [%2d/%2d] [%4d/%4d] time: %4.4f, d_loss: %.8f, g_loss: %.8f, d_loss_patchGAN: %.8f" \
                           % (epoch, self.config.epoch, idx, batch_idxs,
                              time.time() - start_time, errD_fake + errD_real, errG, errD_patchGAN))
@@ -1274,39 +1159,24 @@ class DCGAN(object):
                                     use_resnet=self.config.if_resnet_e)
 
             if self.config.model is "old":
-                if self.config.G_num == 2:
-                    self.generator1 = Generator('G1', is_train=False,
-                                               norm=self.config.G_norm,
-                                               batch_size=batch_size_mid,
-                                               output_height=self.config.output_height,
-                                               output_width=int(self.config.output_width/2),
-                                               input_dim=self.gf_dim,
-                                               output_dim=self.c_dim,
-                                               use_resnet=self.config.if_resnet_g)
-                    self.generator2 = Generator('G2', is_train=False,
-                                               norm=self.config.G_norm,
-                                               batch_size=batch_size_mid,
-                                               output_height=self.config.output_height,
-                                               output_width=int(self.config.output_width/2),
-                                               input_dim=self.gf_dim,
-                                               output_dim=self.c_dim,
-                                               use_resnet=self.config.if_resnet_g)
-                else:
-                    self.generator = Generator('G', is_train=False,
+                self.generator1 = Generator('G1', is_train=False,
                                             norm=self.config.G_norm,
                                             batch_size=batch_size_mid,
                                             output_height=self.config.output_height,
-                                            output_width=self.config.output_width,
+                                            output_width=int(self.config.output_width/2),
                                             input_dim=self.gf_dim,
                                             output_dim=self.c_dim,
                                             use_resnet=self.config.if_resnet_g)
-                # self.discriminator = Discriminator('D', is_train=False,
-                #                                 norm=self.config.D_norm,
-                #                                 num_filters=self.df_dim,
-                #                                    use_resnet=self.config.if_resnet_d)
+                self.generator2 = Generator('G2', is_train=False,
+                                            norm=self.config.G_norm,
+                                            batch_size=batch_size_mid,
+                                            output_height=self.config.output_height,
+                                            output_width=int(self.config.output_width/2),
+                                            input_dim=self.gf_dim,
+                                            output_dim=self.c_dim,
+                                            use_resnet=self.config.if_resnet_g)
             else:
                 self.generator = base_model.generator_model
-                # self.discriminator = base_model.discriminator_model
 
 
 
@@ -1353,11 +1223,8 @@ class DCGAN(object):
                                                on_value=1., off_value=0., dtype=tf.float32)
                 self.z = tf.concat([z_encoded, self.class_onehot], 1)
 
-        if self.config.G_num == 2:
-            self.G1 = self.generator1(self.z)
-            self.G2 = self.generator2(self.z)
-        else:
-            self.G = self.generator(self.z)
+        self.G1 = self.generator1(self.z)
+        self.G2 = self.generator2(self.z)
         # self.D, self.D_logits = self.discriminator(self.inputs)
         # if self.config.G_num == 2:
         #     self.D_, self.D_logits_ = self.discriminator(tf.concat([self.G1, self.G2], 2), reuse=True)
@@ -1542,18 +1409,11 @@ class DCGAN(object):
 
             # generate images
             inputL = batch_images[:, :, 0:int(self.config.output_width / 2), :]
-            if self.config.G_num == 2:
-                outputL = self.sess.run(self.G1,
-                                        feed_dict={self.inputs: batch_images})
-                outputR = self.sess.run(self.G2,
-                                        feed_dict={self.inputs: batch_images})
-            else:
-                results = self.sess.run(self.G,
-                    feed_dict={self.inputs: batch_images})
-                outputL = results[:, :, 0:int(self.config.output_width / 2), :]
-                outputR = results[:, :, int(self.config.output_width / 2):self.config.output_width, :]
-            # tmp = self.z.eval(feed_dict={self.inputs: batch_images})
-            # a = tmp[1, :]
+            outputL = self.sess.run(self.G1,
+                                    feed_dict={self.inputs: batch_images})
+            outputR = self.sess.run(self.G2,
+                                    feed_dict={self.inputs: batch_images})
+
             if self.config.second_test == True:
                 batch_images_second = np.append(outputL, outputL, axis=2)
                 results_tmp = self.sess.run(self.G,

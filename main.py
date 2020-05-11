@@ -108,50 +108,40 @@ def main(_):
     if FLAGS.output_width is None:
         FLAGS.output_width = FLAGS.output_height
 
-    if FLAGS.G_num == 2:
-        dir_tmp = ''
-        if FLAGS.use_D_origin == True:
-            dir_tmp += 'originD'
-            if FLAGS.originD_inputForm == 'concat_n':
-                dir_tmp += "ConcatN_"
-            elif FLAGS.originD_inputForm == 'concat_w':
-                dir_tmp += "ConcatW_"
-        else:
-            dir_tmp += 'noOriginD_'
-        if FLAGS.use_D_patch2 == True:
-            dir_tmp += 'patch2_'
-            dir_tmp += str(FLAGS.sizeOfIn_patch2)
+    dir_tmp = ''
+    if FLAGS.use_D_origin == True:
+        dir_tmp += 'originD'
+        if FLAGS.originD_inputForm == 'concat_n':
+            dir_tmp += "ConcatN_"
+        elif FLAGS.originD_inputForm == 'concat_w':
+            dir_tmp += "ConcatW_"
+    else:
+        dir_tmp += 'noOriginD_'
+    if FLAGS.use_D_patch2 == True:
+        dir_tmp += 'patch2_'
+        dir_tmp += str(FLAGS.sizeOfIn_patch2)
+        dir_tmp += '_'
+    if FLAGS.use_D_patch3 == True:
+        dir_tmp += 'patch3_'
+        dir_tmp += str(FLAGS.sizeOfIn_patch3)
+        dir_tmp += '_'
+    if FLAGS.use_D_patch2_2 == True:
+        if FLAGS.D_patch2_2_loss != 1.0:
+            dir_tmp += str(FLAGS.D_patch2_2_loss)
+        dir_tmp += 'patch2_2_'
+        dir_tmp += str(FLAGS.sizeOfIn_patch2_2)
+        dir_tmp += '_'
+    if FLAGS.use_patchGAN_D_full == True:
+        dir_tmp += 'patchGAN_'
+        if FLAGS.patchGAN_D_norm == 'instance':
+            dir_tmp += 'insN_'
+        if FLAGS.patchGAN_loss == 'wgan' or FLAGS.patchGAN_loss == 'gpwgan':
+            dir_tmp += FLAGS.patchGAN_loss
             dir_tmp += '_'
-        if FLAGS.use_D_patch3 == True:
-            dir_tmp += 'patch3_'
-            dir_tmp += str(FLAGS.sizeOfIn_patch3)
-            dir_tmp += '_'
-        if FLAGS.use_D_patch2_2 == True:
-            if FLAGS.D_patch2_2_loss != 1.0:
-                dir_tmp += str(FLAGS.D_patch2_2_loss)
-            dir_tmp += 'patch2_2_'
-            dir_tmp += str(FLAGS.sizeOfIn_patch2_2)
-            dir_tmp += '_'
-        if FLAGS.use_patchGAN_D_full == True:
-            dir_tmp += 'patchGAN_'
-            if FLAGS.patchGAN_D_norm == 'instance':
-                dir_tmp += 'insN_'
-            if FLAGS.patchGAN_loss == 'wgan' or FLAGS.patchGAN_loss == 'gpwgan':
-                dir_tmp += FLAGS.patchGAN_loss
-                dir_tmp += '_'
-        dir_tmp += '2G'
-        FLAGS.checkpoint_dir = 'checkpoint_' + FLAGS.type + '_instanceEGD' + '_' + dir_tmp
-        FLAGS.sample_dir = 'samples_' + FLAGS.type + '_instanceEGD' + '_' + dir_tmp
-        # checkpoint_gpwgan_instanceEGD_noOriginD_patch2_128_patch3_128_patchGAN_insN_wgan_2G
+    dir_tmp += '2G'
+    FLAGS.checkpoint_dir = 'checkpoint_' + FLAGS.type + '_instanceEGD' + '_' + dir_tmp
+    FLAGS.sample_dir = 'samples_' + FLAGS.type + '_instanceEGD' + '_' + dir_tmp
 
-        # makedirs(checkpoint_dir + "/stage1")
-        # makedirs(checkpoint_dir + "/stage2")
-        # makedirs(checkpoint_dir + "/stage1_AddE/")
-        # makedirs(sample_dir + "/stage1")
-        # makedirs(sample_dir + "/stage2")
-        # makedirs(sample_dir + "/stage1_AddE_specified/")
-        # makedirs(sample_dir + "/stage1_AddE_random/" + FLAGS.dataset + '/')
-    # else:
     print(FLAGS.checkpoint_dir)
     print(FLAGS.sample_dir)
 
