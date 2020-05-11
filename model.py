@@ -490,71 +490,34 @@ class DCGAN(object):
                                                   beta1=self.config.beta1).minimize(
                 self.d_loss_patchGAN, var_list=self.discriminator_patchGAN.var_list)
 
-        if self.config.optim is "adam":
-            if self.config.use_D_origin:
-                self.d_optim = tf.train.AdamOptimizer(self.config.learning_rate,
-                                                beta1=self.config.beta1).minimize(
-                                                    self.d_loss, var_list=self.discriminator.var_list)
 
-            if self.config.use_D_patch:
-                self.d_optim_patch = tf.train.AdamOptimizer(self.config.learning_rate,
-                                                beta1=self.config.beta1).minimize(
-                                                    self.d_loss_patch, var_list=self.discriminator_patch.var_list)
-            if self.config.use_D_patch2:
-                self.d_optim_patch2 = tf.train.AdamOptimizer(self.config.learning_rate,
-                                                beta1=self.config.beta1).minimize(
-                                                    self.d_loss_patch2, var_list=self.discriminator_patch2.var_list)
-            if self.config.use_D_patch2_2:
-                self.d_optim_patch2_2 = tf.train.AdamOptimizer(self.config.learning_rate,
-                                                             beta1=self.config.beta1).minimize(
-                    self.d_loss_patch2_2, var_list=self.discriminator_patch2_2.var_list)
-            if self.config.use_D_patch3:
-                self.d_optim_patch3 = tf.train.AdamOptimizer(self.config.learning_rate,
-                                                beta1=self.config.beta1).minimize(
-                                                    self.d_loss_patch3, var_list=self.discriminator_patch3.var_list)
-            if self.config.if_focal_loss:
-                self.d_optim2 = tf.train.AdamOptimizer(self.config.learning_rate,
-                                            beta1=self.config.beta1).minimize(
-                                                self.loss_d_ac, var_list=self.discriminator2.var_list)
+        if self.config.use_D_origin:
+            self.d_optim = tf.train.RMSPropOptimizer(self.config.learning_rate).minimize(
+                                                self.d_loss, var_list=self.discriminator.var_list)
+        if self.config.use_D_patch:
+            self.d_optim_patch = tf.train.RMSPropOptimizer(self.config.learning_rate).minimize(
+                                                self.d_loss_patch, var_list=self.discriminator_patch.var_list)
+        if self.config.use_D_patch2:
+            self.d_optim_patch2 = tf.train.RMSPropOptimizer(self.config.learning_rate).minimize(
+                                                self.d_loss_patch2, var_list=self.discriminator_patch2.var_list)
+        if self.config.use_D_patch2_2:
+            self.d_optim_patch2_2 = tf.train.RMSPropOptimizer(self.config.learning_rate).minimize(
+                self.d_loss_patch2_2, var_list=self.discriminator_patch2_2.var_list)
 
-            self.g1_optim = tf.train.AdamOptimizer(self.config.learning_rate,
-                                                    beta1=self.config.beta1).minimize(
-                self.g1_loss, var_list=self.generator1.var_list)
-            self.g2_optim = tf.train.AdamOptimizer(self.config.learning_rate,
-                                                    beta1=self.config.beta1).minimize(
-                self.g2_loss, var_list=self.generator2.var_list)
+        if self.config.use_D_patch3:
+            self.d_optim_patch3 = tf.train.RMSPropOptimizer(self.config.learning_rate).minimize(
+                                                self.d_loss_patch3, var_list=self.discriminator_patch3.var_list)
+        if self.config.if_focal_loss:
+            self.d_optim2 = tf.train.RMSPropOptimizer(self.config.learning_rate).minimize(
+                                            self.loss_d_ac, var_list=self.discriminator2.var_list)
 
-            self.e_optim = tf.train.AdamOptimizer(self.config.learning_rate,
-                                                beta1=self.config.beta1).minimize(
-                                                self.zl_loss, var_list=self.encoder.var_list)
-        elif self.config.optim == "rmsprop":
-            if self.config.use_D_origin:
-                self.d_optim = tf.train.RMSPropOptimizer(self.config.learning_rate).minimize(
-                                                    self.d_loss, var_list=self.discriminator.var_list)
-            if self.config.use_D_patch:
-                self.d_optim_patch = tf.train.RMSPropOptimizer(self.config.learning_rate).minimize(
-                                                    self.d_loss_patch, var_list=self.discriminator_patch.var_list)
-            if self.config.use_D_patch2:
-                self.d_optim_patch2 = tf.train.RMSPropOptimizer(self.config.learning_rate).minimize(
-                                                    self.d_loss_patch2, var_list=self.discriminator_patch2.var_list)
-            if self.config.use_D_patch2_2:
-                self.d_optim_patch2_2 = tf.train.RMSPropOptimizer(self.config.learning_rate).minimize(
-                    self.d_loss_patch2_2, var_list=self.discriminator_patch2_2.var_list)
+        self.g1_optim = tf.train.RMSPropOptimizer(self.config.learning_rate).minimize(
+            self.g1_loss, var_list=self.generator1.var_list)
+        self.g2_optim = tf.train.RMSPropOptimizer(self.config.learning_rate).minimize(
+            self.g2_loss, var_list=self.generator2.var_list)
 
-            if self.config.use_D_patch3:
-                self.d_optim_patch3 = tf.train.RMSPropOptimizer(self.config.learning_rate).minimize(
-                                                    self.d_loss_patch3, var_list=self.discriminator_patch3.var_list)
-            if self.config.if_focal_loss:
-                self.d_optim2 = tf.train.RMSPropOptimizer(self.config.learning_rate).minimize(
-                                                self.loss_d_ac, var_list=self.discriminator2.var_list)
-
-            self.g1_optim = tf.train.RMSPropOptimizer(self.config.learning_rate).minimize(
-                self.g1_loss, var_list=self.generator1.var_list)
-            self.g2_optim = tf.train.RMSPropOptimizer(self.config.learning_rate).minimize(
-                self.g2_loss, var_list=self.generator2.var_list)
-
-            self.e_optim = tf.train.RMSPropOptimizer(self.config.learning_rate).minimize(
-                                                self.zl_loss, var_list=self.encoder.var_list)
+        self.e_optim = tf.train.RMSPropOptimizer(self.config.learning_rate).minimize(
+                                            self.zl_loss, var_list=self.encoder.var_list)
         # ??? something not understood
 
 
