@@ -952,8 +952,8 @@ class DCGAN(object):
         def checksum_save_input(input_dict):
             checksum_path = utils.checksum_path
             utils.enforce_exists(checksum_path)
-            for key, val in input_dict:
-                if isinstance(val, np.array):
+            for key, val in input_dict.items():
+                if isinstance(val, np.ndarray):
                     np.save(os.path.join(checksum_path, key) + '.npy', val)
                 else:
                     raise NotImplementedError
@@ -1026,11 +1026,11 @@ class DCGAN(object):
             print(" [!] Load failed...")
 
         # train
-        for epoch in xrange(self.config.epoch):
+        for epoch in xrange(1):
             np.random.shuffle(self.data)
             batch_idxs = min(len(self.data), self.config.train_size) // self.config.batch_size
 
-            for idx in xrange(0, int(batch_idxs)):
+            for idx in xrange(1):
                 # read image by batch
                 batch_files = self.data[idx*self.config.batch_size : (idx+1)*self.config.batch_size]
                 batch = [
@@ -1058,6 +1058,7 @@ class DCGAN(object):
                 restore_batch_images, restore_batch_z = checksum_load_input('batch_images', 'batch_z')
                 assert np.allclose(batch_images, restore_batch_images)
                 assert np.allclose(batch_z, restore_batch_z)
+                print('assertion successed!')
 
                 if self.config.if_focal_loss:
                     # batch_classes = np.floor(np.random.uniform(0, 1,
