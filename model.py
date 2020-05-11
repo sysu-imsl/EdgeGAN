@@ -1073,12 +1073,17 @@ class DCGAN(object):
 
                 batch_z = np.random.normal(size=(self.config.batch_size, self.z_dim))
                 checksum_save({
+                    'batch_files': batch_files,
                     'batch_images': batch_images,
                     'batch_z': batch_z,
                 })
-                restore_batch_images, restore_batch_z = checksum_load('batch_images.npy', 'batch_z.npy')
+
+                (restore_batch_files, restore_batch_images, restore_batch_z) = checksum_load(
+                    'batch_files.pkl', 'batch_images.npy', 'batch_z.npy')
                 assert np.allclose(batch_images, restore_batch_images)
                 assert np.allclose(batch_z, restore_batch_z)
+                for out, tar in zip(restore_batch_files, batch_files):
+                    assert out == tar
                 print('assertion successed!')
 
                 if self.config.if_focal_loss:
