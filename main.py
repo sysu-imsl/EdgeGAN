@@ -30,8 +30,6 @@ flags.DEFINE_integer("save_checkpoint_frequency", 500, "frequency for saving che
 flags.DEFINE_boolean("crop", False, "True for training, False for testing [False]")
 flags.DEFINE_integer("generate_test_images", 100, "Number of images to generate during test. [100]")
 
-flags.DEFINE_boolean("E_stage1", True, "If add Encoder for stage 1, be True on both training stage 1 and 2. Must be False on testing stage 2")
-flags.DEFINE_boolean("E2_stage1", False, "whether to add an encoder to get class vector")
 flags.DEFINE_integer("G_num", 2, "setting 2 generators for edge and image generation seprately")
 
 # setting of testing
@@ -187,7 +185,7 @@ def main(_):
                         makedirs(FLAGS.sample_dir + "/stage1_AddE_specified/" + FLAGS.dataset + '_singleTest/' + str(
                             FLAGS.test_label) + '/')
                     dcgan.test2()
-            elif FLAGS.E_stage1 and not FLAGS.Random_test:
+            elif not FLAGS.Random_test:
                 if FLAGS.output_form is "batch":
                     makedirs(FLAGS.sample_dir + "/stage1_AddE_specified/" + FLAGS.dataset + '/' + str(
                         FLAGS.test_label) + '/')
@@ -195,7 +193,7 @@ def main(_):
                     makedirs(FLAGS.sample_dir + "/stage1_AddE_specified/" + FLAGS.dataset + '_singleTest/' + str(
                         FLAGS.test_label) + '/')
                 dcgan.test2()
-            elif FLAGS.Random_test and FLAGS.E_stage1 and FLAGS.Test_singleLabel:
+            elif FLAGS.Random_test and FLAGS.Test_singleLabel:
                 dcgan.test1(FLAGS.num_classes * FLAGS.batch_size)
             else:
                 dcgan.test1(10*FLAGS.batch_size)

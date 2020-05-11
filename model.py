@@ -125,25 +125,18 @@ class DCGAN(object):
         if self.config.G_num == 2 and self.config.use_patchGAN_D_full == True:
             self.discriminator_patchGAN = patchGAN_D("D_patchGAN", norm=self.config.patchGAN_D_norm, num_filters=64)
 
-        if self.config.E_stage1:
-            if self.config.if_focal_loss:
-                self.encoder = Encoder('E', is_train=True,
-                                   norm=self.config.E_norm,
-                                   image_size=self.config.input_height,
-                                   latent_dim=self.z_dim,
-                                   use_resnet=self.config.if_resnet_e)
-                if self.config.E2_stage1:
-                    self.encoder2 = Encoder('E2', is_train=True,
-                                       norm=self.config.E_norm,
-                                       image_size=self.config.input_height,
-                                       latent_dim=self.config.num_classes,
-                                       use_resnet=self.config.if_resnet_e)
-            else:
-                self.encoder = Encoder('E', is_train=True,
-                                   norm=self.config.E_norm,
-                                   image_size=self.config.input_height,
-                                   latent_dim=self.z_dim,
-                                   use_resnet=self.config.if_resnet_e)
+        if self.config.if_focal_loss:
+            self.encoder = Encoder('E', is_train=True,
+                                norm=self.config.E_norm,
+                                image_size=self.config.input_height,
+                                latent_dim=self.z_dim,
+                                use_resnet=self.config.if_resnet_e)
+        else:
+            self.encoder = Encoder('E', is_train=True,
+                                norm=self.config.E_norm,
+                                image_size=self.config.input_height,
+                                latent_dim=self.z_dim,
+                                use_resnet=self.config.if_resnet_e)
 
         # define inputs
         if self.config.crop:
@@ -378,18 +371,13 @@ class DCGAN(object):
                     self.resized_G_p3_image = self.resized_G_p3
                     self.patch3_D_, self.patch3_D_logits_ = self.discriminator_patch3(self.resized_G_p3, reuse=True)
 
-        if self.config.E_stage1:
-            if self.config.G_num == 2:
-                z_recon, z_recon_mu, z_recon_log_sigma = self.encoder(self.G1)
-                if self.config.if_focal_loss and self.config.E2_stage1:
-                    class_recon, _, _ = self.encoder2(self.G1)
-            else:
-                self.G_left = self.G[0:self.config.batch_size, 0:self.image_dims[0], 0:int(self.image_dims[1] / 2),
-                                  0:self.image_dims[2]]
-                z_recon, z_recon_mu, z_recon_log_sigma = self.encoder(self.G_left)
+        if self.config.G_num == 2:
+            z_recon, z_recon_mu, z_recon_log_sigma = self.encoder(self.G1)
+        else:
+            self.G_left = self.G[0:self.config.batch_size, 0:self.image_dims[0], 0:int(self.image_dims[1] / 2),
+                                0:self.image_dims[2]]
+            z_recon, z_recon_mu, z_recon_log_sigma = self.encoder(self.G_left)
 
-                if self.config.if_focal_loss and self.config.E2_stage1:
-                    class_recon, _, _ = self.encoder2(self.G_left)
 
         # define loss
         if self.config.G_num == 2 and self.config.use_patchGAN_D_full == True:
@@ -704,25 +692,17 @@ class DCGAN(object):
             self.loss_g_ac = 0
             self.loss_d_ac = 0
 
-        if self.config.E_stage1:
-            if self.config.if_focal_loss:
-                self.zl_loss = tf.reduce_mean(tf.abs(self.z[:, 0:self.z_dim] - z_recon)) * self.config.stage1_zl_loss
+        if self.config.if_focal_loss:
+            self.zl_loss = tf.reduce_mean(tf.abs(self.z[:, 0:self.z_dim] - z_recon)) * self.config.stage1_zl_loss
 
-                # l1
-                # class_recon = tf.nn.softmax(class_recon)
-                # self.class_loss = tf.reduce_mean(tf.abs(self.class_onehot - class_recon))
-
-                # focal loss
-                if self.config.E2_stage1:
-                    self.class_loss = networks.get_class_loss(class_recon, tf.cast(self.z[:, -1], dtype=tf.int32), self.config.num_classes)
-                else:
-                    self.class_loss = 0
-            else:
-                self.zl_loss = tf.reduce_mean(tf.abs(self.z - z_recon)) * self.config.stage1_zl_loss
-                self.class_loss = 0
-        else:
-            self.zl_loss = 0
+            # focal loss
             self.class_loss = 0
+        else:
+            self.zl_loss = tf.reduce_mean(tf.abs(self.z - z_recon)) * self.config.stage1_zl_loss
+            self.class_loss = 0
+        # else:
+        #     self.zl_loss = 0
+        #     self.class_loss = 0
 
         # self.g_loss = self.g_loss + self.zl_loss * self.config.stage1_zl_loss
 
@@ -771,14 +751,9 @@ class DCGAN(object):
                                                       beta1=self.config.beta1).minimize(
                     self.g_loss, var_list=self.generator.var_list)
 
-            if self.config.E_stage1:
-                self.e_optim = tf.train.AdamOptimizer(self.config.learning_rate,
-                                                    beta1=self.config.beta1).minimize(
-                                                    self.zl_loss, var_list=self.encoder.var_list)
-                if self.config.if_focal_loss and self.config.E2_stage1:
-                    self.e_optim2 = tf.train.AdamOptimizer(self.config.learning_rate,
-                                                    beta1=self.config.beta1).minimize(
-                                                    self.class_loss, var_list=self.encoder2.var_list)
+            self.e_optim = tf.train.AdamOptimizer(self.config.learning_rate,
+                                                beta1=self.config.beta1).minimize(
+                                                self.zl_loss, var_list=self.encoder.var_list)
         elif self.config.optim == "rmsprop":
             if self.config.use_D_origin:
                 self.d_optim = tf.train.RMSPropOptimizer(self.config.learning_rate).minimize(
@@ -809,12 +784,8 @@ class DCGAN(object):
                 self.g_optim = tf.train.RMSPropOptimizer(self.config.learning_rate).minimize(
                     self.g_loss, var_list=self.generator.var_list)
 
-            if self.config.E_stage1:
-                self.e_optim = tf.train.RMSPropOptimizer(self.config.learning_rate).minimize(
-                                                    self.zl_loss, var_list=self.encoder.var_list)
-                if self.config.if_focal_loss and self.config.E2_stage1:
-                    self.e_optim2 = tf.train.RMSPropOptimizer(self.config.learning_rate).minimize(
-                                                    self.class_loss, var_list=self.encoder2.var_list)
+            self.e_optim = tf.train.RMSPropOptimizer(self.config.learning_rate).minimize(
+                                                self.zl_loss, var_list=self.encoder.var_list)
         # ??? something not understood
         if self.config.type is "wgan":
             if self.config.use_D_origin:
@@ -1042,15 +1013,12 @@ class DCGAN(object):
         # load model if exist
         counter = 1
         start_time = time.time()
-        if self.config.E_stage1:
-            could_load, checkpoint_counter = self.load(self.saver2, self.config.checkpoint_dir+"/stage1_AddE", self.model_dir)
-        else:
-            could_load, checkpoint_counter = self.load(self.saver2, self.config.checkpoint_dir + "/stage1",
-                                                       self.model_dir)
+        could_load, checkpoint_counter = self.load(self.saver2, self.config.checkpoint_dir+"/stage1_AddE", self.model_dir)
         if could_load:
             counter = checkpoint_counter
             print(" [*] Load SUCCESS")
         else:
+            raise ValueError
             print(" [!] Load failed...")
 
         # train
@@ -1136,13 +1104,9 @@ class DCGAN(object):
                 # self.writer.add_summary(summary_str, counter)
 
                 # # Update E network
-                # if self.config.E_stage1:
-                #     _ = self.sess.run([self.e_optim],
-                #                                feed_dict={self.z: batch_z})
+            #     _ = self.sess.run([self.e_optim],
+            #                                feed_dict={self.z: batch_z})
 
-                #     if self.config.if_focal_loss and self.config.E2_stage1:
-                #         _ = self.sess.run([self.e_optim2],
-                #                             feed_dict={self.inputs: batch_images, self.z: batch_z})
 
                 # # Run g_optim twice to make sure that d_loss does not go to zero (different from paper)
                 # if self.config.G_num == 2:
@@ -1205,10 +1169,7 @@ class DCGAN(object):
                 allclose(restore_errD_fake, errD_fake)
                 allclose(restore_errD_real, errD_real)
                 allclose(restore_errG, errG)
-                # if self.config.E_stage1:
-                #     self.save(self.saver2, self.config.checkpoint_dir + "/stage1_AddE", self.model_dir, counter)
-                # else:
-                #     self.save(self.saver, self.config.checkpoint_dir+"/stage1", self.model_dir, counter)
+                # self.save(self.saver2, self.config.checkpoint_dir + "/stage1_AddE", self.model_dir, counter)
                 exit()
 
     def test1(self, num):
@@ -1223,14 +1184,8 @@ class DCGAN(object):
         # load model if exist
         counter = 1
         start_time = time.time()
-        if self.config.E_stage1:
-            # TODO: Why here must use saver rather than saver2?
-            could_load, checkpoint_counter = self.load(self.saver, self.config.checkpoint_dir + "/stage1_AddE",
-                                                       self.model_dir)
-            # could_load, checkpoint_counter = self.load(self.saver, self.config.checkpoint_dir + "/stage2",
-            #                                            self.model_dir2)
-        else:
-            could_load, checkpoint_counter = self.load(self.saver2, self.config.checkpoint_dir+"/stage1", self.model_dir)
+        could_load, checkpoint_counter = self.load(self.saver, self.config.checkpoint_dir + "/stage1_AddE",
+                                                    self.model_dir)
         if could_load:
             counter = checkpoint_counter
             print(" [*] Load SUCCESS")
@@ -1275,13 +1230,9 @@ class DCGAN(object):
             results = self.sess.run(self.G, feed_dict={self.z: batch_z})
 
             image_frame_dim = int(math.ceil(self.config.batch_size**.5))
-            if self.config.E_stage1:
-                utils.save_images(results, [image_frame_dim, image_frame_dim],
-                                  self.config.sample_dir + '/stage1_AddE_random/' + self.config.dataset + '/' +
-                                  self.model_dir + '__test_%s.png' % idx)
-            else:
-                utils.save_images(results, [image_frame_dim, image_frame_dim],
-                                  self.config.sample_dir+'/stage1/'+self.model_dir+'__test_%s.png' % idx)
+            utils.save_images(results, [image_frame_dim, image_frame_dim],
+                                self.config.sample_dir + '/stage1_AddE_random/' + self.config.dataset + '/' +
+                                self.model_dir + '__test_%s.png' % idx)
 
             print("Test: [%4d/%4d]" % (idx, batch_idxs))
 
@@ -1498,36 +1449,30 @@ class DCGAN(object):
         self.build_model2()
 
         # load data
-        if self.config.E_stage1:
-            data_tmp = []
-            if self.config.single_model == False:
-                data_path = os.path.join(self.config.data_dir,
-                                         self.config.dataset,
-                                         "stage1", "sketch_instance", str(self.config.test_label),
-                                         "*.png")
-                data_tmp.extend(glob(data_path))
-                data_path = os.path.join(self.config.data_dir,
-                                         self.config.dataset,
-                                         "stage1", "sketch_instance", str(self.config.test_label),
-                                         "*.jpg")
-                data_tmp.extend(glob(data_path))
-            else:
-                data_path = os.path.join(self.config.data_dir,
-                                         self.config.dataset,
-                                         "stage1", "test",
-                                         "*.png")
-                data_tmp.extend(glob(data_path))
-                data_path = os.path.join(self.config.data_dir,
-                                         self.config.dataset,
-                                         "stage1", "test",
-                                         "*.jpg")
-                data_tmp.extend(glob(data_path))
+        data_tmp = []
+        if self.config.single_model == False:
+            data_path = os.path.join(self.config.data_dir,
+                                        self.config.dataset,
+                                        "stage1", "sketch_instance", str(self.config.test_label),
+                                        "*.png")
+            data_tmp.extend(glob(data_path))
+            data_path = os.path.join(self.config.data_dir,
+                                        self.config.dataset,
+                                        "stage1", "sketch_instance", str(self.config.test_label),
+                                        "*.jpg")
+            data_tmp.extend(glob(data_path))
         else:
             data_path = os.path.join(self.config.data_dir,
-                                    self.config.dataset,
-                                    "stage2", "test",
-                                    self.config.input_fname_pattern)
-            data_tmp = glob(data_path)
+                                        self.config.dataset,
+                                        "stage1", "test",
+                                        "*.png")
+            data_tmp.extend(glob(data_path))
+            data_path = os.path.join(self.config.data_dir,
+                                        self.config.dataset,
+                                        "stage1", "test",
+                                        "*.jpg")
+            data_tmp.extend(glob(data_path))
+
         self.data = sorted(data_tmp)
 
 
@@ -1551,11 +1496,7 @@ class DCGAN(object):
         # test step 1 model which has Encoder
 
 
-        if self.config.E_stage1:
-            could_load, checkpoint_counter = self.load(self.saver2, self.config.checkpoint_dir+"/stage1_AddE", self.model_dir)
-        else:
-            could_load, checkpoint_counter = self.load(self.saver2, self.config.checkpoint_dir + "/stage2",
-                                                       self.model_dir2)
+        could_load, checkpoint_counter = self.load(self.saver2, self.config.checkpoint_dir+"/stage1_AddE", self.model_dir)
         if could_load:
             counter = checkpoint_counter
             print(" [*] Load SUCCESS")
@@ -1633,20 +1574,16 @@ class DCGAN(object):
                     results = np.append(results, outputR, axis=2)
 
             image_frame_dim = int(math.ceil(batch_size_tmp**.5))
-            if self.config.E_stage1:
-                if self.config.output_form == "batch":
-                    utils.save_images(results, [image_frame_dim, image_frame_dim],
-                                    self.config.sample_dir + '/stage1_AddE_specified/' + self.config.dataset + '/' + str(self.config.test_label) + '/' + self.model_dir + '__test_%s.png' % idx)
-                else:
-                    s2 = str(batch_files[0])
-                    name = s2.split('/')[-1]
-                    utils.save_images(results, [image_frame_dim, image_frame_dim],
-                                      self.config.sample_dir + '/stage1_AddE_specified/' + self.config.dataset + '_singleTest/' + str(
-                                          self.config.test_label) + '/' + name)
-
-            else:
+            if self.config.output_form == "batch":
                 utils.save_images(results, [image_frame_dim, image_frame_dim],
-                                  self.config.sample_dir+'/stage2/'+self.model_dir2+'__test_%s.png' % idx)
+                                self.config.sample_dir + '/stage1_AddE_specified/' + self.config.dataset + '/' + str(self.config.test_label) + '/' + self.model_dir + '__test_%s.png' % idx)
+            else:
+                s2 = str(batch_files[0])
+                name = s2.split('/')[-1]
+                utils.save_images(results, [image_frame_dim, image_frame_dim],
+                                    self.config.sample_dir + '/stage1_AddE_specified/' + self.config.dataset + '_singleTest/' + str(
+                                        self.config.test_label) + '/' + name)
+
 
             print("Test: [%4d/%4d]" % (idx, batch_idxs))
 
