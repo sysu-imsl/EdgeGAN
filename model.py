@@ -175,18 +175,9 @@ class DCGAN(object):
                     reuse=True, data_format='NCHW')
 
 
-        if self.config.originD_inputForm == "concat_w":
-            self.D, self.D_logits = self.discriminator(self.inputs)
-            self.G_all = tf.concat([self.G1, self.G2], 2)
-            self.D_, self.D_logits_ = self.discriminator(self.G_all, reuse=True)
-        elif self.config.originD_inputForm == "concat_n":
-            left_in = self.inputs[:, :, 0:int(self.config.output_width / 2), :]
-            right_in = self.inputs[:, :, int(self.config.output_width / 2):self.config.output_width, :]
-            self.concat_in_n = tf.concat([left_in, right_in], 3)
-            self.D, self.D_logits = self.discriminator(self.concat_in_n)
-            self.G_all = tf.concat([self.G1, self.G2], 2)
-            self.concat_out_n = tf.concat([self.G1, self.G2], 3)
-            self.D_, self.D_logits_ = self.discriminator(self.concat_out_n, reuse=True)
+        self.D, self.D_logits = self.discriminator(self.inputs)
+        self.G_all = tf.concat([self.G1, self.G2], 2)
+        self.D_, self.D_logits_ = self.discriminator(self.G_all, reuse=True)
 
 
         if self.config.use_D_patch:
@@ -354,10 +345,7 @@ class DCGAN(object):
 
         alpha_dist = tf.contrib.distributions.Uniform(low=0., high=1.)
         alpha = alpha_dist.sample((self.config.batch_size, 1, 1, 1))
-        if self.config.originD_inputForm == "concat_w":
-            interpolated = self.inputs + alpha*(self.G_all-self.inputs)
-        elif self.config.originD_inputForm == "concat_n":
-            interpolated = self.concat_in_n + alpha * (self.concat_out_n - self.concat_in_n)
+        interpolated = self.inputs + alpha*(self.G_all-self.inputs)
         inte_logit = self.discriminator(interpolated, reuse=True)
         gradients = tf.gradients(inte_logit, [interpolated,])[0]
         grad_l2 = tf.sqrt(tf.reduce_sum(tf.square(gradients), axis=[1,2,3]))
