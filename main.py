@@ -2,13 +2,16 @@
 # the entry of the project
 
 import os
-import scipy.misc
 import numpy as np
 import tensorflow as tf
-os.environ['CUDA_VISIBLE_DEVICES']='2'
+os.environ['CUDA_VISIBLE_DEVICES']='3'
 
 from utils import pp, makedirs, to_json, show_all_variables
 from model import DCGAN
+from numpy.random import seed
+
+seed(2333)
+tf.set_random_seed(6666)
 
 flags = tf.app.flags
 flags.DEFINE_integer("epoch", 100, "Epoch to train [25]")
@@ -210,7 +213,7 @@ def main(_):
             else:
                 dcgan.test2()
                 # dcgan.test1(10 * FLAGS.batch_size)
-      
+
         # to_json("./web/js/layers.js", [dcgan.h0_w, dcgan.h0_b, dcgan.g_bn0],
         #                 [dcgan.h1_w, dcgan.h1_b, dcgan.g_bn1],
         #                 [dcgan.h2_w, dcgan.h2_b, dcgan.g_bn2],
