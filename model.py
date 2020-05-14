@@ -575,12 +575,8 @@ class DCGAN(object):
                         feed_dict={self.inputs: batch_images, self.z: batch_z})
 
                 # Update G network
-                if self.config.G_num == 2:
-                    _, _, summary_str = self.sess.run([self.g1_optim, self.g2_optim, self.g_sum],
-                        feed_dict={self.z: batch_z, self.inputs: batch_images})
-                else:
-                    _, summary_str = self.sess.run([self.g_optim, self.g_sum],
-                        feed_dict={self.z: batch_z})
+                _, _, summary_str = self.sess.run([self.g1_optim, self.g2_optim, self.g_sum],
+                    feed_dict={self.z: batch_z, self.inputs: batch_images})
                 self.writer.add_summary(summary_str, counter)
 
                 # Update E network
@@ -589,12 +585,8 @@ class DCGAN(object):
 
 
                 # Run g_optim twice to make sure that d_loss does not go to zero (different from paper)
-                if self.config.G_num == 2:
-                    _, _, summary_str = self.sess.run([self.g1_optim, self.g2_optim, self.g_sum],
-                        feed_dict={self.z: batch_z, self.inputs: batch_images})
-                else:
-                    _, summary_str = self.sess.run([self.g_optim, self.g_sum],
-                        feed_dict={self.z: batch_z})
+                _, _, summary_str = self.sess.run([self.g1_optim, self.g2_optim, self.g_sum],
+                    feed_dict={self.z: batch_z, self.inputs: batch_images})
                 self.writer.add_summary(summary_str, counter)
 
 
