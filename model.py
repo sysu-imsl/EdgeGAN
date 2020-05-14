@@ -1097,6 +1097,11 @@ class DCGAN(object):
                     batch_classes = np.array(batch_classes).reshape((self.config.batch_size, 1))
                     batch_z = np.concatenate((batch_z, batch_classes), axis=1)
 
+                if self.config.E_stage1:
+                    self.save(self.saver2, self.config.checkpoint_dir + "/stage1_AddE", self.model_dir, counter)
+                else:
+                    self.save(self.saver, self.config.checkpoint_dir+"/stage1", self.model_dir, counter)
+
                 # Update D network
                 if self.config.use_D_origin:
                     _ = self.sess.run([self.d_optim],
@@ -1215,10 +1220,10 @@ class DCGAN(object):
                 assert errD_real == restore_errD_real
                 assert errG == restore_errG
                 # if np.mod(counter, self.config.save_checkpoint_frequency) == 2:
-                if self.config.E_stage1:
-                    self.save(self.saver2, self.config.checkpoint_dir + "/stage1_AddE", self.model_dir, counter)
-                else:
-                    self.save(self.saver, self.config.checkpoint_dir+"/stage1", self.model_dir, counter)
+                # if self.config.E_stage1:
+                #     self.save(self.saver2, self.config.checkpoint_dir + "/stage1_AddE", self.model_dir, counter)
+                # else:
+                #     self.save(self.saver, self.config.checkpoint_dir+"/stage1", self.model_dir, counter)
                 exit()
 
     def test1(self, num):
