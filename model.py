@@ -50,6 +50,44 @@ class DCGAN(object):
         self.dfc_dim = dfc_dim
 
         self.c_dim = c_dim
+        self.optimizers = []
+
+    def register_optim_if(self, name, optims, cond=True, repeat=1):
+        if not cond:
+            return
+        optims = optims if isinstance(optims, list) else [optims, ]
+        self.optimizers.append({
+            'name': name,
+            'optims': optims,
+            'repeat': repeat,
+        })
+
+    def construct_optimizers(self):
+        self.register_optim_if('d_optim', tf.train.RMSPropOptimizer(self.config.learning_rate).minimize(
+            self.d_loss, var_list=self.discriminator.var_list))
+        self.register_optim_if('d_optim_patch2',  tf.train.RMSPropOptimizer(self.config.learning_rate).minimize(
+            self.d_loss_patch2, var_list=self.discriminator_patch2.var_list), self.config.use_D_patch2)
+        self.register_optim_if('d_optim_patch3', tf.train.RMSPropOptimizer(self.config.learning_rate).minimize(
+            self.d_loss_patch3, var_list=self.discriminator_patch3.var_list), self.config.use_D_patch3)
+        self.register_optim_if('d_optim2',  tf.train.RMSPropOptimizer(self.config.learning_rate).minimize(
+            self.loss_d_ac, var_list=self.discriminator2.var_list), self.config.if_focal_loss)
+        self.register_optim_if(
+            'g_optim', [
+            tf.train.RMSPropOptimizer(self.config.learning_rate).minimize(
+                self.g1_loss, var_list=self.generator1.var_list),
+            tf.train.RMSPropOptimizer(self.config.learning_rate).minimize(
+                self.g2_loss, var_list=self.generator2.var_list)],
+            repeat=2
+        )
+        self.register_optim_if('e_optim', tf.train.RMSPropOptimizer(self.config.learning_rate).minimize(
+            self.zl_loss, var_list=self.encoder.var_list))
+
+    def update_model(self, images, z):
+        for optim_param in self.optimizers:
+            optims, repeat = optim_param['optims'], optim_param['repeat']
+            for _ in range(repeat):
+                _ = self.sess.run(optims, {self.inputs: images, self.z: z})
+
 
     def build_model1(self):
         # Define models
@@ -311,32 +349,9 @@ class DCGAN(object):
         # self.g_loss = self.g_loss + self.zl_loss * self.config.stage1_zl_loss
 
         # optimizer
+        self.construct_optimizers()
 
 
-        self.d_optim = tf.train.RMSPropOptimizer(self.config.learning_rate).minimize(
-                                            self.d_loss, var_list=self.discriminator.var_list)
-        if self.config.use_D_patch2:
-            self.d_optim_patch2 = tf.train.RMSPropOptimizer(self.config.learning_rate).minimize(
-                                                self.d_loss_patch2, var_list=self.discriminator_patch2.var_list)
-        if self.config.use_D_patch2_2:
-            self.d_optim_patch2_2 = tf.train.RMSPropOptimizer(self.config.learning_rate).minimize(
-                self.d_loss_patch2_2, var_list=self.discriminator_patch2_2.var_list)
-
-        if self.config.use_D_patch3:
-            self.d_optim_patch3 = tf.train.RMSPropOptimizer(self.config.learning_rate).minimize(
-                                                self.d_loss_patch3, var_list=self.discriminator_patch3.var_list)
-        if self.config.if_focal_loss:
-            self.d_optim2 = tf.train.RMSPropOptimizer(self.config.learning_rate).minimize(
-                                            self.loss_d_ac, var_list=self.discriminator2.var_list)
-
-        self.g1_optim = tf.train.RMSPropOptimizer(self.config.learning_rate).minimize(
-            self.g1_loss, var_list=self.generator1.var_list)
-        self.g2_optim = tf.train.RMSPropOptimizer(self.config.learning_rate).minimize(
-            self.g2_loss, var_list=self.generator2.var_list)
-
-        self.e_optim = tf.train.RMSPropOptimizer(self.config.learning_rate).minimize(
-                                            self.zl_loss, var_list=self.encoder.var_list)
-        # ??? something not understood
 
 
         # define sumary
@@ -542,52 +557,57 @@ class DCGAN(object):
                     batch_classes = np.array(batch_classes).reshape((self.config.batch_size, 1))
                     batch_z = np.concatenate((batch_z, batch_classes), axis=1)
 
-                # Update D network
-                if self.config.use_D_origin:
-                    _ = self.sess.run([self.d_optim],
-                        feed_dict={self.inputs: batch_images, self.z: batch_z})
+                # # Update D network
+                # if self.config.use_D_origin:
+                #     _ = self.sess.run([self.d_optim],
+                #         feed_dict={self.inputs: batch_images, self.z: batch_z})
 
-                if self.config.use_D_patch:
-                    _ = self.sess.run([self.d_optim_patch],
-                                                   feed_dict={self.inputs: batch_images, self.z: batch_z})
+                # if self.config.use_D_patch:
+                #     _ = self.sess.run([self.d_optim_patch],
+                #                                    feed_dict={self.inputs: batch_images, self.z: batch_z})
 
-                if self.config.use_D_patch2:
-                    _ = self.sess.run([self.d_optim_patch2],
-                                                   feed_dict={self.inputs: batch_images, self.z: batch_z})
+                # if self.config.use_D_patch2:
+                #     _ = self.sess.run([self.d_optim_patch2],
+                #                                    feed_dict={self.inputs: batch_images, self.z: batch_z})
 
-                if self.config.use_D_patch2_2:
-                    _ = self.sess.run([self.d_optim_patch2_2],
-                                                   feed_dict={self.inputs: batch_images, self.z: batch_z})
-                if self.config.use_D_patch3:
-                    _ = self.sess.run([self.d_optim_patch3],
-                                                   feed_dict={self.inputs: batch_images, self.z: batch_z})
+                # if self.config.use_D_patch2_2:
+                #     _ = self.sess.run([self.d_optim_patch2_2],
+                #                                    feed_dict={self.inputs: batch_images, self.z: batch_z})
+                # if self.config.use_D_patch3:
+                #     _ = self.sess.run([self.d_optim_patch3],
+                #                                    feed_dict={self.inputs: batch_images, self.z: batch_z})
 
-                if self.config.use_patchGAN_D_full == True and self.config.G_num == 2:
-                    _ = self.sess.run([self.d_optim_patchGAN],
-                                                   feed_dict={self.inputs: batch_images, self.z: batch_z})
+                # if self.config.use_patchGAN_D_full == True and self.config.G_num == 2:
+                #     _ = self.sess.run([self.d_optim_patchGAN],
+                #                                    feed_dict={self.inputs: batch_images, self.z: batch_z})
+                self.update_model(batch_images, batch_z)
 
                 summary_str_d_sum = self.sess.run(self.d_sum,
-                                               feed_dict={self.inputs: batch_images, self.z: batch_z})
+                    feed_dict={self.inputs: batch_images, self.z: batch_z})
                 self.writer.add_summary(summary_str_d_sum, counter)
 
-                if self.config.if_focal_loss:
-                    _ = self.sess.run(self.d_optim2,
-                        feed_dict={self.inputs: batch_images, self.z: batch_z})
-
-                # Update G network
-                _, _, summary_str = self.sess.run([self.g1_optim, self.g2_optim, self.g_sum],
+                summary_str = self.sess.run(self.g_sum,
                     feed_dict={self.z: batch_z, self.inputs: batch_images})
                 self.writer.add_summary(summary_str, counter)
 
-                # Update E network
-                _ = self.sess.run([self.e_optim],
-                                           feed_dict={self.z: batch_z})
+                # if self.config.if_focal_loss:
+                #     _ = self.sess.run(self.d_optim2,
+                #         feed_dict={self.inputs: batch_images, self.z: batch_z})
+
+                # # Update G network
+                # _, _, summary_str = self.sess.run([self.g1_optim, self.g2_optim, self.g_sum],
+                #     feed_dict={self.z: batch_z, self.inputs: batch_images})
+                # self.writer.add_summary(summary_str, counter)
+
+                # # Update E network
+                # _ = self.sess.run([self.e_optim],
+                #                            feed_dict={self.z: batch_z})
 
 
-                # Run g_optim twice to make sure that d_loss does not go to zero (different from paper)
-                _, _, summary_str = self.sess.run([self.g1_optim, self.g2_optim, self.g_sum],
-                    feed_dict={self.z: batch_z, self.inputs: batch_images})
-                self.writer.add_summary(summary_str, counter)
+                # # Run g_optim twice to make sure that d_loss does not go to zero (different from paper)
+                # _, _, summary_str = self.sess.run([self.g1_optim, self.g2_optim, self.g_sum],
+                #     feed_dict={self.z: batch_z, self.inputs: batch_images})
+                # self.writer.add_summary(summary_str, counter)
 
 
                 errD_fake_tmp1 = self.d_loss.eval({self.inputs: batch_images, self.z: batch_z})
