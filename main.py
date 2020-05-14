@@ -2,13 +2,20 @@
 # the entry of the project
 
 import os
-import scipy.misc
+
 import numpy as np
+import scipy.misc
 import tensorflow as tf
+from numpy.random import seed
+
+from model import DCGAN
+from utils import makedirs, pp, show_all_variables, to_json
+
 os.environ['CUDA_VISIBLE_DEVICES']='2'
 
-from utils import pp, makedirs, to_json, show_all_variables
-from model import DCGAN
+
+seed(2333)
+tf.set_random_seed(6666)
 
 flags = tf.app.flags
 flags.DEFINE_integer("epoch", 100, "Epoch to train [25]")
