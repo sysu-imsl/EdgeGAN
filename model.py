@@ -22,10 +22,11 @@ import pickle
 reload(sys)
 sys.setdefaultencoding('utf8')
 
+
 class DCGAN(object):
     def __init__(self, sess, config,
-                z_dim=100, gf_dim=64, df_dim=64,
-                gfc_dim=1024, dfc_dim=1024, c_dim=3):
+                 z_dim=100, gf_dim=64, df_dim=64,
+                 gfc_dim=1024, dfc_dim=1024, c_dim=3):
         """
 
         Args:
@@ -73,10 +74,10 @@ class DCGAN(object):
             self.loss_d_ac, var_list=self.discriminator2.var_list), self.config.if_focal_loss)
         self.register_optim_if(
             'g_optim', [
-            tf.train.RMSPropOptimizer(self.config.learning_rate).minimize(
-                self.g1_loss, var_list=self.generator1.var_list),
-            tf.train.RMSPropOptimizer(self.config.learning_rate).minimize(
-                self.g2_loss, var_list=self.generator2.var_list)],
+                tf.train.RMSPropOptimizer(self.config.learning_rate).minimize(
+                    self.g1_loss, var_list=self.generator1.var_list),
+                tf.train.RMSPropOptimizer(self.config.learning_rate).minimize(
+                    self.g2_loss, var_list=self.generator2.var_list)],
             repeat=2
         )
         self.register_optim_if('e_optim', tf.train.RMSPropOptimizer(self.config.learning_rate).minimize(
@@ -88,14 +89,13 @@ class DCGAN(object):
             for _ in range(repeat):
                 _ = self.sess.run(optims, {self.inputs: images, self.z: z})
 
-
-    def build_model1(self):
-        # Define models
+    def build_networks(self):
         self.generator1 = Generator('G1', is_train=True,
                                     norm=self.config.G_norm,
                                     batch_size=self.config.batch_size,
                                     output_height=self.config.output_height,
-                                    output_width=int(self.config.output_width/2),
+                                    output_width=int(
+                                        self.config.output_width/2),
                                     input_dim=self.gf_dim,
                                     output_dim=self.c_dim,
                                     use_resnet=self.config.if_resnet_g)
@@ -103,22 +103,23 @@ class DCGAN(object):
                                     norm=self.config.G_norm,
                                     batch_size=self.config.batch_size,
                                     output_height=self.config.output_height,
-                                    output_width=int(self.config.output_width/2),
+                                    output_width=int(
+                                        self.config.output_width/2),
                                     input_dim=self.gf_dim,
                                     output_dim=self.c_dim,
                                     use_resnet=self.config.if_resnet_g)
 
-
         # classifier
         if self.config.if_focal_loss:
-            self.discriminator2 = Discriminator2('D2', self.config.SPECTRAL_NORM_UPDATE_OPS)
+            self.discriminator2 = Discriminator2(
+                'D2', self.config.SPECTRAL_NORM_UPDATE_OPS)
 
         # origin discrminator
         if self.config.model is "old":
             self.discriminator = Discriminator('D', is_train=True,
-                                            norm=self.config.D_norm,
-                                            num_filters=self.df_dim,
-                                            use_resnet=self.config.if_resnet_d)
+                                               norm=self.config.D_norm,
+                                               num_filters=self.df_dim,
+                                               use_resnet=self.config.if_resnet_d)
         else:
             self.discriminator = base_model.discriminator_model
 
@@ -126,39 +127,35 @@ class DCGAN(object):
 
         if self.config.use_D_patch2 is True:
             self.discriminator_patch2 = Discriminator('D_patch2', is_train=True,
-                                               norm=self.config.D_norm,
-                                               num_filters=self.df_dim,
-                                               use_resnet=self.config.if_resnet_d)
-
+                                                      norm=self.config.D_norm,
+                                                      num_filters=self.df_dim,
+                                                      use_resnet=self.config.if_resnet_d)
 
 
         if self.config.use_D_patch3 is True:
             self.discriminator_patch3 = Discriminator('D_patch3', is_train=True,
-                                               norm=self.config.D_norm,
-                                               num_filters=self.df_dim,
-                                               use_resnet=self.config.if_resnet_d)
+                                                      norm=self.config.D_norm,
+                                                      num_filters=self.df_dim,
+                                                      use_resnet=self.config.if_resnet_d)
 
 
-        if self.config.if_focal_loss:
-            self.encoder = Encoder('E', is_train=True,
-                                norm=self.config.E_norm,
-                                image_size=self.config.input_height,
-                                latent_dim=self.z_dim,
-                                use_resnet=self.config.if_resnet_e)
-        else:
-            self.encoder = Encoder('E', is_train=True,
-                                norm=self.config.E_norm,
-                                image_size=self.config.input_height,
-                                latent_dim=self.z_dim,
-                                use_resnet=self.config.if_resnet_e)
+        self.encoder = Encoder('E', is_train=True,
+                               norm=self.config.E_norm,
+                               image_size=self.config.input_height,
+                               latent_dim=self.z_dim,
+                               use_resnet=self.config.if_resnet_e)
+
+    def build_model1(self):
+        # Define models
+        self.build_networks()
 
         # define inputs
         if self.config.crop:
             self.image_dims = [self.config.output_height, self.config.output_width,
-                        self.c_dim]
+                               self.c_dim]
         else:
             self.image_dims = [self.config.input_height, self.config.input_width,
-                        self.c_dim]
+                               self.c_dim]
         self.inputs = tf.placeholder(
             tf.float32, [self.config.batch_size] + self.image_dims, name='real_images')
 
@@ -170,58 +167,48 @@ class DCGAN(object):
                 tf.float32, [None, self.z_dim], name='z')
 
         if self.config.if_focal_loss:
-            self.class_onehot = tf.one_hot(tf.cast(self.z[:, -1], dtype=tf.int32), self.config.num_classes, on_value=1., off_value=0., dtype=tf.float32)
-            self.z_onehot = tf.concat([self.z[:, 0:self.z_dim], self.class_onehot], 1)
+            self.class_onehot = tf.one_hot(tf.cast(
+                self.z[:, -1], dtype=tf.int32), self.config.num_classes, on_value=1., off_value=0., dtype=tf.float32)
+            self.z_onehot = tf.concat(
+                [self.z[:, 0:self.z_dim], self.class_onehot], 1)
             self.G1 = self.generator1(self.z_onehot)
             self.G2 = self.generator2(self.z_onehot)
         else:
             self.G1 = self.generator1(self.z)
             self.G2 = self.generator2(self.z)
         if self.config.if_focal_loss:
-            if self.image_dims[0] == self.image_dims[1]:
-                _, _, self.D_logits2 = self.discriminator2(
-                                                tf.transpose(self.inputs, [0, 3, 1, 2]),
-                                                num_classes=self.config.num_classes,
-                                                labels=self.z[:, -1],
-                                                reuse=False, data_format='NCHW')
-                _, _, self.D_logits2_ = self.discriminator2(
-                                                tf.transpose(self.G, [0, 3, 1, 2]),
-                                                num_classes=self.config.num_classes,
-                                                labels=self.z[:, -1],
-                                                reuse=True, data_format='NCHW')
-            else:
-                _, _, self.D_logits2 = self.discriminator2(
-                                                tf.transpose(self.inputs[:, :, int(self.image_dims[1]/2):, :], [0, 3, 1, 2]),
-                                                num_classes=self.config.num_classes,
-                                                labels=self.z[:, -1],
-                                                reuse=False, data_format='NCHW')
-                _, _, self.D_logits2_ = self.discriminator2(
-                    tf.transpose(self.G2, [0, 3, 1, 2]),
-                    num_classes=self.config.num_classes,
-                    labels=self.z[:, -1],
-                    reuse=True, data_format='NCHW')
-
+            _, _, self.D_logits2 = self.discriminator2(
+                tf.transpose(self.inputs[:, :, int(
+                    self.image_dims[1]/2):, :], [0, 3, 1, 2]),
+                num_classes=self.config.num_classes,
+                labels=self.z[:, -1],
+                reuse=False, data_format='NCHW')
+            _, _, self.D_logits2_ = self.discriminator2(
+                tf.transpose(self.G2, [0, 3, 1, 2]),
+                num_classes=self.config.num_classes,
+                labels=self.z[:, -1],
+                reuse=True, data_format='NCHW')
 
         self.D, self.D_logits = self.discriminator(self.inputs)
         self.G_all = tf.concat([self.G1, self.G2], 2)
         self.D_, self.D_logits_ = self.discriminator(self.G_all, reuse=True)
 
-
-
         if self.config.use_D_patch2:
-            right_i = self.inputs[:, :, int(self.config.output_width / 2):self.config.output_width, :]
+            right_i = self.inputs[:, :, int(
+                self.config.output_width / 2):self.config.output_width, :]
             right_i = tf.image.resize_images(right_i, [self.config.sizeOfIn_patch2, self.config.sizeOfIn_patch2],
-                                                method=2)
+                                             method=2)
             self.resized_inputs = right_i
             self.resized_inputs_image = self.resized_inputs
-            self.patch2_D, self.patch2_D_logits = self.discriminator_patch2(self.resized_inputs)
+            self.patch2_D, self.patch2_D_logits = self.discriminator_patch2(
+                self.resized_inputs)
 
             self.resized_G2_p2 = tf.image.resize_images(self.G2,
                                                         [self.config.sizeOfIn_patch2,
                                                             self.config.sizeOfIn_patch2],
                                                         method=2)
-            self.patch2_D_, self.patch2_D_logits_ = self.discriminator_patch2(self.resized_G2_p2, reuse=True)
-
+            self.patch2_D_, self.patch2_D_logits_ = self.discriminator_patch2(
+                self.resized_G2_p2, reuse=True)
 
 
         if self.config.use_D_patch3:
@@ -231,27 +218,29 @@ class DCGAN(object):
             left_i = tf.image.resize_images(left_i, [self.config.sizeOfIn_patch3, self.config.sizeOfIn_patch3],
                                             method=2)
 
-            right_i = self.inputs[:, :, int(self.config.output_width / 2):self.config.output_width, :]
+            right_i = self.inputs[:, :, int(
+                self.config.output_width / 2):self.config.output_width, :]
             right_i = tf.image.resize_images(right_i, [self.config.sizeOfIn_patch3, self.config.sizeOfIn_patch3],
-                                                method=2)
+                                             method=2)
             self.resized_inputs_p3 = left_i
 
             self.resized_inputs_p3_image = self.resized_inputs_p3
-            self.patch3_D, self.patch3_D_logits = self.discriminator_patch3(self.resized_inputs_p3)
+            self.patch3_D, self.patch3_D_logits = self.discriminator_patch3(
+                self.resized_inputs_p3)
 
             self.resized_G1_p3 = tf.image.resize_images(self.G1,
-                                                [self.config.sizeOfIn_patch3, self.config.sizeOfIn_patch3],
-                                                method=2)
-            self.patch3_D_, self.patch3_D_logits_ = self.discriminator_patch3(self.resized_G1_p3, reuse=True)
+                                                        [self.config.sizeOfIn_patch3,
+                                                            self.config.sizeOfIn_patch3],
+                                                        method=2)
+            self.patch3_D_, self.patch3_D_logits_ = self.discriminator_patch3(
+                self.resized_G1_p3, reuse=True)
 
         z_recon, z_recon_mu, z_recon_log_sigma = self.encoder(self.G1)
-
 
         # define loss
 
         self.d_loss_patchGAN = 0
         self.g_loss_patchGAN = 0
-
 
         self.d_loss_real = 0.0
         self.d_loss_fake = 0.0
@@ -262,8 +251,8 @@ class DCGAN(object):
         alpha = alpha_dist.sample((self.config.batch_size, 1, 1, 1))
         interpolated = self.inputs + alpha*(self.G_all-self.inputs)
         inte_logit = self.discriminator(interpolated, reuse=True)
-        gradients = tf.gradients(inte_logit, [interpolated,])[0]
-        grad_l2 = tf.sqrt(tf.reduce_sum(tf.square(gradients), axis=[1,2,3]))
+        gradients = tf.gradients(inte_logit, [interpolated, ])[0]
+        grad_l2 = tf.sqrt(tf.reduce_sum(tf.square(gradients), axis=[1, 2, 3]))
         gradient_penalty = tf.reduce_mean((grad_l2-1)**2)
 
         self.d_loss += self.config.lambda_gp * gradient_penalty
@@ -273,17 +262,20 @@ class DCGAN(object):
         self.g_loss_patch = 0
 
         if self.config.use_D_patch2:
-            self.d_loss_patch2 = tf.reduce_mean(self.patch2_D_logits_ - self.patch2_D_logits)
+            self.d_loss_patch2 = tf.reduce_mean(
+                self.patch2_D_logits_ - self.patch2_D_logits)
 
             alpha_dist = tf.contrib.distributions.Uniform(low=0., high=1.)
             alpha = alpha_dist.sample((self.config.batch_size, 1, 1, 1))
 
-            #TODO: Not know whtether it's true
-            interpolated = self.resized_inputs + alpha * (self.resized_G2_p2 - self.resized_inputs)
+            # TODO: Not know whtether it's true
+            interpolated = self.resized_inputs + alpha * \
+                (self.resized_G2_p2 - self.resized_inputs)
 
             inte_logit = self.discriminator_patch2(interpolated, reuse=True)
             gradients = tf.gradients(inte_logit, [interpolated, ])[0]
-            grad_l2 = tf.sqrt(tf.reduce_sum(tf.square(gradients), axis=[1, 2, 3]))
+            grad_l2 = tf.sqrt(tf.reduce_sum(
+                tf.square(gradients), axis=[1, 2, 3]))
             gradient_penalty = tf.reduce_mean((grad_l2 - 1) ** 2)
 
             self.d_loss_patch2 += self.config.lambda_gp * gradient_penalty
@@ -292,22 +284,24 @@ class DCGAN(object):
             self.d_loss_patch2 = 0
             self.g_loss_patch2 = 0
 
-
         self.d_loss_patch2_2 = 0
         self.g_loss_patch2_2 = 0
 
         if self.config.use_D_patch3:
-            self.d_loss_patch3 = tf.reduce_mean(self.patch3_D_logits_ - self.patch3_D_logits)
+            self.d_loss_patch3 = tf.reduce_mean(
+                self.patch3_D_logits_ - self.patch3_D_logits)
 
             alpha_dist = tf.contrib.distributions.Uniform(low=0., high=1.)
             alpha = alpha_dist.sample((self.config.batch_size, 1, 1, 1))
 
-            #TODO: Not know whtether it's true
-            interpolated = self.resized_inputs_p3 + alpha * (self.resized_G1_p3 - self.resized_inputs_p3)
+            # TODO: Not know whtether it's true
+            interpolated = self.resized_inputs_p3 + alpha * \
+                (self.resized_G1_p3 - self.resized_inputs_p3)
 
             inte_logit = self.discriminator_patch3(interpolated, reuse=True)
             gradients = tf.gradients(inte_logit, [interpolated, ])[0]
-            grad_l2 = tf.sqrt(tf.reduce_sum(tf.square(gradients), axis=[1, 2, 3]))
+            grad_l2 = tf.sqrt(tf.reduce_sum(
+                tf.square(gradients), axis=[1, 2, 3]))
             gradient_penalty = tf.reduce_mean((grad_l2 - 1) ** 2)
 
             self.d_loss_patch3 += self.config.lambda_gp * gradient_penalty
@@ -316,17 +310,18 @@ class DCGAN(object):
             self.d_loss_patch3 = 0
             self.g_loss_patch3 = 0
 
-        self.g1_loss = self.config.D_origin_loss * self.g_loss + self.config.D_patch3_loss * self.g_loss_patch3 + self.d_loss_patchGAN * self.config.D_patchGAN_loss
+        self.g1_loss = self.config.D_origin_loss * self.g_loss + self.config.D_patch3_loss * \
+            self.g_loss_patch3 + self.d_loss_patchGAN * self.config.D_patchGAN_loss
         self.g2_loss = self.config.D_origin_loss * self.g_loss + self.config.D_patch_loss * self.g_loss_patch \
-                    + self.config.D_patch2_loss * self.g_loss_patch2 + self.d_loss_patchGAN * self.config.D_patchGAN_loss + self.config.D_patch2_2_loss * self.g_loss_patch2_2
-
+            + self.config.D_patch2_loss * self.g_loss_patch2 + self.d_loss_patchGAN * \
+            self.config.D_patchGAN_loss + self.config.D_patch2_2_loss * self.g_loss_patch2_2
 
         # focal loss
         if self.config.if_focal_loss:
             self.loss_g_ac, self.loss_d_ac = networks.get_acgan_loss_focal(
-                                            self.D_logits2, tf.cast(self.z[:, -1], dtype=tf.int32),
-                                            self.D_logits2_, tf.cast(self.z[:, -1], dtype=tf.int32),
-                                            num_classes=self.config.num_classes)
+                self.D_logits2, tf.cast(self.z[:, -1], dtype=tf.int32),
+                self.D_logits2_, tf.cast(self.z[:, -1], dtype=tf.int32),
+                num_classes=self.config.num_classes)
 
             self.g2_loss += self.loss_g_ac
             # self.d_loss += self.loss_d_ac
@@ -335,12 +330,14 @@ class DCGAN(object):
             self.loss_d_ac = 0
 
         if self.config.if_focal_loss:
-            self.zl_loss = tf.reduce_mean(tf.abs(self.z[:, 0:self.z_dim] - z_recon)) * self.config.stage1_zl_loss
+            self.zl_loss = tf.reduce_mean(
+                tf.abs(self.z[:, 0:self.z_dim] - z_recon)) * self.config.stage1_zl_loss
 
             # focal loss
             self.class_loss = 0
         else:
-            self.zl_loss = tf.reduce_mean(tf.abs(self.z - z_recon)) * self.config.stage1_zl_loss
+            self.zl_loss = tf.reduce_mean(
+                tf.abs(self.z - z_recon)) * self.config.stage1_zl_loss
             self.class_loss = 0
         # else:
         #     self.zl_loss = 0
@@ -351,9 +348,6 @@ class DCGAN(object):
         # optimizer
         self.construct_optimizers()
 
-
-
-
         # define sumary
         self.z_sum = networks.histogram_summary("z", self.z)
         self.inputs_sum = networks.image_summary("inputs", self.inputs)
@@ -361,8 +355,10 @@ class DCGAN(object):
         self.G1_sum = networks.image_summary("G1", self.G1)
         self.G2_sum = networks.image_summary("G2", self.G2)
 
-        self.d_loss_real_sum = networks.scalar_summary("d_loss_real", self.d_loss_real)
-        self.d_loss_fake_sum = networks.scalar_summary("d_loss_fake", self.d_loss_fake)
+        self.d_loss_real_sum = networks.scalar_summary(
+            "d_loss_real", self.d_loss_real)
+        self.d_loss_fake_sum = networks.scalar_summary(
+            "d_loss_fake", self.d_loss_fake)
 
         self.g1_loss_sum = networks.scalar_summary("g1_loss", self.g1_loss)
         self.g2_loss_sum = networks.scalar_summary("g2_loss", self.g2_loss)
@@ -371,17 +367,19 @@ class DCGAN(object):
 
         self.d_loss_sum = networks.scalar_summary("d_loss", self.d_loss)
 
-
         self.zl_loss_sum = networks.scalar_summary("zl_loss", self.zl_loss)
 
-        self.class_loss_sum = networks.scalar_summary("class_loss", self.class_loss)
+        self.class_loss_sum = networks.scalar_summary(
+            "class_loss", self.class_loss)
 
-        self.loss_g_ac_sum = networks.scalar_summary("loss_g_ac", self.loss_g_ac)
-        self.loss_d_ac_sum = networks.scalar_summary("loss_d_ac", self.loss_d_ac)
+        self.loss_g_ac_sum = networks.scalar_summary(
+            "loss_g_ac", self.loss_g_ac)
+        self.loss_d_ac_sum = networks.scalar_summary(
+            "loss_d_ac", self.loss_d_ac)
 
         self.g_sum = networks.merge_summary([self.z_sum, self.G1_sum, self.G2_sum,
-                                            self.d_loss_fake_sum, self.zl_loss_sum, self.g_loss_sum,
-                                            self.class_loss_sum, self.loss_g_ac_sum, self.g1_loss_sum, self.g2_loss_sum])
+                                             self.d_loss_fake_sum, self.zl_loss_sum, self.g_loss_sum,
+                                             self.class_loss_sum, self.loss_g_ac_sum, self.g1_loss_sum, self.g2_loss_sum])
         self.d_sum = networks.merge_summary([self.z_sum, self.inputs_sum,
                                              self.d_loss_real_sum, self.d_loss_sum, self.loss_d_ac_sum])
         self.d_sum_tmp = networks.histogram_summary("d", self.D)
@@ -389,28 +387,44 @@ class DCGAN(object):
         self.g_sum = networks.merge_summary([self.g_sum, self.d__sum_tmp])
         self.d_sum = networks.merge_summary([self.d_sum, self.d_sum_tmp])
 
-
         if self.config.use_D_patch2:
-            self.d_patch2_sum = networks.histogram_summary("patch2_d", self.patch2_D)
-            self.d__patch2_sum = networks.histogram_summary("patch2_d_", self.patch2_D_)
-            self.resized_inputs_sum = networks.image_summary("resized_inputs_image", self.resized_inputs_image)
-            self.resized_G_sum = networks.image_summary("resized_G_image", self.resized_G2_p2)
-            self.d_loss_patch2_sum = networks.scalar_summary("d_loss_patch2", self.d_loss_patch2)
-            self.g_loss_patch2_sum = networks.scalar_summary("g_loss_patch2", self.g_loss_patch2)
-            self.g_sum = networks.merge_summary([self.g_sum, self.d__patch2_sum, self.resized_G_sum, self.g_loss_patch2_sum])
-            self.d_sum = networks.merge_summary([self.d_sum, self.d_patch2_sum, self.resized_inputs_sum, self.d_loss_patch2_sum])
+            self.d_patch2_sum = networks.histogram_summary(
+                "patch2_d", self.patch2_D)
+            self.d__patch2_sum = networks.histogram_summary(
+                "patch2_d_", self.patch2_D_)
+            self.resized_inputs_sum = networks.image_summary(
+                "resized_inputs_image", self.resized_inputs_image)
+            self.resized_G_sum = networks.image_summary(
+                "resized_G_image", self.resized_G2_p2)
+            self.d_loss_patch2_sum = networks.scalar_summary(
+                "d_loss_patch2", self.d_loss_patch2)
+            self.g_loss_patch2_sum = networks.scalar_summary(
+                "g_loss_patch2", self.g_loss_patch2)
+            self.g_sum = networks.merge_summary(
+                [self.g_sum, self.d__patch2_sum, self.resized_G_sum, self.g_loss_patch2_sum])
+            self.d_sum = networks.merge_summary(
+                [self.d_sum, self.d_patch2_sum, self.resized_inputs_sum, self.d_loss_patch2_sum])
 
         if self.config.use_D_patch3:
-            self.d_patch3_sum = networks.histogram_summary("patch3_d", self.patch3_D)
-            self.d__patch3_sum = networks.histogram_summary("patch3_d_", self.patch3_D_)
-            self.resized_inputs_p3_sum = networks.image_summary("resized_inputs_p3_image", self.resized_inputs_p3_image)
-            self.resized_G_p3_sum = networks.image_summary("resized_G_p3_image", self.resized_G1_p3)
-            self.d_loss_patch3_sum = networks.scalar_summary("d_loss_patch3", self.d_loss_patch3)
-            self.g_loss_patch3_sum = networks.scalar_summary("g_loss_patch3", self.g_loss_patch3)
-            self.g_sum = networks.merge_summary([self.g_sum, self.d__patch3_sum, self.resized_G_p3_sum, self.g_loss_patch3_sum])
-            self.d_sum = networks.merge_summary([self.d_sum, self.d_patch3_sum, self.resized_inputs_p3_sum, self.d_loss_patch3_sum])
+            self.d_patch3_sum = networks.histogram_summary(
+                "patch3_d", self.patch3_D)
+            self.d__patch3_sum = networks.histogram_summary(
+                "patch3_d_", self.patch3_D_)
+            self.resized_inputs_p3_sum = networks.image_summary(
+                "resized_inputs_p3_image", self.resized_inputs_p3_image)
+            self.resized_G_p3_sum = networks.image_summary(
+                "resized_G_p3_image", self.resized_G1_p3)
+            self.d_loss_patch3_sum = networks.scalar_summary(
+                "d_loss_patch3", self.d_loss_patch3)
+            self.g_loss_patch3_sum = networks.scalar_summary(
+                "g_loss_patch3", self.g_loss_patch3)
+            self.g_sum = networks.merge_summary(
+                [self.g_sum, self.d__patch3_sum, self.resized_G_p3_sum, self.g_loss_patch3_sum])
+            self.d_sum = networks.merge_summary(
+                [self.d_sum, self.d_patch3_sum, self.resized_inputs_p3_sum, self.d_loss_patch3_sum])
 
-        self.saver = tf.train.Saver({v.op.name: v for v in self.generator1.var_list + self.generator2.var_list})
+        self.saver = tf.train.Saver(
+            {v.op.name: v for v in self.generator1.var_list + self.generator2.var_list})
         self.saver2 = tf.train.Saver()
 
         utils.show_all_variables()
@@ -429,6 +443,7 @@ class DCGAN(object):
         def checksum_save(input_dict):
             checksum_path = utils.checksum_path
             utils.makedirs(checksum_path)
+
             def save(filename, obj):
                 p = os.path.join(checksum_path, filename)
                 if isinstance(obj, np.ndarray):
@@ -463,7 +478,6 @@ class DCGAN(object):
                 result.append(load(path))
             return result
 
-
         self.build_model1()
 
         # load data
@@ -471,29 +485,29 @@ class DCGAN(object):
             self.data = []
             for i in xrange(self.config.num_classes):
                 data_path = os.path.join(self.config.data_dir,
-                                    self.config.dataset,
-                                    "stage1", "train", str(i),
-                                    "*.png")
+                                         self.config.dataset,
+                                         "stage1", "train", str(i),
+                                         "*.png")
                 self.data.extend(glob(data_path))
                 data_path = os.path.join(self.config.data_dir,
-                                    self.config.dataset,
-                                    "stage1", "train", str(i),
-                                    "*.jpg")
+                                         self.config.dataset,
+                                         "stage1", "train", str(i),
+                                         "*.jpg")
                 self.data.extend(glob(data_path))
         else:
             data_path = os.path.join(self.config.data_dir,
-                                    self.config.dataset,
-                                    "stage1", "train",
-                                    self.config.input_fname_pattern)
+                                     self.config.dataset,
+                                     "stage1", "train",
+                                     self.config.input_fname_pattern)
             self.data = glob(data_path)
 
         if len(self.data) == 0:
             raise Exception("[!] No data found in '" + data_path + "'")
         if len(self.data) < self.config.batch_size:
-            raise Exception("[!] Entire dataset size is less than the configured batch_size")
+            raise Exception(
+                "[!] Entire dataset size is less than the configured batch_size")
 
         self.grayscale = (self.c_dim == 1)
-
 
         # init var
         try:
@@ -508,7 +522,8 @@ class DCGAN(object):
         # load model if exist
         counter = 1
         start_time = time.time()
-        could_load, checkpoint_counter = self.load(self.saver2, self.config.checkpoint_dir+"/stage1_AddE", self.model_dir)
+        could_load, checkpoint_counter = self.load(
+            self.saver2, self.config.checkpoint_dir+"/stage1_AddE", self.model_dir)
         if could_load:
             counter = checkpoint_counter
             print(" [*] Load SUCCESS")
@@ -519,7 +534,8 @@ class DCGAN(object):
         # train
         for epoch in xrange(1):
             np.random.shuffle(self.data)
-            batch_idxs = min(len(self.data), self.config.train_size) // self.config.batch_size
+            batch_idxs = min(
+                len(self.data), self.config.train_size) // self.config.batch_size
 
             for idx in xrange(1):
                 # batch_files = self.data[idx*self.config.batch_size : (idx+1)*self.config.batch_size]
@@ -553,8 +569,10 @@ class DCGAN(object):
                         end = filePath.rfind("/")
                         start = filePath.rfind("/", 0, end)
                         return int(filePath[start+1:end])
-                    batch_classes = [getClass(batch_file) for batch_file in batch_files]
-                    batch_classes = np.array(batch_classes).reshape((self.config.batch_size, 1))
+                    batch_classes = [getClass(batch_file)
+                                     for batch_file in batch_files]
+                    batch_classes = np.array(batch_classes).reshape(
+                        (self.config.batch_size, 1))
                     batch_z = np.concatenate((batch_z, batch_classes), axis=1)
 
                 # # Update D network
@@ -583,11 +601,11 @@ class DCGAN(object):
                 self.update_model(batch_images, batch_z)
 
                 summary_str_d_sum = self.sess.run(self.d_sum,
-                    feed_dict={self.inputs: batch_images, self.z: batch_z})
+                                                  feed_dict={self.inputs: batch_images, self.z: batch_z})
                 self.writer.add_summary(summary_str_d_sum, counter)
 
                 summary_str = self.sess.run(self.g_sum,
-                    feed_dict={self.z: batch_z, self.inputs: batch_images})
+                                            feed_dict={self.z: batch_z, self.inputs: batch_images})
                 self.writer.add_summary(summary_str, counter)
 
                 # if self.config.if_focal_loss:
@@ -603,34 +621,36 @@ class DCGAN(object):
                 # _ = self.sess.run([self.e_optim],
                 #                            feed_dict={self.z: batch_z})
 
-
                 # # Run g_optim twice to make sure that d_loss does not go to zero (different from paper)
                 # _, _, summary_str = self.sess.run([self.g1_optim, self.g2_optim, self.g_sum],
                 #     feed_dict={self.z: batch_z, self.inputs: batch_images})
                 # self.writer.add_summary(summary_str, counter)
-
-
-                errD_fake_tmp1 = self.d_loss.eval({self.inputs: batch_images, self.z: batch_z})
+                errD_fake_tmp1 = self.d_loss.eval(
+                    {self.inputs: batch_images, self.z: batch_z})
                 errD_fake_tmp2 = 0
                 if self.config.use_D_patch2:
-                    errD_fake_tmp3 = self.d_loss_patch2.eval({self.inputs: batch_images, self.z: batch_z})
+                    errD_fake_tmp3 = self.d_loss_patch2.eval(
+                        {self.inputs: batch_images, self.z: batch_z})
                 else:
                     errD_fake_tmp3 = 0
                 if self.config.use_D_patch3:
-                    errD_fake_tmp4 = self.d_loss_patch3.eval({self.inputs: batch_images, self.z: batch_z})
+                    errD_fake_tmp4 = self.d_loss_patch3.eval(
+                        {self.inputs: batch_images, self.z: batch_z})
                 else:
                     errD_fake_tmp4 = 0
                 errD_fake = errD_fake_tmp1 + errD_fake_tmp2 + errD_fake_tmp3 + errD_fake_tmp4
                 errD_real = errD_fake
-                errG = self.g1_loss.eval({self.z: batch_z, self.inputs: batch_images}) + self.g2_loss.eval({self.z: batch_z, self.inputs: batch_images})
+                errG = self.g1_loss.eval({self.z: batch_z, self.inputs: batch_images}) + \
+                    self.g2_loss.eval(
+                        {self.z: batch_z, self.inputs: batch_images})
 
                 counter += 1
-                print("Epoch: [%2d/%2d] [%4d/%4d] time: %4.4f, d_loss: %.8f, g_loss: %.8f" \
-                    % (epoch, self.config.epoch, idx, batch_idxs,
-                        time.time() - start_time, errD_fake+errD_real, errG))
+                print("Epoch: [%2d/%2d] [%4d/%4d] time: %4.4f, d_loss: %.8f, g_loss: %.8f"
+                      % (epoch, self.config.epoch, idx, batch_idxs,
+                         time.time() - start_time, errD_fake+errD_real, errG))
 
                 outputL = self.sess.run(self.G1,
-                        feed_dict={self.z: batch_z, self.inputs: batch_images})
+                                        feed_dict={self.z: batch_z, self.inputs: batch_images})
 
                 restore_outputL, restore_errD_fake, restore_errD_real, restore_errG = checksum_load(
                     "outputL.npy", "errD_fake.pkl", "errD_real.pkl", "errG.pkl",)
@@ -655,7 +675,7 @@ class DCGAN(object):
         counter = 1
         start_time = time.time()
         could_load, checkpoint_counter = self.load(self.saver, self.config.checkpoint_dir + "/stage1_AddE",
-                                                    self.model_dir)
+                                                   self.model_dir)
         if could_load:
             counter = checkpoint_counter
             print(" [*] Load SUCCESS")
@@ -676,7 +696,8 @@ class DCGAN(object):
                     #                                            [self.config.batch_size, 1]).astype(
                     #     np.float32) * self.config.num_classes)
                     # batch_classes = tf.fill([self.config.batch_size, 1], idx)
-                    batch_classes = np.full((self.config.batch_size, 1), idx, dtype = np.float32)
+                    batch_classes = np.full(
+                        (self.config.batch_size, 1), idx, dtype=np.float32)
                     # batch_classes = tf.fill(batch_classes.size(), idx)
                     # batch_classes = np.floor(np.random.uniform(1, 2,
                     #                                            [self.config.batch_size, 1]).astype(
@@ -684,7 +705,7 @@ class DCGAN(object):
                     batch_z = np.concatenate((batch_z, batch_classes), axis=1)
                 else:
                     batch_classes = np.floor(np.random.uniform(0, 5,
-                            [self.config.batch_size, 1]).astype(np.float32)*self.config.num_classes)
+                                                               [self.config.batch_size, 1]).astype(np.float32)*self.config.num_classes)
                     # batch_classes = np.floor(np.random.uniform(1, 2,
                     #                                            [self.config.batch_size, 1]).astype(
                     #     np.float32) * 1)
@@ -701,8 +722,8 @@ class DCGAN(object):
 
             image_frame_dim = int(math.ceil(self.config.batch_size**.5))
             utils.save_images(results, [image_frame_dim, image_frame_dim],
-                                self.config.sample_dir + '/stage1_AddE_random/' + self.config.dataset + '/' +
-                                self.model_dir + '__test_%s.png' % idx)
+                              self.config.sample_dir + '/stage1_AddE_random/' + self.config.dataset + '/' +
+                              self.model_dir + '__test_%s.png' % idx)
 
             print("Test: [%4d/%4d]" % (idx, batch_idxs))
 
@@ -723,23 +744,24 @@ class DCGAN(object):
         if (not self.config.Test_allLabel) or (self.config.Test_singleLabel and self.config.test_label == 0):
             if self.config.if_focal_loss:
                 self.encoder = Encoder('E', is_train=True,
-                                    norm=self.config.E_norm,
-                                    image_size=self.config.input_height,
-                                    latent_dim=self.z_dim,
-                                    use_resnet=self.config.if_resnet_e)
+                                       norm=self.config.E_norm,
+                                       image_size=self.config.input_height,
+                                       latent_dim=self.z_dim,
+                                       use_resnet=self.config.if_resnet_e)
             else:
                 # TODO latent_dim is corret?
                 self.encoder = Encoder('E', is_train=True,
-                                    norm=self.config.E_norm,
-                                    image_size=self.config.input_height,
-                                    latent_dim=self.z_dim,
-                                    use_resnet=self.config.if_resnet_e)
+                                       norm=self.config.E_norm,
+                                       image_size=self.config.input_height,
+                                       latent_dim=self.z_dim,
+                                       use_resnet=self.config.if_resnet_e)
 
             self.generator1 = Generator('G1', is_train=False,
                                         norm=self.config.G_norm,
                                         batch_size=batch_size_mid,
                                         output_height=self.config.output_height,
-                                        output_width=int(self.config.output_width/2),
+                                        output_width=int(
+                                            self.config.output_width/2),
                                         input_dim=self.gf_dim,
                                         output_dim=self.c_dim,
                                         use_resnet=self.config.if_resnet_g)
@@ -747,32 +769,34 @@ class DCGAN(object):
                                         norm=self.config.G_norm,
                                         batch_size=batch_size_mid,
                                         output_height=self.config.output_height,
-                                        output_width=int(self.config.output_width/2),
+                                        output_width=int(
+                                            self.config.output_width/2),
                                         input_dim=self.gf_dim,
                                         output_dim=self.c_dim,
                                         use_resnet=self.config.if_resnet_g)
 
-
-
         # define inputs
         if self.config.crop:
             self.image_dims = [self.config.output_height, self.config.output_width,
-                        self.c_dim]
+                               self.c_dim]
         else:
             self.image_dims = [self.config.input_height, self.config.input_width,
-                        self.c_dim]
+                               self.c_dim]
         self.inputs = tf.placeholder(
             tf.float32, [batch_size_mid] + self.image_dims, name='real_images')
 
         self.masks = tf.placeholder(
             tf.float32, [batch_size_mid] + self.image_dims, name='mask_images')
 
-        self.input_left = self.inputs[0:batch_size_mid,0:self.image_dims[0],0:int(self.image_dims[1]/2),0:self.image_dims[2]]
-        z_encoded, z_encoded_mu, z_encoded_log_sigma = self.encoder(self.input_left)
+        self.input_left = self.inputs[0:batch_size_mid, 0:self.image_dims[0], 0:int(
+            self.image_dims[1]/2), 0:self.image_dims[2]]
+        z_encoded, z_encoded_mu, z_encoded_log_sigma = self.encoder(
+            self.input_left)
         self.z = z_encoded
         if self.config.if_focal_loss:
             if self.config.Test_singleLabel:
-                batch_classes = np.full((batch_size_mid, 1), self.config.test_label, dtype=np.float32)
+                batch_classes = np.full(
+                    (batch_size_mid, 1), self.config.test_label, dtype=np.float32)
                 # batch_z = np.concatenate((z_encoded, batch_classes), axis=1)
                 self.class_onehot = tf.one_hot(tf.cast(batch_classes[:, -1], dtype=tf.int32), self.config.num_classes,
                                                on_value=1., off_value=0., dtype=tf.float32)
@@ -785,7 +809,6 @@ class DCGAN(object):
 
         utils.show_all_variables()
 
-
     def test2(self):
         self.build_model2()
 
@@ -793,35 +816,37 @@ class DCGAN(object):
         data_tmp = []
         if self.config.single_model == False:
             data_path = os.path.join(self.config.data_dir,
-                                        self.config.dataset,
-                                        "stage1", "sketch_instance", str(self.config.test_label),
-                                        "*.png")
+                                     self.config.dataset,
+                                     "stage1", "sketch_instance", str(
+                                         self.config.test_label),
+                                     "*.png")
             data_tmp.extend(glob(data_path))
             data_path = os.path.join(self.config.data_dir,
-                                        self.config.dataset,
-                                        "stage1", "sketch_instance", str(self.config.test_label),
-                                        "*.jpg")
+                                     self.config.dataset,
+                                     "stage1", "sketch_instance", str(
+                                         self.config.test_label),
+                                     "*.jpg")
             data_tmp.extend(glob(data_path))
         else:
             data_path = os.path.join(self.config.data_dir,
-                                        self.config.dataset,
-                                        "stage1", "test",
-                                        "*.png")
+                                     self.config.dataset,
+                                     "stage1", "test",
+                                     "*.png")
             data_tmp.extend(glob(data_path))
             data_path = os.path.join(self.config.data_dir,
-                                        self.config.dataset,
-                                        "stage1", "test",
-                                        "*.jpg")
+                                     self.config.dataset,
+                                     "stage1", "test",
+                                     "*.jpg")
             data_tmp.extend(glob(data_path))
 
         self.data = sorted(data_tmp)
 
 
-
         if len(self.data) == 0:
             raise Exception("[!] No data found in '" + data_path + "'")
         if len(self.data) < self.config.batch_size and self.config.output_form is "batch":
-            raise Exception("[!] Entire dataset size is less than the configured batch_size")
+            raise Exception(
+                "[!] Entire dataset size is less than the configured batch_size")
 
         self.grayscale = (self.c_dim == 1)
 
@@ -835,9 +860,8 @@ class DCGAN(object):
         counter = 1
         start_time = time.time()
         # test step 1 model which has Encoder
-
-
-        could_load, checkpoint_counter = self.load(self.saver2, self.config.checkpoint_dir+"/stage1_AddE", self.model_dir)
+        could_load, checkpoint_counter = self.load(
+            self.saver2, self.config.checkpoint_dir+"/stage1_AddE", self.model_dir)
         if could_load:
             counter = checkpoint_counter
             print(" [*] Load SUCCESS")
@@ -863,21 +887,23 @@ class DCGAN(object):
         else:
             batch_size_tmp = 1
 
-        batch_idxs = min(len(self.data), self.config.train_size) // batch_size_tmp
+        batch_idxs = min(
+            len(self.data), self.config.train_size) // batch_size_tmp
 
         for idx in xrange(0, int(batch_idxs)):
             # read image by batch
-            batch_files = self.data[idx*batch_size_tmp : (idx+1)*batch_size_tmp]
+            batch_files = self.data[idx*batch_size_tmp: (idx+1)*batch_size_tmp]
             batch = [
                 utils.get_image(batch_file,
-                        input_height=self.config.input_height,
-                        input_width=self.config.input_width,
-                        resize_height=self.config.output_height,
-                        resize_width=self.config.output_width,
-                        crop=self.config.crop,
-                        grayscale=self.grayscale) for batch_file in batch_files]
+                                input_height=self.config.input_height,
+                                input_width=self.config.input_width,
+                                resize_height=self.config.output_height,
+                                resize_width=self.config.output_width,
+                                crop=self.config.crop,
+                                grayscale=self.grayscale) for batch_file in batch_files]
             if self.grayscale:
-                batch_images = np.array(batch).astype(np.float32)[:, :, :, None]
+                batch_images = np.array(batch).astype(
+                    np.float32)[:, :, :, None]
             else:
                 batch_images = np.array(batch).astype(np.float32)
 
@@ -901,14 +927,13 @@ class DCGAN(object):
             image_frame_dim = int(math.ceil(batch_size_tmp**.5))
             if self.config.output_form == "batch":
                 utils.save_images(results, [image_frame_dim, image_frame_dim],
-                                self.config.sample_dir + '/stage1_AddE_specified/' + self.config.dataset + '/' + str(self.config.test_label) + '/' + self.model_dir + '__test_%s.png' % idx)
+                                  self.config.sample_dir + '/stage1_AddE_specified/' + self.config.dataset + '/' + str(self.config.test_label) + '/' + self.model_dir + '__test_%s.png' % idx)
             else:
                 s2 = str(batch_files[0])
                 name = s2.split('/')[-1]
                 utils.save_images(results, [image_frame_dim, image_frame_dim],
-                                    self.config.sample_dir + '/stage1_AddE_specified/' + self.config.dataset + '_singleTest/' + str(
-                                        self.config.test_label) + '/' + name)
-
+                                  self.config.sample_dir + '/stage1_AddE_specified/' + self.config.dataset + '_singleTest/' + str(
+                    self.config.test_label) + '/' + name)
 
             print("Test: [%4d/%4d]" % (idx, batch_idxs))
 
@@ -932,8 +957,8 @@ class DCGAN(object):
         utils.makedirs(checkpoint_dir)
 
         saver.save(self.sess,
-                os.path.join(checkpoint_dir, model_name),
-                global_step=step)
+                   os.path.join(checkpoint_dir, model_name),
+                   global_step=step)
 
     def load(self, saver, checkpoint_dir, model_dir):
         import re
@@ -946,7 +971,8 @@ class DCGAN(object):
             ckpt_name = os.path.basename(ckpt.model_checkpoint_path)
             saver.restore(self.sess, os.path.join(checkpoint_dir, ckpt_name))
 
-            counter = int(next(re.finditer("(\d+)(?!.*\d)",ckpt_name)).group(0))
+            counter = int(
+                next(re.finditer("(\d+)(?!.*\d)", ckpt_name)).group(0))
             print(" [*] Success to read {}".format(ckpt_name))
             return True, counter
         else:
