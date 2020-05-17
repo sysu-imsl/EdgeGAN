@@ -11,7 +11,7 @@ import tensorflow as tf
 import numpy as np
 from six.moves import xrange
 
-from base_model import Encoder, Generator, Discriminator, Discriminator2, Discriminator_patch, patchGAN_D
+from base_model import Encoder, Generator, Discriminator, Classifier, Discriminator_patch, patchGAN_D
 import base_model
 import networks
 import utils
@@ -71,7 +71,7 @@ class DCGAN(object):
         self.register_optim_if('d_optim_patch3', tf.train.RMSPropOptimizer(self.config.learning_rate).minimize(
             self.d_loss_patch3, var_list=self.discriminator_patch3.var_list), self.config.use_D_patch3)
         self.register_optim_if('d_optim2',  tf.train.RMSPropOptimizer(self.config.learning_rate).minimize(
-            self.loss_d_ac, var_list=self.discriminator2.var_list), self.config.if_focal_loss)
+            self.loss_d_ac, var_list=self.classifier.var_list), self.config.if_focal_loss)
         self.register_optim_if(
             'g_optim', [
                 tf.train.RMSPropOptimizer(self.config.learning_rate).minimize(
@@ -111,7 +111,7 @@ class DCGAN(object):
 
         # classifier
         if self.config.if_focal_loss:
-            self.discriminator2 = Discriminator2(
+            self.classifier = Classifier(
                 'D2', self.config.SPECTRAL_NORM_UPDATE_OPS)
 
         # origin discrminator
@@ -131,13 +131,11 @@ class DCGAN(object):
                                                       num_filters=self.df_dim,
                                                       use_resnet=self.config.if_resnet_d)
 
-
         if self.config.use_D_patch3 is True:
             self.discriminator_patch3 = Discriminator('D_patch3', is_train=True,
                                                       norm=self.config.D_norm,
                                                       num_filters=self.df_dim,
                                                       use_resnet=self.config.if_resnet_d)
-
 
         self.encoder = Encoder('E', is_train=True,
                                norm=self.config.E_norm,
@@ -177,13 +175,13 @@ class DCGAN(object):
             self.G1 = self.generator1(self.z)
             self.G2 = self.generator2(self.z)
         if self.config.if_focal_loss:
-            _, _, self.D_logits2 = self.discriminator2(
+            _, _, self.D_logits2 = self.classifier(
                 tf.transpose(self.inputs[:, :, int(
                     self.image_dims[1]/2):, :], [0, 3, 1, 2]),
                 num_classes=self.config.num_classes,
                 labels=self.z[:, -1],
                 reuse=False, data_format='NCHW')
-            _, _, self.D_logits2_ = self.discriminator2(
+            _, _, self.D_logits2_ = self.classifier(
                 tf.transpose(self.G2, [0, 3, 1, 2]),
                 num_classes=self.config.num_classes,
                 labels=self.z[:, -1],
@@ -209,7 +207,6 @@ class DCGAN(object):
                                                         method=2)
             self.patch2_D_, self.patch2_D_logits_ = self.discriminator_patch2(
                 self.resized_G2_p2, reuse=True)
-
 
         if self.config.use_D_patch3:
             #   TODO: Resize the input
@@ -840,7 +837,6 @@ class DCGAN(object):
             data_tmp.extend(glob(data_path))
 
         self.data = sorted(data_tmp)
-
 
         if len(self.data) == 0:
             raise Exception("[!] No data found in '" + data_path + "'")

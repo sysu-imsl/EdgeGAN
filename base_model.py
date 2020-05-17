@@ -6,12 +6,15 @@ import tensorflow.contrib.layers as ly
 import networks
 import math
 
+
 def lrelu(x, leak=0.3, name="lrelu"):
     with tf.variable_scope(name):
         f1 = 0.5 * (1 + leak)
         f2 = 0.5 * (1 - leak)
         return f1 * x + f2 * abs(x)
 # new encoder
+
+
 def generator_model(z):
     with tf.variable_scope('G') as scope:
         # TODO: image channel
@@ -31,6 +34,8 @@ def generator_model(z):
     return train
 
 # new disc
+
+
 def discriminator_model(img, reuse=False):
     with tf.variable_scope('D') as scope:
         if reuse:
@@ -48,8 +53,10 @@ def discriminator_model(img, reuse=False):
         img = ly.conv2d(img, num_outputs=size * 8, kernel_size=3,
                         stride=2, activation_fn=lrelu, normalizer_fn=ly.batch_norm)
         # logit = ly.fully_connected(tf.reshape(img, [batch_size, -1]), 1, activation_fn=None)
-        logit = networks._linear(tf.reshape(img, [batch_size, -1]), 1, name='linear')
+        logit = networks._linear(tf.reshape(
+            img, [batch_size, -1]), 1, name='linear')
     return tf.nn.sigmoid(logit), logit
+
 
 class Encoder(object):
     def __init__(self, name, is_train, norm='batch', activation='relu',
@@ -80,15 +87,15 @@ class Encoder(object):
             E = input
             for i, n in enumerate(num_filters):
                 E = networks.conv_block(E, n, 'e_convnet_{}_{}'.format(n, i), 4,
-                                       2, self._is_train, self._reuse,
-                                       norm=self._norm if i else None,
-                                       activation=self._activation)
+                                        2, self._is_train, self._reuse,
+                                        norm=self._norm if i else None,
+                                        activation=self._activation)
             E = networks.flatten(E)
             mu = networks.mlp(E, self._latent_dim, 'FC8_mu', self._is_train,
-                             self._reuse, norm=None, activation=None)
+                              self._reuse, norm=None, activation=None)
             log_sigma = networks.mlp(E, self._latent_dim, 'FC8_sigma',
-                                    self._is_train, self._reuse,
-                                    norm=None, activation=None)
+                                     self._is_train, self._reuse,
+                                     norm=None, activation=None)
 
             z = mu + tf.random_normal(shape=tf.shape(self._latent_dim)) \
                 * tf.exp(log_sigma)
@@ -111,21 +118,21 @@ class Encoder(object):
 
             E = input
             E = networks.conv_block(E, 64, 'e_resnet_{}_{}'.format(64, 0), 4, 2,
-                                   self._is_train, self._reuse, norm=None,
-                                   activation=self._activation, bias=True)
+                                    self._is_train, self._reuse, norm=None,
+                                    activation=self._activation, bias=True)
             for i, n in enumerate(num_filters):
                 E = networks.residual(E, n, 'e_resnet_{}_{}'.format(n, i + 1),
-                                     self._is_train, self._reuse,
-                                     norm=self._norm, bias=True)
+                                      self._is_train, self._reuse,
+                                      norm=self._norm, bias=True)
                 E = tf.nn.avg_pool(E, [1, 2, 2, 1], [1, 2, 2, 1], 'SAME')
             E = networks._activation(E, 'relu')
             E = tf.nn.avg_pool(E, [1, 8, 8, 1], [1, 8, 8, 1], 'SAME')
             E = networks.flatten(E)
             mu = networks.mlp(E, self._latent_dim, 'FC8_mu', self._is_train,
-                             self._reuse, norm=None, activation=None)
+                              self._reuse, norm=None, activation=None)
             log_sigma = networks.mlp(E, self._latent_dim, 'FC8_sigma',
-                                    self._is_train, self._reuse, norm=None,
-                                    activation=None)
+                                     self._is_train, self._reuse, norm=None,
+                                     activation=None)
 
             z = mu + tf.random_normal(shape=tf.shape(self._latent_dim)) \
                 * tf.exp(log_sigma)
@@ -177,50 +184,62 @@ class Generator(object):
     def _convnet(self, z):
         with tf.variable_scope(self.name, reuse=self._reuse):
             s_h, s_w = self._output_height, self._output_width
-            s_h2, s_w2 = self._conv_out_size_same(s_h, 2), self._conv_out_size_same(s_w, 2)
-            s_h4, s_w4 = self._conv_out_size_same(s_h2, 2), self._conv_out_size_same(s_w2, 2)
-            s_h8, s_w8 = self._conv_out_size_same(s_h4, 2), self._conv_out_size_same(s_w4, 2)
-            s_h16, s_w16 = self._conv_out_size_same(s_h8, 2), self._conv_out_size_same(s_w8, 2)
+            s_h2, s_w2 = self._conv_out_size_same(
+                s_h, 2), self._conv_out_size_same(s_w, 2)
+            s_h4, s_w4 = self._conv_out_size_same(
+                s_h2, 2), self._conv_out_size_same(s_w2, 2)
+            s_h8, s_w8 = self._conv_out_size_same(
+                s_h4, 2), self._conv_out_size_same(s_w4, 2)
+            s_h16, s_w16 = self._conv_out_size_same(
+                s_h8, 2), self._conv_out_size_same(s_w8, 2)
 
             # project `z` and reshape
-            z_ = networks._linear(z, self._input_dim*8*s_h16*s_w16, name='g_lin_0')
+            z_ = networks._linear(z, self._input_dim*8 *
+                                  s_h16*s_w16, name='g_lin_0')
             h0 = tf.reshape(z_, [-1, s_h16, s_w16, self._input_dim * 8])
-            h0 = networks._activation(networks._norm(h0, self._norm), self._activation)
+            h0 = networks._activation(networks._norm(
+                h0, self._norm), self._activation)
 
             h1 = networks.deconv_block(h0, [self._batch_size, s_h8, s_w8, self._input_dim*4],
-                                      'g_dconv_1', 5, 2, self._is_train,
-                                      self._reuse, self._norm, self._activation)
+                                       'g_dconv_1', 5, 2, self._is_train,
+                                       self._reuse, self._norm, self._activation)
 
             h2 = networks.deconv_block(h1, [self._batch_size, s_h4, s_w4, self._input_dim*2],
-                                      'g_dconv_2', 5, 2, self._is_train,
-                                      self._reuse, self._norm, self._activation)
+                                       'g_dconv_2', 5, 2, self._is_train,
+                                       self._reuse, self._norm, self._activation)
 
             h3 = networks.deconv_block(h2, [self._batch_size, s_h2, s_w2, self._input_dim],
-                                      'g_dconv_3', 5, 2, self._is_train,
-                                      self._reuse, self._norm, self._activation)
+                                       'g_dconv_3', 5, 2, self._is_train,
+                                       self._reuse, self._norm, self._activation)
 
             h4 = networks.deconv_block(h3, [self._batch_size, s_h, s_w, self._output_dim],
-                                      'g_dconv_4', 5, 2, self._is_train,
-                                      self._reuse, None, None)
+                                       'g_dconv_4', 5, 2, self._is_train,
+                                       self._reuse, None, None)
 
             self._reuse = True
             self.var_list = tf.get_collection(tf.GraphKeys.TRAINABLE_VARIABLES,
                                               self.name)
 
             return tf.nn.tanh(h4)
-    
+
     def _resnet(self, z):
         # return None
         with tf.variable_scope(self.name, reuse=self._reuse):
             s_h, s_w = self._output_height, self._output_width
-            s_h2, s_w2 = self._conv_out_size_same(s_h, 2), self._conv_out_size_same(s_w, 2)
-            s_h4, s_w4 = self._conv_out_size_same(s_h2, 2), self._conv_out_size_same(s_w2, 2)
-            s_h8, s_w8 = self._conv_out_size_same(s_h4, 2), self._conv_out_size_same(s_w4, 2)
-            s_h16, s_w16 = self._conv_out_size_same(s_h8, 2), self._conv_out_size_same(s_w8, 2)
+            s_h2, s_w2 = self._conv_out_size_same(
+                s_h, 2), self._conv_out_size_same(s_w, 2)
+            s_h4, s_w4 = self._conv_out_size_same(
+                s_h2, 2), self._conv_out_size_same(s_w2, 2)
+            s_h8, s_w8 = self._conv_out_size_same(
+                s_h4, 2), self._conv_out_size_same(s_w4, 2)
+            s_h16, s_w16 = self._conv_out_size_same(
+                s_h8, 2), self._conv_out_size_same(s_w8, 2)
 
             # project `z` and reshape
-            z_ = networks._linear(z, self._input_dim*8*s_h16*s_w16, name='g_lin_resnet_0')
-            h0 = networks._activation(networks._norm(z_, self._norm), self._activation)
+            z_ = networks._linear(z, self._input_dim*8 *
+                                  s_h16*s_w16, name='g_lin_resnet_0')
+            h0 = networks._activation(networks._norm(
+                z_, self._norm), self._activation)
             h0 = tf.reshape(h0, [-1, s_h16, s_w16, self._input_dim * 8])
 
             h1 = networks.deresidual2(h0, [self._batch_size, s_h8/2, s_w8/2, self._input_dim*4],
@@ -252,7 +271,7 @@ class Generator(object):
 
 class Discriminator(object):
     def __init__(self, name, is_train, norm='batch', activation='lrelu',
-                num_filters=64, use_resnet=False):
+                 num_filters=64, use_resnet=False):
         print(' [*] Init Discriminator %s', name)
         self._num_filters = num_filters
         self.name = name
@@ -320,7 +339,7 @@ class Discriminator(object):
             D = tf.nn.avg_pool(D, [1, 8, 8, 1], [1, 8, 8, 1], 'SAME')
 
             D = networks._linear(tf.reshape(D, [input.get_shape()[0], -1]), 1,
-                                name='d_linear_resnet_5')
+                                 name='d_linear_resnet_5')
 
             self._reuse = True
             self.var_list = tf.get_collection(tf.GraphKeys.TRAINABLE_VARIABLES,
@@ -328,25 +347,24 @@ class Discriminator(object):
 
             return tf.nn.sigmoid(D), D
 
-
     def _convnet(self, input):
 
         with tf.variable_scope(self.name, reuse=self._reuse):
             D = networks.conv_block(input, self._num_filters, 'd_conv_0', 4, 2,
-                                   self._is_train, self._reuse, norm=None,
-                                   activation=self._activation)
+                                    self._is_train, self._reuse, norm=None,
+                                    activation=self._activation)
             D = networks.conv_block(D, self._num_filters*2, 'd_conv_1', 4, 2,
-                                   self._is_train, self._reuse, self._norm,
-                                   self._activation)
+                                    self._is_train, self._reuse, self._norm,
+                                    self._activation)
             D = networks.conv_block(D, self._num_filters*4, 'd_conv_3', 4, 2,
-                                   self._is_train, self._reuse, self._norm,
-                                   self._activation)
+                                    self._is_train, self._reuse, self._norm,
+                                    self._activation)
             D = networks.conv_block(D, self._num_filters*8, 'd_conv_4', 4, 2,
-                                   self._is_train, self._reuse, self._norm,
-                                   self._activation)
+                                    self._is_train, self._reuse, self._norm,
+                                    self._activation)
 
             D = networks._linear(tf.reshape(D, [input.get_shape()[0], -1]), 1,
-                                name='d_linear_5')
+                                 name='d_linear_5')
 
             # if scale == 0:
             #     D = networks._linear(tf.reshape(D, [input.get_shape()[0], -1]), 1,
@@ -365,7 +383,7 @@ class Discriminator(object):
             return tf.nn.sigmoid(D), D
 
 
-class Discriminator2(object):
+class Classifier(object):
     def __init__(self, name, SPECTRAL_NORM_UPDATE_OPS):
         print(' [*] Init Discriminator %s', name)
         self.name = name
@@ -391,7 +409,8 @@ class Discriminator2(object):
             x_list.append(resized_)
 
             for i in range(5):
-                resized_ = networks.mean_pool(resized_, data_format=data_format)
+                resized_ = networks.mean_pool(
+                    resized_, data_format=data_format)
                 x_list.append(resized_)
             x_list = x_list[::-1]
         else:
@@ -409,10 +428,10 @@ class Discriminator2(object):
                 scope.reuse_variables()
 
             h0 = networks.conv2d2(x_list[-1], 8, kernel_size=7, sn=sn, stride=1, data_format=data_format,
-                        activation_fn=activation_fn_d,
-                        normalizer_fn=normalizer_fn_d,
-                        normalizer_params=normalizer_params_d,
-                        weights_initializer=weight_initializer)
+                                  activation_fn=activation_fn_d,
+                                  normalizer_fn=normalizer_fn_d,
+                                  normalizer_params=normalizer_params_d,
+                                  weights_initializer=weight_initializer)
 
             # Initial memory state
             hidden_state_shape = h0.get_shape().as_list()
@@ -421,65 +440,68 @@ class Discriminator2(object):
             hts_0 = [h0]
             for i in range(1, num_blocks):
                 h0 = tf.tile(tf.get_variable("initial_hidden_state_%d" % i, shape=hidden_state_shape, dtype=tf.float32,
-                                            initializer=tf.zeros_initializer()), [batch_size, 1, 1, 1])
+                                             initializer=tf.zeros_initializer()), [batch_size, 1, 1, 1])
                 hts_0.append(h0)
 
             hts_1 = networks.mru_conv(x_list[-1], hts_0,
-                            size * 2, sn=sn, stride=2, dilate_rate=1,
-                            data_format=data_format, num_blocks=num_blocks,
-                            last_unit=False,
-                            activation_fn=activation_fn_d,
-                            normalizer_fn=normalizer_fn_d,
-                            normalizer_params=normalizer_params_d,
-                            weights_initializer=weight_initializer,
-                            unit_num=1)
+                                      size * 2, sn=sn, stride=2, dilate_rate=1,
+                                      data_format=data_format, num_blocks=num_blocks,
+                                      last_unit=False,
+                                      activation_fn=activation_fn_d,
+                                      normalizer_fn=normalizer_fn_d,
+                                      normalizer_params=normalizer_params_d,
+                                      weights_initializer=weight_initializer,
+                                      unit_num=1)
             hts_2 = networks.mru_conv(x_list[-2], hts_1,
-                            size * 4, sn=sn, stride=2, dilate_rate=1,
-                            data_format=data_format, num_blocks=num_blocks,
-                            last_unit=False,
-                            activation_fn=activation_fn_d,
-                            normalizer_fn=normalizer_fn_d,
-                            normalizer_params=normalizer_params_d,
-                            weights_initializer=weight_initializer,
-                            unit_num=2)
+                                      size * 4, sn=sn, stride=2, dilate_rate=1,
+                                      data_format=data_format, num_blocks=num_blocks,
+                                      last_unit=False,
+                                      activation_fn=activation_fn_d,
+                                      normalizer_fn=normalizer_fn_d,
+                                      normalizer_params=normalizer_params_d,
+                                      weights_initializer=weight_initializer,
+                                      unit_num=2)
             hts_3 = networks.mru_conv(x_list[-3], hts_2,
-                            size * 8, sn=sn, stride=2, dilate_rate=1,
-                            data_format=data_format, num_blocks=num_blocks,
-                            last_unit=False,
-                            activation_fn=activation_fn_d,
-                            normalizer_fn=normalizer_fn_d,
-                            normalizer_params=normalizer_params_d,
-                            weights_initializer=weight_initializer,
-                            unit_num=3)
+                                      size * 8, sn=sn, stride=2, dilate_rate=1,
+                                      data_format=data_format, num_blocks=num_blocks,
+                                      last_unit=False,
+                                      activation_fn=activation_fn_d,
+                                      normalizer_fn=normalizer_fn_d,
+                                      normalizer_params=normalizer_params_d,
+                                      weights_initializer=weight_initializer,
+                                      unit_num=3)
             hts_4 = networks.mru_conv(x_list[-4], hts_3,
-                            size * 12, sn=sn, stride=2, dilate_rate=1,
-                            data_format=data_format, num_blocks=num_blocks,
-                            last_unit=True,
-                            activation_fn=activation_fn_d,
-                            normalizer_fn=normalizer_fn_d,
-                            normalizer_params=normalizer_params_d,
-                            weights_initializer=weight_initializer,
-                            unit_num=4)
+                                      size * 12, sn=sn, stride=2, dilate_rate=1,
+                                      data_format=data_format, num_blocks=num_blocks,
+                                      last_unit=True,
+                                      activation_fn=activation_fn_d,
+                                      normalizer_fn=normalizer_fn_d,
+                                      normalizer_params=normalizer_params_d,
+                                      weights_initializer=weight_initializer,
+                                      unit_num=4)
 
             img = hts_4[-1]
             img_shape = img.get_shape().as_list()
 
             # discriminator end
             disc = networks.conv2d2(img, output_dim, kernel_size=1, sn=sn, stride=1, data_format=data_format,
-                        activation_fn=None, normalizer_fn=None,
-                        weights_initializer=weight_initializer)
+                                    activation_fn=None, normalizer_fn=None,
+                                    weights_initializer=weight_initializer)
 
             # classification end
-            img = tf.reduce_mean(img, axis=(2, 3) if data_format == 'NCHW' else (1, 2))
-            logits = networks.fully_connected(img, num_classes, sn=sn, activation_fn=None, normalizer_fn=None, SPECTRAL_NORM_UPDATE_OPS=self.SPECTRAL_NORM_UPDATE_OPS)
+            img = tf.reduce_mean(img, axis=(
+                2, 3) if data_format == 'NCHW' else (1, 2))
+            logits = networks.fully_connected(img, num_classes, sn=sn, activation_fn=None,
+                                              normalizer_fn=None, SPECTRAL_NORM_UPDATE_OPS=self.SPECTRAL_NORM_UPDATE_OPS)
 
             self.var_list = tf.get_collection(tf.GraphKeys.TRAINABLE_VARIABLES,
                                               self.name)
         return disc, tf.nn.sigmoid(logits), logits
 
+
 class Discriminator_patch(object):
     def __init__(self, name, is_train, norm='batch', activation='lrelu',
-                num_filters=64, use_resnet=False):
+                 num_filters=64, use_resnet=False):
         print(' [*] Init Discriminator %s', name)
         self._num_filters = num_filters
         self.name = name
@@ -501,16 +523,16 @@ class Discriminator_patch(object):
     def _convnet(self, input):
         with tf.variable_scope(self.name, reuse=self._reuse):
             D = networks.conv_block(input, self._num_filters, 'd_patch_conv_0', 4, 2,
-                                   self._is_train, self._reuse, norm=None,
-                                   activation=self._activation)
+                                    self._is_train, self._reuse, norm=None,
+                                    activation=self._activation)
             D = networks.conv_block(D, self._num_filters*2, 'd_patch_conv_1', 4, 1,
-                                   self._is_train, self._reuse, self._norm,
-                                   self._activation)
+                                    self._is_train, self._reuse, self._norm,
+                                    self._activation)
             D = networks.conv_block(D, 1, 'd_patch_conv_2', 4, 1,
-                                   self._is_train, self._reuse, self._norm,
-                                   self._activation)
+                                    self._is_train, self._reuse, self._norm,
+                                    self._activation)
             D = networks._linear(tf.reshape(D, [input.get_shape()[0], -1]), 1,
-                                name='d_patch_linear_3')
+                                 name='d_patch_linear_3')
 
             self._reuse = True
             self.var_list = tf.get_collection(tf.GraphKeys.TRAINABLE_VARIABLES,
@@ -518,9 +540,10 @@ class Discriminator_patch(object):
 
             return tf.nn.sigmoid(D), D
 
+
 class patchGAN_D(object):
     def __init__(self, name, norm='batch',
-                num_filters=64):
+                 num_filters=64):
         print(' [*] Init Discriminator %s', name)
         self._num_filters = num_filters
         self.name = name
@@ -530,9 +553,9 @@ class patchGAN_D(object):
     def __call__(self, discrim_inputs, discrim_targets):
         return self.create_discriminator(discrim_inputs, discrim_targets)
 
-
     def discrim_conv(self, batch_input, out_channels, stride):
-        padded_input = tf.pad(batch_input, [[0, 0], [1, 1], [1, 1], [0, 0]], mode="CONSTANT")
+        padded_input = tf.pad(batch_input, [[0, 0], [1, 1], [
+                              1, 1], [0, 0]], mode="CONSTANT")
         return tf.layers.conv2d(padded_input, out_channels, kernel_size=4, strides=(stride, stride), padding="valid",
                                 kernel_initializer=tf.random_normal_initializer(0, 0.02))
 
@@ -567,14 +590,15 @@ class patchGAN_D(object):
 
         # layer_1: [batch, 256, 256, in_channels * 2] => [batch, 128, 128, ndf]
         with tf.variable_scope(self.name, reuse=self._reuse):
-        # with tf.variable_scope("layer_1"):
+            # with tf.variable_scope("layer_1"):
             convolved = self.discrim_conv(input, self._num_filters, stride=2)
             rectified = self.lrelu(convolved, 0.2)
             layers.append(rectified)
             for i in range(n_layers):
                 out_channels = self._num_filters * min(2**(i+1), 8)
                 stride = 1 if i == n_layers - 1 else 2  # last layer here has stride 1
-                convolved = self.discrim_conv(layers[-1], out_channels, stride=stride)
+                convolved = self.discrim_conv(
+                    layers[-1], out_channels, stride=stride)
                 if self._norm == "batch":
                     normalized = self.batchnorm(convolved)
                 elif self._norm == "instance":
