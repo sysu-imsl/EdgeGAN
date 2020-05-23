@@ -431,6 +431,7 @@ class DCGAN(object):
         def allclose(a, b):
             assert type(a) == type(b)
             if isinstance(a, np.ndarray):
+                print('output error: {}'.format(np.mean(np.abs(a-b))))
                 return np.mean(np.abs(a-b)) < 5e-4
             else:
                 return abs((a-b) / a) < 0.01
@@ -610,10 +611,10 @@ class DCGAN(object):
 
                 restore_outputL, restore_errD_fake, restore_errD_real, restore_errG = checksum_load(
                     "outputL.npy", "errD_fake.pkl", "errD_real.pkl", "errG.pkl",)
-                allclose(restore_outputL, outputL)
-                allclose(restore_errD_fake, errD_fake)
-                allclose(restore_errD_real, errD_real)
-                allclose(restore_errG, errG)
+                assert allclose(restore_outputL, outputL)
+                assert allclose(restore_errD_fake, errD_fake)
+                assert allclose(restore_errD_real, errD_real)
+                assert allclose(restore_errG, errG)
                 print('assert successed!')
                 # self.save(self.saver2, self.config.checkpoint_dir + "/stage1_AddE", self.model_dir, counter)
                 exit()
