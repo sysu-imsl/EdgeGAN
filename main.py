@@ -11,7 +11,7 @@ from numpy.random import seed
 from model import DCGAN
 from utils import makedirs, pp, show_all_variables, to_json
 
-os.environ['CUDA_VISIBLE_DEVICES']='3'
+os.environ['CUDA_VISIBLE_DEVICES']='2'
 
 
 seed(2333)

@@ -280,36 +280,11 @@ class Discriminator(object):
         self._activation = activation
         self._use_resnet = use_resnet
         self._reuse = False
-        # self.scale_num = scale_num
 
     def __call__(self, input, reuse=False):
         if self._use_resnet:
-            # _, h, w, _ = input.get_shape()
-            # image = input
-            # for scale in range(self.scale_num):
-            #     image = tf.image.resize_images(image, [h * pow(2, scale), w * pow(2, scale)], method=2)
-            #     D_logit_tmp, D_result_tmp = self._resnet(image)
-            #     if scale == 0:
-            #         D_logit = D_logit_tmp
-            #         D_result = D_result_tmp
-            #     else:
-            #         D_logit = tf.concat([D_logit, D_logit_tmp], 0)
-            #         D_result = tf.concat([D_result, D_result_tmp], 0)
-            # return D_logit, D_result
             return self._resnet(input)
         else:
-            # _, h, w, _ = input.get_shape()
-            # image = input
-            # for scale in range(self.scale_num):
-            #     image = tf.image.resize_images(image, [h * pow(2, scale), w * pow(2, scale)], method=2)
-            #     D_logit_tmp, D_result_tmp = self._convnet(image, scale)
-            #     if scale == 0:
-            #         D_logit = D_logit_tmp
-            #         D_result = D_result_tmp
-            #     else:
-            #         D_logit = tf.concat([D_logit, D_logit_tmp], 0)
-            #         D_result = tf.concat([D_result, D_result_tmp], 0)
-            # return D_logit, D_result
             return self._convnet(input)
 
     def _resnet(self, input):
@@ -365,16 +340,6 @@ class Discriminator(object):
 
             D = networks._linear(tf.reshape(D, [input.get_shape()[0], -1]), 1,
                                  name='d_linear_5')
-
-            # if scale == 0:
-            #     D = networks._linear(tf.reshape(D, [input.get_shape()[0], -1]), 1,
-            #                         name='d_linear_5')
-            # elif scale == 1:
-            #     D = networks._linear(tf.reshape(D, [input.get_shape()[0], -1]), 1,
-            #                          name='d_linear_6')
-            # elif scale == 2:
-            #     D = networks._linear(tf.reshape(D, [input.get_shape()[0], -1]), 1,
-            #                          name='d_linear_7')
 
             self._reuse = True
             self.var_list = tf.get_collection(tf.GraphKeys.TRAINABLE_VARIABLES,
@@ -585,12 +550,9 @@ class patchGAN_D(object):
         n_layers = 3
         layers = []
 
-        # 2x [batch, height, width, in_channels] => [batch, height, width, in_channels * 2]
         input = tf.concat([discrim_inputs, discrim_targets], axis=3)
 
-        # layer_1: [batch, 256, 256, in_channels * 2] => [batch, 128, 128, ndf]
         with tf.variable_scope(self.name, reuse=self._reuse):
-            # with tf.variable_scope("layer_1"):
             convolved = self.discrim_conv(input, self._num_filters, stride=2)
             rectified = self.lrelu(convolved, 0.2)
             layers.append(rectified)
@@ -606,31 +568,11 @@ class patchGAN_D(object):
                 rectified = self.lrelu(normalized, 0.2)
                 layers.append(rectified)
 
-            # layer_5: [batch, 31, 31, ndf * 8] => [batch, 30, 30, 1]
-            # with tf.variable_scope("layer_%d" % (len(layers) + 1)):
             convolved = self.discrim_conv(rectified, out_channels=1, stride=1)
             output = tf.sigmoid(convolved)
             layers.append(output)
-        # layer_2: [batch, 128, 128, ndf] => [batch, 64, 64, ndf * 2]
-        # layer_3: [batch, 64, 64, ndf * 2] => [batch, 32, 32, ndf * 4]
-        # layer_4: [batch, 32, 32, ndf * 4] => [batch, 31, 31, ndf * 8]
-        # for i in range(n_layers):
-        #     with tf.variable_scope("layer_%d" % (len(layers) + 1)):
-        #         out_channels = self._num_filters * min(2**(i+1), 8)
-        #         stride = 1 if i == n_layers - 1 else 2  # last layer here has stride 1
-        #         convolved = self.discrim_conv(layers[-1], out_channels, stride=stride)
-        #         normalized = self.batchnorm(convolved)
-        #         rectified = self.lrelu(normalized, 0.2)
-        #         layers.append(rectified)
-        #
-        # # layer_5: [batch, 31, 31, ndf * 8] => [batch, 30, 30, 1]
-        # with tf.variable_scope("layer_%d" % (len(layers) + 1)):
-        #     convolved = self.discrim_conv(rectified, out_channels=1, stride=1)
-        #     output = tf.sigmoid(convolved)
-        #     layers.append(output)
+
         self._reuse = True
         self.var_list = tf.get_collection(tf.GraphKeys.TRAINABLE_VARIABLES,
                                           self.name)
-        # test = layers[-1]
-        # return layers[-1], convolved
         return layers[-1], convolved
