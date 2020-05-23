@@ -164,10 +164,7 @@ class DCGAN(object):
             self.z = tf.placeholder(
                 tf.float32, [None, self.z_dim], name='z')
 
-    def build_model1(self):
-        self.build_networks()
-        self.define_inputs()
-
+    def forward(self):
         if self.config.if_focal_loss:
             self.G1 = self.generator1(self.z_onehot)
             self.G2 = self.generator2(self.z_onehot)
@@ -210,7 +207,6 @@ class DCGAN(object):
 
         if self.config.use_D_patch3:
             #   TODO: Resize the input
-
             left_i = self.inputs[:, :, 0:int(self.config.output_width / 2), :]
             left_i = tf.image.resize_images(left_i, [self.config.sizeOfIn_patch3, self.config.sizeOfIn_patch3],
                                             method=2)
@@ -232,7 +228,12 @@ class DCGAN(object):
             self.patch3_D_, self.patch3_D_logits_ = self.discriminator_patch3(
                 self.resized_G1_p3, reuse=True)
 
-        z_recon, z_recon_mu, z_recon_log_sigma = self.encoder(self.G1)
+        self.z_recon, _, _ = self.encoder(self.G1)
+
+    def build_model1(self):
+        self.build_networks()
+        self.define_inputs()
+        self.forward()
 
         # define loss
 
@@ -327,12 +328,12 @@ class DCGAN(object):
 
         if self.config.if_focal_loss:
             self.zl_loss = tf.reduce_mean(
-                tf.abs(self.z[:, 0:self.z_dim] - z_recon)) * self.config.stage1_zl_loss
+                tf.abs(self.z[:, 0:self.z_dim] - self.z_recon)) * self.config.stage1_zl_loss
 
             self.class_loss = 0
         else:
             self.zl_loss = tf.reduce_mean(
-                tf.abs(self.z - z_recon)) * self.config.stage1_zl_loss
+                tf.abs(self.z - self.z_recon)) * self.config.stage1_zl_loss
             self.class_loss = 0
 
         # optimizer
