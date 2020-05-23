@@ -27,6 +27,11 @@ def channel_first(input):
     return tf.transpose(input, [0, 3, 1, 2])
 
 
+def random_blend(a, b, batchsize):
+    alpha_dist = tf.contrib.distributions.Uniform(low=0., high=1.)
+    alpha = alpha_dist.sample((batchsize, 1, 1, 1))
+    return b + alpha * (a - b)
+
 class DCGAN(object):
     def __init__(self, sess, config,
                  z_dim=100, gf_dim=64, df_dim=64,
@@ -248,9 +253,10 @@ class DCGAN(object):
 
         self.d_loss = tf.reduce_mean(self.D_logits_ - self.D_logits)
 
-        alpha_dist = tf.contrib.distributions.Uniform(low=0., high=1.)
-        alpha = alpha_dist.sample((self.config.batch_size, 1, 1, 1))
-        interpolated = self.inputs + alpha*(self.G_all-self.inputs)
+        # alpha_dist = tf.contrib.distributions.Uniform(low=0., high=1.)
+        # alpha = alpha_dist.sample((self.config.batch_size, 1, 1, 1))
+        # interpolated = self.inputs + alpha*(self.G_all-self.inputs)
+        interpolated = random_blend(self.G_all, self.inputs, self.config.batch_size)
         inte_logit = self.discriminator(interpolated, reuse=True)
         gradients = tf.gradients(inte_logit, [interpolated, ])[0]
         grad_l2 = tf.sqrt(tf.reduce_sum(tf.square(gradients), axis=[1, 2, 3]))
