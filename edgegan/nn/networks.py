@@ -8,6 +8,10 @@ import tensorflow.contrib.layers as ly
 import warnings
 import functools
 from edgegan.nn import activation_fn as _activation
+from edgegan.nn import norm as _norm
+from edgegan.nn import conv2d as _conv2d
+from edgegan.nn import deconv2d as _deconv2d
+from edgegan.nn import linear as _linear
 
 try:
     image_summary = tf.image_summary
@@ -28,109 +32,6 @@ if "concat_v2" in dir(tf):
 else:
     def concat(tensors, axis, *args, **kwargs):
         return tf.concat(tensors, axis, *args, **kwargs)
-
-
-def _norm(input, is_train, norm='batch',
-          epsilon=1e-5, momentum=0.9, name=None):
-    assert norm in ['instance', 'batch', None]
-    if norm == 'instance':
-        with tf.variable_scope(name or 'instance_norm'):
-            eps = 1e-5
-            mean, sigma = tf.nn.moments(input, [1, 2], keep_dims=True)
-            normalized = (input - mean) / (tf.sqrt(sigma) + eps)
-            out = normalized
-    elif norm == 'batch':
-        with tf.variable_scope(name or 'batch_norm'):
-            out = tf.contrib.layers.batch_norm(input,
-                                               decay=momentum, center=True,
-                                               updates_collections=None,
-                                               epsilon=epsilon,
-                                               scale=True, is_training=True)
-    else:
-        out = input
-
-    return out
-
-
-def conv_cond_concat(x, y):
-    """Concatenate conditioning vector on feature map axis."""
-    x_shapes = x.get_shape()
-    y_shapes = y.get_shape()
-    return concat(
-        [x, y * tf.ones([x_shapes[0], x_shapes[1], x_shapes[2], y_shapes[3]])],
-        3)
-
-
-def _conv2d(input, output_dim, filter_size=5, stride=2, reuse=False,
-            pad='SAME', bias=True, name=None):
-    stride_shape = [1, stride, stride, 1]
-    filter_shape = [filter_size, filter_size, input.get_shape()[-1],
-                    output_dim]
-
-    with tf.variable_scope(name or 'conv2d', reuse=reuse):
-        w = tf.get_variable('w', filter_shape,
-                            initializer=tf.truncated_normal_initializer(
-                                stddev=0.02))
-        if pad == 'REFLECT':
-            p = (filter_size - 1) // 2
-            x = tf.pad(input, [[0, 0], [p, p], [p, p], [0, 0]], 'REFLECT')
-            conv = tf.nn.conv2d(x, w, stride_shape, padding='VALID')
-        else:
-            assert pad in ['SAME', 'VALID']
-            conv = tf.nn.conv2d(input, w, stride_shape, padding=pad)
-
-        if bias:
-            b = tf.get_variable('b', [output_dim],
-                                initializer=tf.constant_initializer(0.0))
-            conv = tf.reshape(tf.nn.bias_add(conv, b), conv.get_shape())
-
-        return conv
-
-
-def _deconv2d(input_, output_shape, with_w=False,
-              filter_size=5, stride=2, reuse=False, name=None):
-    with tf.variable_scope(name or 'deconv2d', reuse=reuse):
-        stride_shape = [1, stride, stride, 1]
-        filter_shape = [filter_size, filter_size, output_shape[-1],
-                        input_.get_shape()[-1]]
-
-        w = tf.get_variable('w', filter_shape,
-                            initializer=tf.random_normal_initializer(
-                                stddev=0.02))
-        deconv = tf.nn.conv2d_transpose(
-            input_, w, output_shape=output_shape, strides=stride_shape)
-        b = tf.get_variable('b', [output_shape[-1]],
-                            initializer=tf.constant_initializer(0.0))
-        deconv = tf.reshape(tf.nn.bias_add(deconv, b), deconv.get_shape())
-
-        if with_w:
-            return deconv, w, b
-        else:
-            return deconv
-
-
-def _linear(input_, output_size, with_w=False, reuse=False, name=None):
-    shape = input_.get_shape().as_list()
-
-    with tf.variable_scope(name or "linear", reuse=reuse):
-        try:
-            matrix = tf.get_variable(
-                "Matrix", [shape[1], output_size],
-                tf.float32,
-                tf.random_normal_initializer(stddev=0.02))
-        except ValueError as err:
-            msg = "NOTE: Usually, this is due to an issue with the image \
-dimensions.  Did you correctly set '--crop' or '--input_height' or \
-'--output_height'?"
-            err.args = err.args + (msg, )
-            raise
-        bias = tf.get_variable(
-            "bias", [output_size],
-            initializer=tf.constant_initializer(0.0))
-        if with_w:
-            return tf.matmul(input_, matrix) + bias, matrix, bias
-        else:
-            return tf.matmul(input_, matrix) + bias
 
 
 def conv_block(input, num_filters, name, k_size, stride, is_train, reuse, norm,
