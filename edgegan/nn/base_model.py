@@ -8,57 +8,6 @@ import math
 from edgegan import nn
 
 
-def lrelu(x, leak=0.3, name="lrelu"):
-    with tf.variable_scope(name):
-        f1 = 0.5 * (1 + leak)
-        f2 = 0.5 * (1 - leak)
-        return f1 * x + f2 * abs(x)
-# new encoder
-
-
-def generator_model(z):
-    with tf.variable_scope('G') as scope:
-        # TODO: image channel
-        channel = 3
-
-        train = ly.fully_connected(
-            z, 4 * 4 * 512, activation_fn=lrelu, normalizer_fn=ly.batch_norm)
-        train = tf.reshape(train, (-1, 4, 4, 512))
-        train = ly.conv2d_transpose(train, 256, 3, stride=2,
-                                    activation_fn=tf.nn.relu, normalizer_fn=ly.batch_norm, padding='SAME', weights_initializer=tf.random_normal_initializer(0, 0.02))
-        train = ly.conv2d_transpose(train, 128, 3, stride=2,
-                                    activation_fn=tf.nn.relu, normalizer_fn=ly.batch_norm, padding='SAME', weights_initializer=tf.random_normal_initializer(0, 0.02))
-        train = ly.conv2d_transpose(train, 64, 3, stride=2,
-                                    activation_fn=tf.nn.relu, normalizer_fn=ly.batch_norm, padding='SAME', weights_initializer=tf.random_normal_initializer(0, 0.02))
-        train = ly.conv2d_transpose(train, channel, 3, stride=1,
-                                    activation_fn=tf.nn.tanh, padding='SAME', weights_initializer=tf.random_normal_initializer(0, 0.02))
-    return train
-
-# new disc
-
-
-def discriminator_model(img, reuse=False):
-    with tf.variable_scope('D') as scope:
-        if reuse:
-            scope.reuse_variables()
-        # TODO: image size
-        size = 64
-        batch_size = 64
-
-        img = ly.conv2d(img, num_outputs=size, kernel_size=3,
-                        stride=2, activation_fn=lrelu)
-        img = ly.conv2d(img, num_outputs=size * 2, kernel_size=3,
-                        stride=2, activation_fn=lrelu, normalizer_fn=ly.batch_norm)
-        img = ly.conv2d(img, num_outputs=size * 4, kernel_size=3,
-                        stride=2, activation_fn=lrelu, normalizer_fn=ly.batch_norm)
-        img = ly.conv2d(img, num_outputs=size * 8, kernel_size=3,
-                        stride=2, activation_fn=lrelu, normalizer_fn=ly.batch_norm)
-        # logit = ly.fully_connected(tf.reshape(img, [batch_size, -1]), 1, activation_fn=None)
-        logit = networks._linear(tf.reshape(
-            img, [batch_size, -1]), 1, name='linear')
-    return tf.nn.sigmoid(logit), logit
-
-
 class Encoder(object):
     def __init__(self, name, is_train, norm='batch', activation='relu',
                  image_size=128, latent_dim=8,
@@ -100,11 +49,6 @@ class Encoder(object):
 
             z = mu + tf.random_normal(shape=tf.shape(self._latent_dim)) \
                 * tf.exp(log_sigma)
-            # z = mu + tf.random_uniform(shape=tf.shape(self._latent_dim)) \
-            #       * tf.exp(log_sigma)
-            # matrix_min = tf.reduce_min(z)
-            # matrix_max = tf.reduce_max(z)
-            # z = (z - matrix_min) * 2 / (matrix_max - matrix_min) - 1
 
             self._reuse = True
             self.var_list = tf.get_collection(tf.GraphKeys.TRAINABLE_VARIABLES,
@@ -137,18 +81,6 @@ class Encoder(object):
 
             z = mu + tf.random_normal(shape=tf.shape(self._latent_dim)) \
                 * tf.exp(log_sigma)
-
-            # z = mu + tf.random_uniform(shape=tf.shape(self._latent_dim)) \
-            #     * tf.exp(log_sigma)
-
-            # z = networks._norm(z, self._is_train, norm=self._norm)
-
-            # matrix_min = tf.reduce_min(z)
-            # matrix_max = tf.reduce_max(z)
-            # z = (z - matrix_min)*2/(matrix_max-matrix_min) -1
-
-            # z = networks.mlp(E, self._latent_dim, 'mlp', self._is_train,
-            #                  self._reuse, norm=None, activation=None)
 
             self._reuse = True
             self.var_list = tf.get_collection(tf.GraphKeys.TRAINABLE_VARIABLES,

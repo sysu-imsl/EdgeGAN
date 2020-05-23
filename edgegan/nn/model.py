@@ -134,13 +134,10 @@ class DCGAN(object):
                 'D2', self.config.SPECTRAL_NORM_UPDATE_OPS)
 
         # origin discrminator
-        if self.config.model is "old":
-            self.discriminator = Discriminator('D', is_train=True,
-                                               norm=self.config.D_norm,
-                                               num_filters=self.df_dim,
-                                               use_resnet=self.config.if_resnet_d)
-        else:
-            self.discriminator = base_model.discriminator_model
+        self.discriminator = Discriminator('D', is_train=True,
+                                            norm=self.config.D_norm,
+                                            num_filters=self.df_dim,
+                                            use_resnet=self.config.if_resnet_d)
 
         # multi-scale discriminators
 

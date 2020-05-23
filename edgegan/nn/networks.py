@@ -341,8 +341,6 @@ def mru_conv(x, ht, filter_depth, sn, stride=2, dilate_rate=1,
     if dilate_rate != 1:
         stride = 1
 
-    # cell_block = mru_conv_block
-    # cell_block = mru_conv_block_v2
     cell_block = functools.partial(mru_conv_block_v3, deconv=False)
 
     hts_new = []
