@@ -23,6 +23,10 @@ reload(sys)
 sys.setdefaultencoding('utf8')
 
 
+def channel_first(input):
+    return tf.transpose(input, [0, 3, 1, 2])
+
+
 class DCGAN(object):
     def __init__(self, sess, config,
                  z_dim=100, gf_dim=64, df_dim=64,
@@ -144,22 +148,24 @@ class DCGAN(object):
                                use_resnet=self.config.if_resnet_e)
 
     def define_inputs(self):
-        if self.config.crop:
-            self.image_dims = [self.config.output_height, self.config.output_width,
-                               self.c_dim]
-        else:
-            self.image_dims = [self.config.input_height, self.config.input_width,
-                               self.c_dim]
+        image_size = (
+            [self.config.output_height, self.config.output_width, ] if self.config.crop
+            else [self.config.input_height, self.config.input_width, ]
+        )
+        self.image_dims = image_size + [self.c_dim]
         self.inputs = tf.placeholder(
             tf.float32, [self.config.batch_size] + self.image_dims, name='real_images')
 
         if self.config.if_focal_loss:
             self.z = tf.placeholder(
                 tf.float32, [None, self.z_dim+1], name='z')
-            self.class_onehot = tf.one_hot(tf.cast(
-                self.z[:, -1], dtype=tf.int32), self.config.num_classes, on_value=1., off_value=0., dtype=tf.float32)
+            class_onehot = tf.one_hot(
+                tf.cast(self.z[:, -1], dtype=tf.int32),
+                self.config.num_classes,
+                on_value=1., off_value=0., dtype=tf.float32
+            )
             self.z_onehot = tf.concat(
-                [self.z[:, 0:self.z_dim], self.class_onehot], 1)
+                [self.z[:, 0:self.z_dim], class_onehot], 1)
         else:
             self.z = tf.placeholder(
                 tf.float32, [None, self.z_dim], name='z')
@@ -171,18 +177,20 @@ class DCGAN(object):
         else:
             self.G1 = self.generator1(self.z)
             self.G2 = self.generator2(self.z)
+
         if self.config.if_focal_loss:
-            _, _, self.D_logits2 = self.classifier(
-                tf.transpose(self.inputs[:, :, int(
-                    self.image_dims[1]/2):, :], [0, 3, 1, 2]),
-                num_classes=self.config.num_classes,
-                labels=self.z[:, -1],
-                reuse=False, data_format='NCHW')
-            _, _, self.D_logits2_ = self.classifier(
-                tf.transpose(self.G2, [0, 3, 1, 2]),
-                num_classes=self.config.num_classes,
-                labels=self.z[:, -1],
-                reuse=True, data_format='NCHW')
+            def classify(inputs, reuse):
+                _, _, result = self.classifier(
+                    channel_first(inputs),
+                    num_classes=self.config.num_classes,
+                    labels=self.z[:, -1],
+                    reuse=reuse, data_format='NCHW'
+                )
+                return result
+
+            self.D_logits2 = classify(
+                self.inputs[:, :, int(self.image_dims[1]/2):, :], reuse=False)
+            self.D_logits2_ = classify(self.G2, reuse=True)
 
         self.D, self.D_logits = self.discriminator(self.inputs)
         self.G_all = tf.concat([self.G1, self.G2], 2)
