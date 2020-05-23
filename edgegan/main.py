@@ -8,8 +8,8 @@ import scipy.misc
 import tensorflow as tf
 from numpy.random import seed
 
-from model import DCGAN
-from utils import makedirs, pp, show_all_variables, to_json
+from edgegan.nn import DCGAN
+from edgegan.utils import makedirs, pp, show_all_variables, to_json
 
 os.environ['CUDA_VISIBLE_DEVICES']='0'
 

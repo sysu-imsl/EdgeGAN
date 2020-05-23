@@ -11,10 +11,10 @@ import tensorflow as tf
 import numpy as np
 from six.moves import xrange
 
-from base_model import Encoder, Generator, Discriminator, Classifier, Discriminator_patch, patchGAN_D
-import base_model
-import networks
-import utils
+from edgegan.nn.base_model import Encoder, Generator, Discriminator, Classifier, Discriminator_patch, patchGAN_D
+from edgegan.nn import base_model
+from edgegan.nn import networks
+from edgegan import utils
 
 import sys
 import pickle
@@ -325,7 +325,8 @@ class DCGAN(object):
             self.loss_g_ac = 0
             self.loss_d_ac = 0
 
-        z_target = self.z[:, :self.z_dim] if self.config.if_focal_loss else self.z
+        z_target = self.z[:,
+                          :self.z_dim] if self.config.if_focal_loss else self.z
         self.zl_loss = l1loss(
             z_target, self.z_recon,
             weight=self.config.stage1_zl_loss
