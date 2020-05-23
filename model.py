@@ -267,12 +267,6 @@ class DCGAN(object):
         self.z_recon, _, _ = self.encoder(self.G1)
 
     def define_losses(self):
-        self.d_loss_patchGAN = 0
-        self.g_loss_patchGAN = 0
-
-        self.d_loss_real = 0.0
-        self.d_loss_fake = 0.0
-
         self.d_loss = (
             discriminator_ganloss(self.D_logits_, self.D_logits) +
             penalty(
@@ -286,24 +280,33 @@ class DCGAN(object):
         self.g_loss_patch = 0
 
         if self.config.use_D_patch2:
-            self.d_loss_patch2 = tf.reduce_mean(
-                self.patch2_D_logits_ - self.patch2_D_logits)
+            self.d_loss_patch2 = (
+                discriminator_ganloss(self.patch2_D_logits_, self.patch2_D_logits) +
+                penalty(
+                    self.resized_G2_p2, self.resized_inputs, self.discriminator_patch2,
+                    self.config.batch_size, self.config.lambda_gp
+                )
+            )
+            self.g_loss_patch2 = generator_ganloss(self.patch2_D_logits_)
 
-            alpha_dist = tf.contrib.distributions.Uniform(low=0., high=1.)
-            alpha = alpha_dist.sample((self.config.batch_size, 1, 1, 1))
+            # self.d_loss_patch2 = tf.reduce_mean(
+            #     self.patch2_D_logits_ - self.patch2_D_logits)
 
-            # TODO: Not know whtether it's true
-            interpolated = self.resized_inputs + alpha * \
-                (self.resized_G2_p2 - self.resized_inputs)
+            # alpha_dist = tf.contrib.distributions.Uniform(low=0., high=1.)
+            # alpha = alpha_dist.sample((self.config.batch_size, 1, 1, 1))
 
-            inte_logit = self.discriminator_patch2(interpolated, reuse=True)
-            gradients = tf.gradients(inte_logit, [interpolated, ])[0]
-            grad_l2 = tf.sqrt(tf.reduce_sum(
-                tf.square(gradients), axis=[1, 2, 3]))
-            gradient_penalty = tf.reduce_mean((grad_l2 - 1) ** 2)
+            # # TODO: Not know whtether it's true
+            # interpolated = self.resized_inputs + alpha * \
+            #     (self.resized_G2_p2 - self.resized_inputs)
 
-            self.d_loss_patch2 += self.config.lambda_gp * gradient_penalty
-            self.g_loss_patch2 = tf.reduce_mean(self.patch2_D_logits_ * -1)
+            # inte_logit = self.discriminator_patch2(interpolated, reuse=True)
+            # gradients = tf.gradients(inte_logit, [interpolated, ])[0]
+            # grad_l2 = tf.sqrt(tf.reduce_sum(
+            #     tf.square(gradients), axis=[1, 2, 3]))
+            # gradient_penalty = tf.reduce_mean((grad_l2 - 1) ** 2)
+
+            # self.d_loss_patch2 += self.config.lambda_gp * gradient_penalty
+            # self.g_loss_patch2 = tf.reduce_mean(self.patch2_D_logits_ * -1)
         else:
             self.d_loss_patch2 = 0
             self.g_loss_patch2 = 0
@@ -335,10 +338,9 @@ class DCGAN(object):
             self.g_loss_patch3 = 0
 
         self.g1_loss = self.config.D_origin_loss * self.g_loss + self.config.D_patch3_loss * \
-            self.g_loss_patch3 + self.d_loss_patchGAN * self.config.D_patchGAN_loss
+            self.g_loss_patch3
         self.g2_loss = self.config.D_origin_loss * self.g_loss + self.config.D_patch_loss * self.g_loss_patch \
-            + self.config.D_patch2_loss * self.g_loss_patch2 + self.d_loss_patchGAN * \
-            self.config.D_patchGAN_loss + self.config.D_patch2_2_loss * self.g_loss_patch2_2
+            + self.config.D_patch2_loss * self.g_loss_patch2 + self.config.D_patch2_2_loss * self.g_loss_patch2_2
 
         # focal loss
         if self.config.if_focal_loss:
@@ -369,11 +371,6 @@ class DCGAN(object):
         self.G1_sum = networks.image_summary("G1", self.G1)
         self.G2_sum = networks.image_summary("G2", self.G2)
 
-        self.d_loss_real_sum = networks.scalar_summary(
-            "d_loss_real", self.d_loss_real)
-        self.d_loss_fake_sum = networks.scalar_summary(
-            "d_loss_fake", self.d_loss_fake)
-
         self.g1_loss_sum = networks.scalar_summary("g1_loss", self.g1_loss)
         self.g2_loss_sum = networks.scalar_summary("g2_loss", self.g2_loss)
 
@@ -392,10 +389,10 @@ class DCGAN(object):
             "loss_d_ac", self.loss_d_ac)
 
         self.g_sum = networks.merge_summary([self.z_sum, self.G1_sum, self.G2_sum,
-                                             self.d_loss_fake_sum, self.zl_loss_sum, self.g_loss_sum,
+                                             self.zl_loss_sum, self.g_loss_sum,
                                              self.class_loss_sum, self.loss_g_ac_sum, self.g1_loss_sum, self.g2_loss_sum])
         self.d_sum = networks.merge_summary([self.z_sum, self.inputs_sum,
-                                             self.d_loss_real_sum, self.d_loss_sum, self.loss_d_ac_sum])
+                                             self.d_loss_sum, self.loss_d_ac_sum])
         self.d_sum_tmp = networks.histogram_summary("d", self.D)
         self.d__sum_tmp = networks.histogram_summary("d_", self.D_)
         self.g_sum = networks.merge_summary([self.g_sum, self.d__sum_tmp])
