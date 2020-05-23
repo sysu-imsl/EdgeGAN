@@ -7,6 +7,7 @@ from tensorflow.python.ops import init_ops
 import tensorflow.contrib.layers as ly
 import warnings
 import functools
+from edgegan.nn import activation_fn as _activation
 
 try:
     image_summary = tf.image_summary
@@ -49,20 +50,6 @@ def _norm(input, is_train, norm='batch',
         out = input
 
     return out
-
-
-def _activation(input, name='lrelu'):
-    assert name in ['relu', 'lrelu', 'tanh', 'sigmoid', None]
-    if name == 'relu':
-        return tf.nn.relu(input)
-    elif name == 'lrelu':
-        return tf.maximum(input, 0.2*input)
-    elif name == 'tanh':
-        return tf.tanh(input)
-    elif name == 'sigmoid':
-        return tf.sigmoid(input)
-    else:
-        return input
 
 
 def conv_cond_concat(x, y):
@@ -174,7 +161,7 @@ def residual(input, num_filters, name, is_train, reuse, norm, pad='REFLECT',
 
 
 def residual2(input, num_filters, name, k_size, stride, is_train, reuse, norm,
-               activation, pad='SAME', bias=False):
+              activation, pad='SAME', bias=False):
     with tf.variable_scope(name, reuse=reuse):
         with tf.variable_scope('res1', reuse=reuse):
             out = _conv2d(input, num_filters, k_size, stride, reuse, pad, bias)
@@ -189,6 +176,7 @@ def residual2(input, num_filters, name, k_size, stride, is_train, reuse, norm,
             shortcut = _conv2d(input, num_filters, 1, 1, reuse, pad, bias)
 
         return _activation(shortcut + out)
+
 
 def deresidual2(input, num_filters, name, k_size, stride, is_train, reuse,
                 norm, activation, with_w=False):
@@ -244,16 +232,12 @@ def sigmoid_cross_entropy_with_logits(x, y):
         return tf.nn.sigmoid_cross_entropy_with_logits(logits=x, targets=y)
 
 
-
-
-
-
-
 def mean_pool(input, data_format):
     assert data_format == 'NCHW'
     output = tf.add_n(
         [input[:, :, ::2, ::2], input[:, :, 1::2, ::2], input[:, :, ::2, 1::2], input[:, :, 1::2, 1::2]]) / 4.
     return output
+
 
 def upsample(input, data_format):
     assert data_format == 'NCHW'
@@ -263,6 +247,7 @@ def upsample(input, data_format):
     output = tf.transpose(output, [0, 3, 1, 2])
     return output
 
+
 def upsample2(input, data_format):
     assert data_format == 'NHWC'
     output = tf.transpose(input, [0, 3, 1, 2])
@@ -271,13 +256,15 @@ def upsample2(input, data_format):
     output = tf.depth_to_space(output, 2)
     return output
 
+
 def mru_conv_block_v3(inp, ht, filter_depth, sn,
                       stride, dilate=1,
                       activation_fn=tf.nn.relu,
                       normalizer_fn=None,
                       normalizer_params=None,
                       weights_initializer=ly.xavier_initializer_conv2d(),
-                      biases_initializer_mask=tf.constant_initializer(value=0.5),
+                      biases_initializer_mask=tf.constant_initializer(
+                          value=0.5),
                       biases_initializer_h=tf.constant_initializer(value=-1),
                       data_format='NCHW',
                       weight_decay_rate=1e-8,
@@ -299,7 +286,8 @@ def mru_conv_block_v3(inp, ht, filter_depth, sn,
     channel_index = 1 if data_format == 'NCHW' else 3
     reduce_dim = [2, 3] if data_format == 'NCHW' else [1, 2]
     hidden_depth = ht.get_shape().as_list()[channel_index]
-    regularizer = ly.l2_regularizer(weight_decay_rate) if weight_decay_rate > 0 else None
+    regularizer = ly.l2_regularizer(
+        weight_decay_rate) if weight_decay_rate > 0 else None
     weights_initializer_mask = weights_initializer
     biases_initializer = tf.zeros_initializer()
 
@@ -327,22 +315,22 @@ def mru_conv_block_v3(inp, ht, filter_depth, sn,
 
     # update gate
     rg = conv2d2(full_inp, hidden_depth, 3, sn=sn, stride=1, rate=dilate,
-                data_format=data_format, activation_fn=lrelu,
-                normalizer_fn=mask_normalizer_fn, normalizer_params=mask_normalizer_params,
-                weights_regularizer=regularizer,
-                weights_initializer=weights_initializer_mask,
-                biases_initializer=biases_initializer_mask,
-                scope='update_gate')
+                 data_format=data_format, activation_fn=lrelu,
+                 normalizer_fn=mask_normalizer_fn, normalizer_params=mask_normalizer_params,
+                 weights_regularizer=regularizer,
+                 weights_initializer=weights_initializer_mask,
+                 biases_initializer=biases_initializer_mask,
+                 scope='update_gate')
     rg = (rg - tf.reduce_min(rg, axis=reduce_dim, keep_dims=True)) / (
-            tf.reduce_max(rg, axis=reduce_dim, keep_dims=True) - tf.reduce_min(rg, axis=reduce_dim, keep_dims=True))
+        tf.reduce_max(rg, axis=reduce_dim, keep_dims=True) - tf.reduce_min(rg, axis=reduce_dim, keep_dims=True))
 
     # Input Image conv
     img_new = conv2d2(inp, hidden_depth, 3, sn=sn, stride=1, rate=dilate,
-                     data_format=data_format, activation_fn=None,
-                     normalizer_fn=None, normalizer_params=None,
-                     biases_initializer=biases_initializer,
-                     weights_regularizer=regularizer,
-                     weights_initializer=weights_initializer)
+                      data_format=data_format, activation_fn=None,
+                      normalizer_fn=None, normalizer_params=None,
+                      biases_initializer=biases_initializer,
+                      weights_regularizer=regularizer,
+                      weights_initializer=weights_initializer)
 
     ht_plus = ht + rg * img_new
     with tf.variable_scope('norm_activation_merge_1') as sc:
@@ -350,27 +338,27 @@ def mru_conv_block_v3(inp, ht, filter_depth, sn,
 
     # new hidden state
     h_new = conv2d2(ht_new_in, filter_depth, 3, sn=sn, stride=1, rate=dilate,
-                   data_format=data_format, activation_fn=activation_fn,
-                   normalizer_fn=normalizer_fn, normalizer_params=normalizer_params,
-                   biases_initializer=biases_initializer,
-                   weights_regularizer=regularizer,
-                   weights_initializer=weights_initializer)
+                    data_format=data_format, activation_fn=activation_fn,
+                    normalizer_fn=normalizer_fn, normalizer_params=normalizer_params,
+                    biases_initializer=biases_initializer,
+                    weights_regularizer=regularizer,
+                    weights_initializer=weights_initializer)
     h_new = conv2d2(h_new, filter_depth, 3, sn=sn, stride=1, rate=dilate,
-                   data_format=data_format, activation_fn=None,
-                   normalizer_fn=None, normalizer_params=None,
-                   biases_initializer=biases_initializer,
-                   weights_regularizer=regularizer,
-                   weights_initializer=weights_initializer)
+                    data_format=data_format, activation_fn=None,
+                    normalizer_fn=None, normalizer_params=None,
+                    biases_initializer=biases_initializer,
+                    weights_regularizer=regularizer,
+                    weights_initializer=weights_initializer)
 
     # new hidden state out
     # linear project for filter depth
     if ht.get_shape().as_list()[channel_index] != filter_depth:
         ht_orig = conv2d2(ht_orig, filter_depth, 1, sn=sn, stride=1,
-                         data_format=data_format, activation_fn=None,
-                         normalizer_fn=None, normalizer_params=None,
-                         biases_initializer=biases_initializer,
-                         weights_regularizer=regularizer,
-                         weights_initializer=weights_initializer)
+                          data_format=data_format, activation_fn=None,
+                          normalizer_fn=None, normalizer_params=None,
+                          biases_initializer=biases_initializer,
+                          weights_regularizer=regularizer,
+                          weights_initializer=weights_initializer)
     ht_new = ht_orig + h_new
 
     if not deconv:
@@ -381,15 +369,16 @@ def mru_conv_block_v3(inp, ht, filter_depth, sn,
 
     return ht_new
 
+
 def conv2d2(inputs, num_outputs, kernel_size, sn, stride=1, rate=1,
-           data_format='NCHW', activation_fn=tf.nn.relu,
-           normalizer_fn=None, normalizer_params=None,
-           weights_regularizer=None,
-           weights_initializer=ly.xavier_initializer(),
-           biases_initializer=init_ops.zeros_initializer(),
-           biases_regularizer=None,
-           reuse=None, scope=None,
-           SPECTRAL_NORM_UPDATE_OPS='spectral_norm_update_ops'):
+            data_format='NCHW', activation_fn=tf.nn.relu,
+            normalizer_fn=None, normalizer_params=None,
+            weights_regularizer=None,
+            weights_initializer=ly.xavier_initializer(),
+            biases_initializer=init_ops.zeros_initializer(),
+            biases_regularizer=None,
+            reuse=None, scope=None,
+            SPECTRAL_NORM_UPDATE_OPS='spectral_norm_update_ops'):
     assert data_format == 'NCHW'
     assert rate == 1
     if data_format == 'NCHW':
@@ -410,9 +399,11 @@ def conv2d2(inputs, num_outputs, kernel_size, sn, stride=1, rate=1,
                                   trainable=True, dtype=inputs.dtype.base_dtype)
         # Spectral Normalization
         if sn:
-            weights = spectral_normed_weight(weights, num_iters=1, update_collection=SPECTRAL_NORM_UPDATE_OPS)
+            weights = spectral_normed_weight(
+                weights, num_iters=1, update_collection=SPECTRAL_NORM_UPDATE_OPS)
 
-        conv_out = tf.nn.conv2d(inputs, weights, strides=stride, padding='SAME', data_format=data_format)
+        conv_out = tf.nn.conv2d(
+            inputs, weights, strides=stride, padding='SAME', data_format=data_format)
 
         if biases_initializer is not None:
             biases = tf.get_variable(name='biases', shape=(1, num_outputs, 1, 1),
@@ -422,12 +413,14 @@ def conv2d2(inputs, num_outputs, kernel_size, sn, stride=1, rate=1,
 
         if normalizer_fn is not None:
             normalizer_params = normalizer_params or {}
-            conv_out = normalizer_fn(conv_out, activation_fn=None, **normalizer_params)
+            conv_out = normalizer_fn(
+                conv_out, activation_fn=None, **normalizer_params)
 
         if activation_fn is not None:
             conv_out = activation_fn(conv_out)
 
     return conv_out
+
 
 def mru_conv(x, ht, filter_depth, sn, stride=2, dilate_rate=1,
              num_blocks=5, last_unit=False,
@@ -492,6 +485,7 @@ def mru_conv(x, ht, filter_depth, sn, stride=2, dilate_rate=1,
 
     return hts_new
 
+
 def fully_connected(inputs, num_outputs, sn, activation_fn=None,
                     normalizer_fn=None, normalizer_params=None,
                     weights_initializer=ly.xavier_initializer(),
@@ -513,7 +507,8 @@ def fully_connected(inputs, num_outputs, sn, activation_fn=None,
 
         # Spectral Normalization
         if sn:
-            weights = spectral_normed_weight(weights, num_iters=1, update_collection=(SPECTRAL_NORM_UPDATE_OPS))
+            weights = spectral_normed_weight(
+                weights, num_iters=1, update_collection=(SPECTRAL_NORM_UPDATE_OPS))
 
         linear_out = tf.matmul(inputs, weights)
 
@@ -527,16 +522,19 @@ def fully_connected(inputs, num_outputs, sn, activation_fn=None,
         # Apply normalizer function / layer.
         if normalizer_fn is not None:
             normalizer_params = normalizer_params or {}
-            linear_out = normalizer_fn(linear_out, activation_fn=None, **normalizer_params)
+            linear_out = normalizer_fn(
+                linear_out, activation_fn=None, **normalizer_params)
 
         if activation_fn is not None:
             linear_out = activation_fn(linear_out)
 
     return linear_out
 
+
 def miu_relu(x, miu=0.7, name="miu_relu"):
     with tf.variable_scope(name):
         return (x + tf.sqrt((1 - miu) ** 2 + x ** 2)) / 2.
+
 
 def prelu(x, name="prelu"):
     with tf.variable_scope(name):
@@ -544,13 +542,15 @@ def prelu(x, name="prelu"):
                                trainable=True, caching_device=None)
         return tf.maximum(leak * x, x)
 
+
 def lrelu(x, leak=0.2, name="lrelu"):
     with tf.variable_scope(name):
         return tf.maximum(leak * x, x)
 
+
 def get_acgan_loss_focal(real_image_logits_out, real_image_label,
-                            disc_image_logits_out, condition,
-                            num_classes, ld1=1, ld2=0.5, ld_focal=2.):
+                         disc_image_logits_out, condition,
+                         num_classes, ld1=1, ld2=0.5, ld_focal=2.):
     loss_ac_d = tf.reduce_mean((1 - tf.reduce_sum(tf.nn.softmax(real_image_logits_out) * tf.squeeze(
         tf.one_hot(real_image_label, num_classes, on_value=1., off_value=0., dtype=tf.float32)), axis=1)) ** ld_focal *
         tf.nn.sparse_softmax_cross_entropy_with_logits(logits=real_image_logits_out, labels=real_image_label))
@@ -561,6 +561,7 @@ def get_acgan_loss_focal(real_image_logits_out, real_image_label,
     loss_ac_g = ld2 * loss_ac_g
     return loss_ac_g, loss_ac_d
 
+
 def get_class_loss(logits_out, label, num_classes, ld_focal=2.0):
     loss = tf.reduce_mean((1 - tf.reduce_sum(tf.nn.softmax(logits_out) * tf.squeeze(
         tf.one_hot(label, num_classes, on_value=1., off_value=0., dtype=tf.float32)), axis=1)) ** ld_focal *
@@ -570,8 +571,10 @@ def get_class_loss(logits_out, label, num_classes, ld_focal=2.0):
 
 NO_OPS = 'NO_OPS'
 
+
 def _l2normalize(v, eps=1e-12):
     return v / (tf.reduce_sum(v ** 2) ** 0.5 + eps)
+
 
 def spectral_normed_weight(W, u=None, num_iters=1, update_collection=None, with_sigma=False):
     # Usually num_iters = 1 will be enough
@@ -579,7 +582,8 @@ def spectral_normed_weight(W, u=None, num_iters=1, update_collection=None, with_
     W_reshaped = tf.reshape(W, [-1, W_shape[-1]])
     if u is None:
         with tf.variable_scope(W.name.rsplit('/', 1)[0]) as sc:
-            u = tf.get_variable("u", [1, W_shape[-1]], initializer=tf.truncated_normal_initializer(), trainable=False)
+            u = tf.get_variable(
+                "u", [1, W_shape[-1]], initializer=tf.truncated_normal_initializer(), trainable=False)
 
     def power_iteration(i, u_i, v_i):
         v_ip1 = _l2normalize(tf.matmul(u_i, tf.transpose(W_reshaped)))
@@ -596,13 +600,15 @@ def spectral_normed_weight(W, u=None, num_iters=1, update_collection=None, with_
         warnings.warn(
             'Setting update_collection to None will make u being updated every W execution. This maybe undesirable'
             '. Please consider using a update collection instead.')
-        sigma = tf.matmul(tf.matmul(v_final, W_reshaped), tf.transpose(u_final))[0, 0]
+        sigma = tf.matmul(tf.matmul(v_final, W_reshaped),
+                          tf.transpose(u_final))[0, 0]
         # sigma = tf.reduce_sum(tf.matmul(u_final, tf.transpose(W_reshaped)) * v_final)
         W_bar = W_reshaped / sigma
         with tf.control_dependencies([u.assign(u_final)]):
             W_bar = tf.reshape(W_bar, W_shape)
     else:
-        sigma = tf.matmul(tf.matmul(v_final, W_reshaped), tf.transpose(u_final))[0, 0]
+        sigma = tf.matmul(tf.matmul(v_final, W_reshaped),
+                          tf.transpose(u_final))[0, 0]
         # sigma = tf.reduce_sum(tf.matmul(u_final, tf.transpose(W_reshaped)) * v_final)
         W_bar = W_reshaped / sigma
         W_bar = tf.reshape(W_bar, W_shape)
