@@ -54,6 +54,10 @@ def generator_ganloss(output):
     return tf.reduce_mean(output * -1)
 
 
+def l1loss(output, target, weight):
+    return weight * tf.reduce_mean(tf.abs(output - target))
+
+
 class DCGAN(object):
     def __init__(self, sess, config,
                  z_dim=100, gf_dim=64, df_dim=64,
@@ -321,12 +325,11 @@ class DCGAN(object):
             self.loss_g_ac = 0
             self.loss_d_ac = 0
 
-        if self.config.if_focal_loss:
-            self.zl_loss = tf.reduce_mean(
-                tf.abs(self.z[:, 0:self.z_dim] - self.z_recon)) * self.config.stage1_zl_loss
-        else:
-            self.zl_loss = tf.reduce_mean(
-                tf.abs(self.z - self.z_recon)) * self.config.stage1_zl_loss
+        z_target = self.z[:, :self.z_dim] if self.config.if_focal_loss else self.z
+        self.zl_loss = l1loss(
+            z_target, self.z_recon,
+            weight=self.config.stage1_zl_loss
+        )
 
     def define_summaries(self):
         self.z_sum = networks.histogram_summary("z", self.z)
