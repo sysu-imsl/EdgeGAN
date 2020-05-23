@@ -330,14 +330,7 @@ class DCGAN(object):
                 tf.abs(self.z - self.z_recon)) * self.config.stage1_zl_loss
             self.class_loss = 0
 
-    def build_model1(self):
-        self.build_networks()
-        self.define_inputs()
-        self.forward()
-        self.define_losses()
-        self.construct_optimizers()
-
-        # define sumary
+    def define_summaries(self):
         self.z_sum = networks.histogram_summary("z", self.z)
         self.inputs_sum = networks.image_summary("inputs", self.inputs)
 
@@ -411,6 +404,14 @@ class DCGAN(object):
                 [self.g_sum, self.d__patch3_sum, self.resized_G_p3_sum, self.g_loss_patch3_sum])
             self.d_sum = networks.merge_summary(
                 [self.d_sum, self.d_patch3_sum, self.resized_inputs_p3_sum, self.d_loss_patch3_sum])
+
+    def build_model1(self):
+        self.build_networks()
+        self.define_inputs()
+        self.forward()
+        self.define_losses()
+        self.construct_optimizers()
+        self.define_summaries()
 
         self.saver = tf.train.Saver(
             {v.op.name: v for v in self.generator1.var_list + self.generator2.var_list})
