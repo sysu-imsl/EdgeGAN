@@ -276,9 +276,6 @@ class DCGAN(object):
         )
         self.g_loss = generator_ganloss(self.D_logits_)
 
-        self.d_loss_patch = 0
-        self.g_loss_patch = 0
-
         if self.config.use_D_patch2:
             self.d_loss_patch2 = (
                 discriminator_ganloss(self.patch2_D_logits_, self.patch2_D_logits) +
@@ -288,59 +285,46 @@ class DCGAN(object):
                 )
             )
             self.g_loss_patch2 = generator_ganloss(self.patch2_D_logits_)
+        else:
+            self.d_loss_patch2 = 0
+            self.g_loss_patch2 = 0
 
-            # self.d_loss_patch2 = tf.reduce_mean(
-            #     self.patch2_D_logits_ - self.patch2_D_logits)
+        if self.config.use_D_patch3:
+            self.d_loss_patch3 = (
+                discriminator_ganloss(self.patch3_D_logits_, self.patch3_D_logits) +
+                penalty(
+                    self.resized_G1_p3, self.resized_inputs_p3, self.discriminator_patch3,
+                    self.config.batch_size, self.config.lambda_gp
+                )
+            )
+            self.g_loss_patch3 = generator_ganloss(self.patch3_D_logits_)
+
+            # self.d_loss_patch3 = tf.reduce_mean(
+            #     self.patch3_D_logits_ - self.patch3_D_logits)
 
             # alpha_dist = tf.contrib.distributions.Uniform(low=0., high=1.)
             # alpha = alpha_dist.sample((self.config.batch_size, 1, 1, 1))
 
             # # TODO: Not know whtether it's true
-            # interpolated = self.resized_inputs + alpha * \
-            #     (self.resized_G2_p2 - self.resized_inputs)
+            # interpolated = self.resized_inputs_p3 + alpha * \
+            #     (self.resized_G1_p3 - self.resized_inputs_p3)
 
-            # inte_logit = self.discriminator_patch2(interpolated, reuse=True)
+            # inte_logit = self.discriminator_patch3(interpolated, reuse=True)
             # gradients = tf.gradients(inte_logit, [interpolated, ])[0]
             # grad_l2 = tf.sqrt(tf.reduce_sum(
             #     tf.square(gradients), axis=[1, 2, 3]))
             # gradient_penalty = tf.reduce_mean((grad_l2 - 1) ** 2)
 
-            # self.d_loss_patch2 += self.config.lambda_gp * gradient_penalty
-            # self.g_loss_patch2 = tf.reduce_mean(self.patch2_D_logits_ * -1)
-        else:
-            self.d_loss_patch2 = 0
-            self.g_loss_patch2 = 0
-
-        self.d_loss_patch2_2 = 0
-        self.g_loss_patch2_2 = 0
-
-        if self.config.use_D_patch3:
-            self.d_loss_patch3 = tf.reduce_mean(
-                self.patch3_D_logits_ - self.patch3_D_logits)
-
-            alpha_dist = tf.contrib.distributions.Uniform(low=0., high=1.)
-            alpha = alpha_dist.sample((self.config.batch_size, 1, 1, 1))
-
-            # TODO: Not know whtether it's true
-            interpolated = self.resized_inputs_p3 + alpha * \
-                (self.resized_G1_p3 - self.resized_inputs_p3)
-
-            inte_logit = self.discriminator_patch3(interpolated, reuse=True)
-            gradients = tf.gradients(inte_logit, [interpolated, ])[0]
-            grad_l2 = tf.sqrt(tf.reduce_sum(
-                tf.square(gradients), axis=[1, 2, 3]))
-            gradient_penalty = tf.reduce_mean((grad_l2 - 1) ** 2)
-
-            self.d_loss_patch3 += self.config.lambda_gp * gradient_penalty
-            self.g_loss_patch3 = tf.reduce_mean(self.patch3_D_logits_ * -1)
+            # self.d_loss_patch3 += self.config.lambda_gp * gradient_penalty
+            # self.g_loss_patch3 = tf.reduce_mean(self.patch3_D_logits_ * -1)
         else:
             self.d_loss_patch3 = 0
             self.g_loss_patch3 = 0
 
         self.g1_loss = self.config.D_origin_loss * self.g_loss + self.config.D_patch3_loss * \
             self.g_loss_patch3
-        self.g2_loss = self.config.D_origin_loss * self.g_loss + self.config.D_patch_loss * self.g_loss_patch \
-            + self.config.D_patch2_loss * self.g_loss_patch2 + self.config.D_patch2_2_loss * self.g_loss_patch2_2
+        self.g2_loss = self.config.D_origin_loss * self.g_loss + \
+            + self.config.D_patch2_loss * self.g_loss_patch2
 
         # focal loss
         if self.config.if_focal_loss:
