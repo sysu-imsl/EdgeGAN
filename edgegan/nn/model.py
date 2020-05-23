@@ -11,9 +11,7 @@ import tensorflow as tf
 import numpy as np
 from six.moves import xrange
 
-from edgegan.nn.base_model import Encoder, Generator, Discriminator, Classifier, Discriminator_patch, patchGAN_D
-from edgegan.nn import base_model
-from edgegan.nn import networks
+from edgegan.models import Encoder, Generator, Discriminator, Classifier
 from edgegan import utils
 from edgegan import nn
 import edgegan.nn.functional as F
