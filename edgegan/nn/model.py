@@ -15,6 +15,8 @@ from edgegan.nn.base_model import Encoder, Generator, Discriminator, Classifier,
 from edgegan.nn import base_model
 from edgegan.nn import networks
 from edgegan import utils
+from edgegan import nn
+import edgegan.nn.functional as F
 
 import sys
 import pickle
@@ -33,29 +35,11 @@ def random_blend(a, b, batchsize):
     return b + alpha * (a - b)
 
 
-def gradient_penalty(output, on):
-    gradients = tf.gradients(output, [on, ])[0]
-    grad_l2 = tf.sqrt(tf.reduce_sum(tf.square(gradients), axis=[1, 2, 3]))
-    return tf.reduce_mean((grad_l2-1)**2)
-
-
-def discriminator_ganloss(output, target):
-    return tf.reduce_mean(output - target)
-
-
 def penalty(synthesized, real, nn_func, batchsize, weight):
     assert callable(nn_func)
     interpolated = random_blend(synthesized, real, batchsize)
     inte_logit = nn_func(interpolated, reuse=True)
-    return weight * gradient_penalty(inte_logit, interpolated)
-
-
-def generator_ganloss(output):
-    return tf.reduce_mean(output * -1)
-
-
-def l1loss(output, target, weight):
-    return weight * tf.reduce_mean(tf.abs(output - target))
+    return weight * F.gradient_penalty(inte_logit, interpolated)
 
 
 class DCGAN(object):
@@ -270,36 +254,36 @@ class DCGAN(object):
 
     def define_losses(self):
         self.d_loss = (
-            discriminator_ganloss(self.D_logits_, self.D_logits) +
+            F.discriminator_ganloss(self.D_logits_, self.D_logits) +
             penalty(
                 self.G_all, self.inputs, self.discriminator,
                 self.config.batch_size, self.config.lambda_gp
             )
         )
-        self.g_loss = generator_ganloss(self.D_logits_)
+        self.g_loss = F.generator_ganloss(self.D_logits_)
 
         if self.config.use_D_patch2:
             self.d_loss_patch2 = (
-                discriminator_ganloss(self.patch2_D_logits_, self.patch2_D_logits) +
+                F.discriminator_ganloss(self.patch2_D_logits_, self.patch2_D_logits) +
                 penalty(
                     self.resized_G2_p2, self.resized_inputs, self.discriminator_patch2,
                     self.config.batch_size, self.config.lambda_gp
                 )
             )
-            self.g_loss_patch2 = generator_ganloss(self.patch2_D_logits_)
+            self.g_loss_patch2 = F.generator_ganloss(self.patch2_D_logits_)
         else:
             self.d_loss_patch2 = 0
             self.g_loss_patch2 = 0
 
         if self.config.use_D_patch3:
             self.d_loss_patch3 = (
-                discriminator_ganloss(self.patch3_D_logits_, self.patch3_D_logits) +
+                F.discriminator_ganloss(self.patch3_D_logits_, self.patch3_D_logits) +
                 penalty(
                     self.resized_G1_p3, self.resized_inputs_p3, self.discriminator_patch3,
                     self.config.batch_size, self.config.lambda_gp
                 )
             )
-            self.g_loss_patch3 = generator_ganloss(self.patch3_D_logits_)
+            self.g_loss_patch3 = F.generator_ganloss(self.patch3_D_logits_)
         else:
             self.d_loss_patch3 = 0
             self.g_loss_patch3 = 0
@@ -315,7 +299,7 @@ class DCGAN(object):
 
         # focal loss
         if self.config.if_focal_loss:
-            self.loss_g_ac, self.loss_d_ac = networks.get_acgan_loss_focal(
+            self.loss_g_ac, self.loss_d_ac = F.get_acgan_loss_focal(
                 self.D_logits2, tf.cast(self.z[:, -1], dtype=tf.int32),
                 self.D_logits2_, tf.cast(self.z[:, -1], dtype=tf.int32),
                 num_classes=self.config.num_classes)
@@ -327,7 +311,7 @@ class DCGAN(object):
 
         z_target = self.z[:,
                           :self.z_dim] if self.config.if_focal_loss else self.z
-        self.zl_loss = l1loss(
+        self.zl_loss = F.l1loss(
             z_target, self.z_recon,
             weight=self.config.stage1_zl_loss
         )

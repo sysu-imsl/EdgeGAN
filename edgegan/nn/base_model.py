@@ -5,6 +5,7 @@ import tensorflow as tf
 import tensorflow.contrib.layers as ly
 import networks
 import math
+from edgegan import nn
 
 
 def lrelu(x, leak=0.3, name="lrelu"):
@@ -383,7 +384,7 @@ class Classifier(object):
 
         output_dim = 1
 
-        activation_fn_d = networks.prelu
+        activation_fn_d = nn.prelu
         normalizer_fn_d = None
         normalizer_params_d = None
         weight_initializer = tf.random_normal_initializer(0, 0.02)

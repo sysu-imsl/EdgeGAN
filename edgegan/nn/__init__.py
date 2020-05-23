@@ -1,2 +1,2 @@
 from .modules import *
-from .model import DCGAN
+# from .model import DCGAN

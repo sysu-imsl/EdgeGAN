@@ -5,13 +5,14 @@ import numpy as np
 import tensorflow as tf
 from tensorflow.python.ops import init_ops
 import tensorflow.contrib.layers as ly
-import warnings
 import functools
 from edgegan.nn import activation_fn as _activation
 from edgegan.nn import norm as _norm
 from edgegan.nn import conv2d as _conv2d
 from edgegan.nn import deconv2d as _deconv2d
 from edgegan.nn import linear as _linear
+from edgegan.nn import spectral_normed_weight
+from edgegan.nn import lrelu
 
 try:
     image_summary = tf.image_summary
@@ -124,13 +125,6 @@ def mlp(input, out_dim, name, is_train, reuse, norm=None, activation=None,
 
 def flatten(input):
     return tf.reshape(input, [-1, np.prod(input.get_shape().as_list()[1:])])
-
-
-def sigmoid_cross_entropy_with_logits(x, y):
-    try:
-        return tf.nn.sigmoid_cross_entropy_with_logits(logits=x, labels=y)
-    except:
-        return tf.nn.sigmoid_cross_entropy_with_logits(logits=x, targets=y)
 
 
 def mean_pool(input, data_format):
@@ -430,94 +424,3 @@ def fully_connected(inputs, num_outputs, sn, activation_fn=None,
             linear_out = activation_fn(linear_out)
 
     return linear_out
-
-
-def miu_relu(x, miu=0.7, name="miu_relu"):
-    with tf.variable_scope(name):
-        return (x + tf.sqrt((1 - miu) ** 2 + x ** 2)) / 2.
-
-
-def prelu(x, name="prelu"):
-    with tf.variable_scope(name):
-        leak = tf.get_variable("param", shape=None, initializer=0.2, regularizer=None,
-                               trainable=True, caching_device=None)
-        return tf.maximum(leak * x, x)
-
-
-def lrelu(x, leak=0.2, name="lrelu"):
-    with tf.variable_scope(name):
-        return tf.maximum(leak * x, x)
-
-
-def get_acgan_loss_focal(real_image_logits_out, real_image_label,
-                         disc_image_logits_out, condition,
-                         num_classes, ld1=1, ld2=0.5, ld_focal=2.):
-    loss_ac_d = tf.reduce_mean((1 - tf.reduce_sum(tf.nn.softmax(real_image_logits_out) * tf.squeeze(
-        tf.one_hot(real_image_label, num_classes, on_value=1., off_value=0., dtype=tf.float32)), axis=1)) ** ld_focal *
-        tf.nn.sparse_softmax_cross_entropy_with_logits(logits=real_image_logits_out, labels=real_image_label))
-    loss_ac_d = ld1 * loss_ac_d
-
-    loss_ac_g = tf.reduce_mean(
-        tf.nn.sparse_softmax_cross_entropy_with_logits(logits=disc_image_logits_out, labels=condition))
-    loss_ac_g = ld2 * loss_ac_g
-    return loss_ac_g, loss_ac_d
-
-
-def get_class_loss(logits_out, label, num_classes, ld_focal=2.0):
-    loss = tf.reduce_mean((1 - tf.reduce_sum(tf.nn.softmax(logits_out) * tf.squeeze(
-        tf.one_hot(label, num_classes, on_value=1., off_value=0., dtype=tf.float32)), axis=1)) ** ld_focal *
-        tf.nn.sparse_softmax_cross_entropy_with_logits(logits=logits_out, labels=label))
-    return loss
-
-
-NO_OPS = 'NO_OPS'
-
-
-def _l2normalize(v, eps=1e-12):
-    return v / (tf.reduce_sum(v ** 2) ** 0.5 + eps)
-
-
-def spectral_normed_weight(W, u=None, num_iters=1, update_collection=None, with_sigma=False):
-    # Usually num_iters = 1 will be enough
-    W_shape = W.shape.as_list()
-    W_reshaped = tf.reshape(W, [-1, W_shape[-1]])
-    if u is None:
-        with tf.variable_scope(W.name.rsplit('/', 1)[0]) as sc:
-            u = tf.get_variable(
-                "u", [1, W_shape[-1]], initializer=tf.truncated_normal_initializer(), trainable=False)
-
-    def power_iteration(i, u_i, v_i):
-        v_ip1 = _l2normalize(tf.matmul(u_i, tf.transpose(W_reshaped)))
-        u_ip1 = _l2normalize(tf.matmul(v_ip1, W_reshaped))
-        return i + 1, u_ip1, v_ip1
-
-    _, u_final, v_final = tf.while_loop(
-        cond=lambda i, _1, _2: i < num_iters,
-        body=power_iteration,
-        loop_vars=(tf.constant(0, dtype=tf.int32),
-                   u, tf.zeros(dtype=tf.float32, shape=[1, W_reshaped.shape.as_list()[0]]))
-    )
-    if update_collection is None:
-        warnings.warn(
-            'Setting update_collection to None will make u being updated every W execution. This maybe undesirable'
-            '. Please consider using a update collection instead.')
-        sigma = tf.matmul(tf.matmul(v_final, W_reshaped),
-                          tf.transpose(u_final))[0, 0]
-        # sigma = tf.reduce_sum(tf.matmul(u_final, tf.transpose(W_reshaped)) * v_final)
-        W_bar = W_reshaped / sigma
-        with tf.control_dependencies([u.assign(u_final)]):
-            W_bar = tf.reshape(W_bar, W_shape)
-    else:
-        sigma = tf.matmul(tf.matmul(v_final, W_reshaped),
-                          tf.transpose(u_final))[0, 0]
-        # sigma = tf.reduce_sum(tf.matmul(u_final, tf.transpose(W_reshaped)) * v_final)
-        W_bar = W_reshaped / sigma
-        W_bar = tf.reshape(W_bar, W_shape)
-        # Put NO_OPS to not update any collection. This is useful for the second call of discriminator if the update_op
-        # has already been collected on the first call.
-        if update_collection != NO_OPS:
-            tf.add_to_collection(update_collection, u.assign(u_final))
-    if with_sigma:
-        return W_bar, sigma
-    else:
-        return W_bar
