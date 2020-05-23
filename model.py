@@ -26,11 +26,24 @@ sys.setdefaultencoding('utf8')
 def channel_first(input):
     return tf.transpose(input, [0, 3, 1, 2])
 
-
 def random_blend(a, b, batchsize):
     alpha_dist = tf.contrib.distributions.Uniform(low=0., high=1.)
     alpha = alpha_dist.sample((batchsize, 1, 1, 1))
     return b + alpha * (a - b)
+
+def gradient_penalty(output, on):
+    gradients = tf.gradients(output, [on, ])[0]
+    grad_l2 = tf.sqrt(tf.reduce_sum(tf.square(gradients), axis=[1, 2, 3]))
+    return tf.reduce_mean((grad_l2-1)**2)
+
+def discriminator_ganloss(output, target):
+    return tf.reduce_mean(output - target)
+
+def penalty(synthesized, real, nn_func, batchsize, weight):
+    assert callable(nn_func)
+    interpolated = random_blend(synthesized, real, batchsize)
+    inte_logit = nn_func(interpolated, reuse=True)
+    return weight * gradient_penalty(inte_logit, interpolated)
 
 class DCGAN(object):
     def __init__(self, sess, config,
@@ -251,18 +264,21 @@ class DCGAN(object):
         self.d_loss_real = 0.0
         self.d_loss_fake = 0.0
 
-        self.d_loss = tf.reduce_mean(self.D_logits_ - self.D_logits)
+        self.d_loss = (
+            discriminator_ganloss(self.D_logits_, self.D_logits) +
+            penalty(
+                self.G_all, self.inputs, self.discriminator,
+                self.config.batch_size, self.config.lambda_gp
+            )
+        )
 
-        # alpha_dist = tf.contrib.distributions.Uniform(low=0., high=1.)
-        # alpha = alpha_dist.sample((self.config.batch_size, 1, 1, 1))
-        # interpolated = self.inputs + alpha*(self.G_all-self.inputs)
-        interpolated = random_blend(self.G_all, self.inputs, self.config.batch_size)
-        inte_logit = self.discriminator(interpolated, reuse=True)
-        gradients = tf.gradients(inte_logit, [interpolated, ])[0]
-        grad_l2 = tf.sqrt(tf.reduce_sum(tf.square(gradients), axis=[1, 2, 3]))
-        gradient_penalty = tf.reduce_mean((grad_l2-1)**2)
+        # interpolated = random_blend(self.G_all, self.inputs, self.config.batch_size)
+        # inte_logit = self.discriminator(interpolated, reuse=True)
+        # gradients = tf.gradients(inte_logit, [interpolated, ])[0]
+        # grad_l2 = tf.sqrt(tf.reduce_sum(tf.square(gradients), axis=[1, 2, 3]))
+        # gradient_penalty = tf.reduce_mean((grad_l2-1)**2)
 
-        self.d_loss += self.config.lambda_gp * gradient_penalty
+        # self.d_loss += self.config.lambda_gp * gradient_penalty
         self.g_loss = tf.reduce_mean(self.D_logits_ * -1)
 
         self.d_loss_patch = 0
