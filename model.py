@@ -230,13 +230,7 @@ class DCGAN(object):
 
         self.z_recon, _, _ = self.encoder(self.G1)
 
-    def build_model1(self):
-        self.build_networks()
-        self.define_inputs()
-        self.forward()
-
-        # define loss
-
+    def define_losses(self):
         self.d_loss_patchGAN = 0
         self.g_loss_patchGAN = 0
 
@@ -336,7 +330,11 @@ class DCGAN(object):
                 tf.abs(self.z - self.z_recon)) * self.config.stage1_zl_loss
             self.class_loss = 0
 
-        # optimizer
+    def build_model1(self):
+        self.build_networks()
+        self.define_inputs()
+        self.forward()
+        self.define_losses()
         self.construct_optimizers()
 
         # define sumary
