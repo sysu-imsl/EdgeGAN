@@ -1,5 +1,4 @@
 from .modules import *
-# from .model import DCGAN
 import tensorflow as tf
 
 try:
