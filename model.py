@@ -143,11 +143,7 @@ class DCGAN(object):
                                latent_dim=self.z_dim,
                                use_resnet=self.config.if_resnet_e)
 
-    def build_model1(self):
-        # Define models
-        self.build_networks()
-
-        # define inputs
+    def define_inputs(self):
         if self.config.crop:
             self.image_dims = [self.config.output_height, self.config.output_width,
                                self.c_dim]
@@ -160,15 +156,19 @@ class DCGAN(object):
         if self.config.if_focal_loss:
             self.z = tf.placeholder(
                 tf.float32, [None, self.z_dim+1], name='z')
-        else:
-            self.z = tf.placeholder(
-                tf.float32, [None, self.z_dim], name='z')
-
-        if self.config.if_focal_loss:
             self.class_onehot = tf.one_hot(tf.cast(
                 self.z[:, -1], dtype=tf.int32), self.config.num_classes, on_value=1., off_value=0., dtype=tf.float32)
             self.z_onehot = tf.concat(
                 [self.z[:, 0:self.z_dim], self.class_onehot], 1)
+        else:
+            self.z = tf.placeholder(
+                tf.float32, [None, self.z_dim], name='z')
+
+    def build_model1(self):
+        self.build_networks()
+        self.define_inputs()
+
+        if self.config.if_focal_loss:
             self.G1 = self.generator1(self.z_onehot)
             self.G2 = self.generator2(self.z_onehot)
         else:
@@ -321,7 +321,6 @@ class DCGAN(object):
                 num_classes=self.config.num_classes)
 
             self.g2_loss += self.loss_g_ac
-            # self.d_loss += self.loss_d_ac
         else:
             self.loss_g_ac = 0
             self.loss_d_ac = 0
@@ -330,17 +329,11 @@ class DCGAN(object):
             self.zl_loss = tf.reduce_mean(
                 tf.abs(self.z[:, 0:self.z_dim] - z_recon)) * self.config.stage1_zl_loss
 
-            # focal loss
             self.class_loss = 0
         else:
             self.zl_loss = tf.reduce_mean(
                 tf.abs(self.z - z_recon)) * self.config.stage1_zl_loss
             self.class_loss = 0
-        # else:
-        #     self.zl_loss = 0
-        #     self.class_loss = 0
-
-        # self.g_loss = self.g_loss + self.zl_loss * self.config.stage1_zl_loss
 
         # optimizer
         self.construct_optimizers()
