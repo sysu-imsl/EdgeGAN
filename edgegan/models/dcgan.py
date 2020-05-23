@@ -1,26 +1,26 @@
 # -*- coding:utf8 -*-
 # defination of dcgan
 
-from __future__ import division
-from __future__ import print_function
-import os
-import time
+from __future__ import division, print_function
+
 import math
+import os
+import pickle
+import sys
+import time
 from glob import glob
-import tensorflow as tf
+
 import numpy as np
+import tensorflow as tf
 from six.moves import xrange
 
-from .generator import Generator
+import edgegan.nn.functional as F
+from edgegan import nn, utils
+
+from .classifier import Classifier
 from .discriminator import Discriminator
 from .encoder import Encoder
-from .classifier import Classifier
-from edgegan import utils
-from edgegan import nn
-import edgegan.nn.functional as F
-
-import sys
-import pickle
+from .generator import Generator
 
 reload(sys)
 sys.setdefaultencoding('utf8')

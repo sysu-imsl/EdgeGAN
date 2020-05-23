@@ -4,12 +4,11 @@
 import os
 
 import numpy as np
-import scipy.misc
 import tensorflow as tf
 from numpy.random import seed
 
 from edgegan.models import DCGAN
-from edgegan.utils import makedirs, pp, show_all_variables, to_json
+from edgegan.utils import makedirs, pp
 
 os.environ['CUDA_VISIBLE_DEVICES'] = '1'
 
@@ -47,11 +46,7 @@ flags.DEFINE_integer("save_checkpoint_frequency", 500,
                      "frequency for saving checkpoint")
 flags.DEFINE_boolean(
     "crop", False, "True for training, False for testing [False]")
-flags.DEFINE_integer("generate_test_images", 100,
-                     "Number of images to generate during test. [100]")
 
-flags.DEFINE_integer(
-    "G_num", 2, "setting 2 generators for edge and image generation seprately")
 
 # setting of testing
 flags.DEFINE_boolean("Random_test", False,
@@ -83,6 +78,8 @@ flags.DEFINE_string("SPECTRAL_NORM_UPDATE_OPS", "spectral_norm_update_ops", "")
 flags.DEFINE_string("type", "gpwgan", "gan type: [dcgan | wgan | gpwgan]")
 flags.DEFINE_string("optim", "rmsprop", "optimizer type: [adam | rmsprop]")
 flags.DEFINE_string("model", "old", "which base model(G and D): [old | new]")
+
+
 flags.DEFINE_boolean("if_resnet_e", True, "if use resnet for E")
 flags.DEFINE_boolean("if_resnet_g", False, "if use resnet for G")
 flags.DEFINE_boolean("if_resnet_d", False, "if use resnet for origin D")
@@ -99,24 +96,13 @@ flags.DEFINE_string("G_norm", "instance",
                     "normalization options:[instance, batch, norm]")
 flags.DEFINE_string("D_norm", "instance",
                     "normalization options:[instance, batch, norm]")
-flags.DEFINE_string("D_patch_norm", "batch",
-                    "normalization options:[instance, batch, norm]")
-flags.DEFINE_boolean("use_D_origin", True,
-                     "True for using origin discriminator")
-flags.DEFINE_string("originD_inputForm", "concat_w", "concat_w, concat_n")
 
-flags.DEFINE_boolean("use_D_patch", False,
-                     "True for using patch discriminator, modify the network setting")
 
 flags.DEFINE_boolean("use_D_patch2", True,
                      "True for using patch discriminator, modify the size of input of discriminator")
 # flags.DEFINE_integer("scale_num", 2, "num of of multi-discriminator")
 flags.DEFINE_integer("sizeOfIn_patch2", 128, "The size of input for D_patch2")
-flags.DEFINE_string("conditional_D2", "single_right",
-                    "full_concat_w, full_concat_n, single_right")
 
-flags.DEFINE_boolean("use_D_patch2_2", False,
-                     "True for using patch discriminator, modify the size of input of discriminator")
 # flags.DEFINE_integer("scale_num", 2, "num of of multi-discriminator")
 flags.DEFINE_integer("sizeOfIn_patch2_2", 256,
                      "The size of input for D_patch2_2")
@@ -124,26 +110,14 @@ flags.DEFINE_integer("sizeOfIn_patch2_2", 256,
 flags.DEFINE_boolean("use_D_patch3", True,
                      "True for using patch discriminator, modify the size of input of discriminator, user for edge discriminator when G_num == 2")
 flags.DEFINE_integer("sizeOfIn_patch3", 128, "The size of input for D_patch2")
-flags.DEFINE_string("conditional_D3", "single_right",
-                    "full_concat_n, full_concat_w, single_right")
 
-flags.DEFINE_boolean("use_patchGAN_D_full", False, "True for using patchGAN D")
-flags.DEFINE_string("patchGAN_D_norm", "instance",
-                    "normalization options:[instance, batch, norm]")
-flags.DEFINE_string("patchGAN_loss", "origin", "[wgan, gpwgan, origin]")
 
 flags.DEFINE_float("D_origin_loss", 1.0,
                    "weight of origin discriminative loss, is ineffective when use_D_origin is false")
-flags.DEFINE_float("D_patch_loss", 0.0,
-                   "weight of patch discriminative loss, is ineffective when use_D_patch is false")
 flags.DEFINE_float("D_patch2_loss", 1.0,
                    "weight of patch discriminative loss, is ineffective when use_D_patch2 is false")
-flags.DEFINE_float("D_patch2_2_loss", 0.5,
-                   "weight of patch discriminative loss, is ineffective when use_D_patch2_2 is false")
 flags.DEFINE_float("D_patch3_loss", 1.0,
                    "weight of patch discriminative loss, is ineffective when use_D_patch3 is false")
-flags.DEFINE_float("D_patchGAN_loss", 1.0,
-                   "weight of patch discriminative loss, is ineffective when use_D_patchGAN_D_full is false")
 FLAGS = flags.FLAGS
 
 
