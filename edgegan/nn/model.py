@@ -135,9 +135,9 @@ class DCGAN(object):
 
         # origin discrminator
         self.discriminator = Discriminator('D', is_train=True,
-                                            norm=self.config.D_norm,
-                                            num_filters=self.df_dim,
-                                            use_resnet=self.config.if_resnet_d)
+                                           norm=self.config.D_norm,
+                                           num_filters=self.df_dim,
+                                           use_resnet=self.config.if_resnet_d)
 
         # multi-scale discriminators
 
@@ -314,70 +314,70 @@ class DCGAN(object):
         )
 
     def define_summaries(self):
-        self.z_sum = networks.histogram_summary("z", self.z)
-        self.inputs_sum = networks.image_summary("inputs", self.inputs)
+        self.z_sum = nn.histogram_summary("z", self.z)
+        self.inputs_sum = nn.image_summary("inputs", self.inputs)
 
-        self.G1_sum = networks.image_summary("G1", self.G1)
-        self.G2_sum = networks.image_summary("G2", self.G2)
+        self.G1_sum = nn.image_summary("G1", self.G1)
+        self.G2_sum = nn.image_summary("G2", self.G2)
 
-        self.g1_loss_sum = networks.scalar_summary("g1_loss", self.g1_loss)
-        self.g2_loss_sum = networks.scalar_summary("g2_loss", self.g2_loss)
+        self.g1_loss_sum = nn.scalar_summary("g1_loss", self.g1_loss)
+        self.g2_loss_sum = nn.scalar_summary("g2_loss", self.g2_loss)
 
-        self.g_loss_sum = networks.scalar_summary("g_loss", self.g_loss)
+        self.g_loss_sum = nn.scalar_summary("g_loss", self.g_loss)
 
-        self.d_loss_sum = networks.scalar_summary("d_loss", self.d_loss)
+        self.d_loss_sum = nn.scalar_summary("d_loss", self.d_loss)
 
-        self.zl_loss_sum = networks.scalar_summary("zl_loss", self.zl_loss)
+        self.zl_loss_sum = nn.scalar_summary("zl_loss", self.zl_loss)
 
-        self.loss_g_ac_sum = networks.scalar_summary(
+        self.loss_g_ac_sum = nn.scalar_summary(
             "loss_g_ac", self.loss_g_ac)
-        self.loss_d_ac_sum = networks.scalar_summary(
+        self.loss_d_ac_sum = nn.scalar_summary(
             "loss_d_ac", self.loss_d_ac)
 
-        self.g_sum = networks.merge_summary([self.z_sum, self.G1_sum, self.G2_sum,
-                                             self.zl_loss_sum, self.g_loss_sum,
-                                             self.loss_g_ac_sum, self.g1_loss_sum, self.g2_loss_sum])
-        self.d_sum = networks.merge_summary([self.z_sum, self.inputs_sum,
-                                             self.d_loss_sum, self.loss_d_ac_sum])
-        self.d_sum_tmp = networks.histogram_summary("d", self.D)
-        self.d__sum_tmp = networks.histogram_summary("d_", self.D_)
-        self.g_sum = networks.merge_summary([self.g_sum, self.d__sum_tmp])
-        self.d_sum = networks.merge_summary([self.d_sum, self.d_sum_tmp])
+        self.g_sum = nn.merge_summary([self.z_sum, self.G1_sum, self.G2_sum,
+                                       self.zl_loss_sum, self.g_loss_sum,
+                                       self.loss_g_ac_sum, self.g1_loss_sum, self.g2_loss_sum])
+        self.d_sum = nn.merge_summary([self.z_sum, self.inputs_sum,
+                                       self.d_loss_sum, self.loss_d_ac_sum])
+        self.d_sum_tmp = nn.histogram_summary("d", self.D)
+        self.d__sum_tmp = nn.histogram_summary("d_", self.D_)
+        self.g_sum = nn.merge_summary([self.g_sum, self.d__sum_tmp])
+        self.d_sum = nn.merge_summary([self.d_sum, self.d_sum_tmp])
 
         if self.config.use_D_patch2:
-            self.d_patch2_sum = networks.histogram_summary(
+            self.d_patch2_sum = nn.histogram_summary(
                 "patch2_d", self.patch2_D)
-            self.d__patch2_sum = networks.histogram_summary(
+            self.d__patch2_sum = nn.histogram_summary(
                 "patch2_d_", self.patch2_D_)
-            self.resized_inputs_sum = networks.image_summary(
+            self.resized_inputs_sum = nn.image_summary(
                 "resized_inputs_image", self.resized_inputs)
-            self.resized_G_sum = networks.image_summary(
+            self.resized_G_sum = nn.image_summary(
                 "resized_G_image", self.resized_G2_p2)
-            self.d_loss_patch2_sum = networks.scalar_summary(
+            self.d_loss_patch2_sum = nn.scalar_summary(
                 "d_loss_patch2", self.d_loss_patch2)
-            self.g_loss_patch2_sum = networks.scalar_summary(
+            self.g_loss_patch2_sum = nn.scalar_summary(
                 "g_loss_patch2", self.g_loss_patch2)
-            self.g_sum = networks.merge_summary(
+            self.g_sum = nn.merge_summary(
                 [self.g_sum, self.d__patch2_sum, self.resized_G_sum, self.g_loss_patch2_sum])
-            self.d_sum = networks.merge_summary(
+            self.d_sum = nn.merge_summary(
                 [self.d_sum, self.d_patch2_sum, self.resized_inputs_sum, self.d_loss_patch2_sum])
 
         if self.config.use_D_patch3:
-            self.d_patch3_sum = networks.histogram_summary(
+            self.d_patch3_sum = nn.histogram_summary(
                 "patch3_d", self.patch3_D)
-            self.d__patch3_sum = networks.histogram_summary(
+            self.d__patch3_sum = nn.histogram_summary(
                 "patch3_d_", self.patch3_D_)
-            self.resized_inputs_p3_sum = networks.image_summary(
+            self.resized_inputs_p3_sum = nn.image_summary(
                 "resized_inputs_p3_image", self.resized_inputs_p3)
-            self.resized_G_p3_sum = networks.image_summary(
+            self.resized_G_p3_sum = nn.image_summary(
                 "resized_G_p3_image", self.resized_G1_p3)
-            self.d_loss_patch3_sum = networks.scalar_summary(
+            self.d_loss_patch3_sum = nn.scalar_summary(
                 "d_loss_patch3", self.d_loss_patch3)
-            self.g_loss_patch3_sum = networks.scalar_summary(
+            self.g_loss_patch3_sum = nn.scalar_summary(
                 "g_loss_patch3", self.g_loss_patch3)
-            self.g_sum = networks.merge_summary(
+            self.g_sum = nn.merge_summary(
                 [self.g_sum, self.d__patch3_sum, self.resized_G_p3_sum, self.g_loss_patch3_sum])
-            self.d_sum = networks.merge_summary(
+            self.d_sum = nn.merge_summary(
                 [self.d_sum, self.d_patch3_sum, self.resized_inputs_p3_sum, self.d_loss_patch3_sum])
 
     def build_model1(self):
@@ -482,8 +482,8 @@ class DCGAN(object):
             tf.initialize_all_variables().run()
 
         # init summary writer
-        self.writer = networks.SummaryWriter("./logs", self.sess.graph)
-        # self.writer = networks.SummaryWriter("./logs_2", self.sess.graph)
+        self.writer = nn.SummaryWriter("./logs", self.sess.graph)
+        # self.writer = nn.SummaryWriter("./logs_2", self.sess.graph)
 
         # load model if exist
         counter = 1

@@ -6,6 +6,7 @@ import tensorflow.contrib.layers as ly
 import networks
 import math
 from edgegan import nn
+import edgegan.nn.functional as F
 
 
 class Encoder(object):
@@ -36,16 +37,16 @@ class Encoder(object):
 
             E = input
             for i, n in enumerate(num_filters):
-                E = networks.conv_block(E, n, 'e_convnet_{}_{}'.format(n, i), 4,
+                E = nn.conv_block(E, n, 'e_convnet_{}_{}'.format(n, i), 4,
                                         2, self._is_train, self._reuse,
                                         norm=self._norm if i else None,
                                         activation=self._activation)
-            E = networks.flatten(E)
-            mu = networks.mlp(E, self._latent_dim, 'FC8_mu', self._is_train,
-                              self._reuse, norm=None, activation=None)
-            log_sigma = networks.mlp(E, self._latent_dim, 'FC8_sigma',
-                                     self._is_train, self._reuse,
-                                     norm=None, activation=None)
+            E = F.flatten(E)
+            mu = nn.mlp(E, self._latent_dim, 'FC8_mu', self._is_train,
+                        self._reuse, norm=None, activation=None)
+            log_sigma = nn.mlp(E, self._latent_dim, 'FC8_sigma',
+                               self._is_train, self._reuse,
+                               norm=None, activation=None)
 
             z = mu + tf.random_normal(shape=tf.shape(self._latent_dim)) \
                 * tf.exp(log_sigma)
@@ -62,22 +63,22 @@ class Encoder(object):
                 num_filters.append(512)
 
             E = input
-            E = networks.conv_block(E, 64, 'e_resnet_{}_{}'.format(64, 0), 4, 2,
-                                    self._is_train, self._reuse, norm=None,
-                                    activation=self._activation, bias=True)
+            E = nn.conv_block(E, 64, 'e_resnet_{}_{}'.format(64, 0), 4, 2,
+                              self._is_train, self._reuse, norm=None,
+                              activation=self._activation, bias=True)
             for i, n in enumerate(num_filters):
-                E = networks.residual(E, n, 'e_resnet_{}_{}'.format(n, i + 1),
+                E = nn.residual(E, n, 'e_resnet_{}_{}'.format(n, i + 1),
                                       self._is_train, self._reuse,
                                       norm=self._norm, bias=True)
                 E = tf.nn.avg_pool(E, [1, 2, 2, 1], [1, 2, 2, 1], 'SAME')
-            E = networks._activation(E, 'relu')
+            E = nn.activation_fn(E, 'relu')
             E = tf.nn.avg_pool(E, [1, 8, 8, 1], [1, 8, 8, 1], 'SAME')
-            E = networks.flatten(E)
-            mu = networks.mlp(E, self._latent_dim, 'FC8_mu', self._is_train,
-                              self._reuse, norm=None, activation=None)
-            log_sigma = networks.mlp(E, self._latent_dim, 'FC8_sigma',
-                                     self._is_train, self._reuse, norm=None,
-                                     activation=None)
+            E = F.flatten(E)
+            mu = nn.mlp(E, self._latent_dim, 'FC8_mu', self._is_train,
+                        self._reuse, norm=None, activation=None)
+            log_sigma = nn.mlp(E, self._latent_dim, 'FC8_sigma',
+                               self._is_train, self._reuse, norm=None,
+                               activation=None)
 
             z = mu + tf.random_normal(shape=tf.shape(self._latent_dim)) \
                 * tf.exp(log_sigma)
@@ -127,27 +128,27 @@ class Generator(object):
                 s_h8, 2), self._conv_out_size_same(s_w8, 2)
 
             # project `z` and reshape
-            z_ = networks._linear(z, self._input_dim*8 *
-                                  s_h16*s_w16, name='g_lin_0')
+            z_ = nn.linear(z, self._input_dim*8 *
+                           s_h16*s_w16, name='g_lin_0')
             h0 = tf.reshape(z_, [-1, s_h16, s_w16, self._input_dim * 8])
-            h0 = networks._activation(networks._norm(
+            h0 = nn.activation_fn(nn.norm(
                 h0, self._norm), self._activation)
 
-            h1 = networks.deconv_block(h0, [self._batch_size, s_h8, s_w8, self._input_dim*4],
-                                       'g_dconv_1', 5, 2, self._is_train,
-                                       self._reuse, self._norm, self._activation)
+            h1 = nn.deconv_block(h0, [self._batch_size, s_h8, s_w8, self._input_dim*4],
+                                 'g_dconv_1', 5, 2, self._is_train,
+                                 self._reuse, self._norm, self._activation)
 
-            h2 = networks.deconv_block(h1, [self._batch_size, s_h4, s_w4, self._input_dim*2],
-                                       'g_dconv_2', 5, 2, self._is_train,
-                                       self._reuse, self._norm, self._activation)
+            h2 = nn.deconv_block(h1, [self._batch_size, s_h4, s_w4, self._input_dim*2],
+                                 'g_dconv_2', 5, 2, self._is_train,
+                                 self._reuse, self._norm, self._activation)
 
-            h3 = networks.deconv_block(h2, [self._batch_size, s_h2, s_w2, self._input_dim],
-                                       'g_dconv_3', 5, 2, self._is_train,
-                                       self._reuse, self._norm, self._activation)
+            h3 = nn.deconv_block(h2, [self._batch_size, s_h2, s_w2, self._input_dim],
+                                 'g_dconv_3', 5, 2, self._is_train,
+                                 self._reuse, self._norm, self._activation)
 
-            h4 = networks.deconv_block(h3, [self._batch_size, s_h, s_w, self._output_dim],
-                                       'g_dconv_4', 5, 2, self._is_train,
-                                       self._reuse, None, None)
+            h4 = nn.deconv_block(h3, [self._batch_size, s_h, s_w, self._output_dim],
+                                 'g_dconv_4', 5, 2, self._is_train,
+                                 self._reuse, None, None)
 
             self._reuse = True
             self.var_list = tf.get_collection(tf.GraphKeys.TRAINABLE_VARIABLES,
@@ -169,31 +170,31 @@ class Generator(object):
                 s_h8, 2), self._conv_out_size_same(s_w8, 2)
 
             # project `z` and reshape
-            z_ = networks._linear(z, self._input_dim*8 *
-                                  s_h16*s_w16, name='g_lin_resnet_0')
-            h0 = networks._activation(networks._norm(
+            z_ = nn.linear(z, self._input_dim*8 *
+                           s_h16*s_w16, name='g_lin_resnet_0')
+            h0 = nn.activation_fn(nn.norm(
                 z_, self._norm), self._activation)
             h0 = tf.reshape(h0, [-1, s_h16, s_w16, self._input_dim * 8])
 
-            h1 = networks.deresidual2(h0, [self._batch_size, s_h8/2, s_w8/2, self._input_dim*4],
-                                      'g_resnet_1', 3, 1, self._is_train,
-                                      self._reuse, self._norm, self._activation)
-            h1 = networks.upsample2(h1, "NHWC")
+            h1 = nn.deresidual2(h0, [self._batch_size, s_h8/2, s_w8/2, self._input_dim*4],
+                                'g_resnet_1', 3, 1, self._is_train,
+                                self._reuse, self._norm, self._activation)
+            h1 = nn.upsample2(h1, "NHWC")
 
-            h2 = networks.deresidual2(h1, [self._batch_size, s_h4/2, s_w4/2, self._input_dim*2],
-                                      'g_resnet_2', 3, 1, self._is_train,
-                                      self._reuse, self._norm, self._activation)
-            h2 = networks.upsample2(h2, "NHWC")
+            h2 = nn.deresidual2(h1, [self._batch_size, s_h4/2, s_w4/2, self._input_dim*2],
+                                'g_resnet_2', 3, 1, self._is_train,
+                                self._reuse, self._norm, self._activation)
+            h2 = nn.upsample2(h2, "NHWC")
 
-            h3 = networks.deresidual2(h2, [self._batch_size, s_h2/2, s_w2/2, self._input_dim],
-                                      'g_resnet_3', 3, 1, self._is_train,
-                                      self._reuse, self._norm, self._activation)
-            h3 = networks.upsample2(h3, "NHWC")
+            h3 = nn.deresidual2(h2, [self._batch_size, s_h2/2, s_w2/2, self._input_dim],
+                                'g_resnet_3', 3, 1, self._is_train,
+                                self._reuse, self._norm, self._activation)
+            h3 = nn.upsample2(h3, "NHWC")
 
-            h4 = networks.deresidual2(h3, [self._batch_size, s_h/2, s_w/2, self._output_dim],
-                                      'g_resnet_4', 3, 1, self._is_train,
-                                      self._reuse, None, None)
-            h4 = networks.upsample2(h4, "NHWC")
+            h4 = nn.deresidual2(h3, [self._batch_size, s_h/2, s_w/2, self._output_dim],
+                                'g_resnet_4', 3, 1, self._is_train,
+                                self._reuse, None, None)
+            h4 = nn.upsample2(h4, "NHWC")
 
             self._reuse = True
             self.var_list = tf.get_collection(tf.GraphKeys.TRAINABLE_VARIABLES,
@@ -223,31 +224,31 @@ class Discriminator(object):
     def _resnet(self, input):
         # return None
         with tf.variable_scope(self.name, reuse=self._reuse):
-            D = networks.residual2(input, self._num_filters, 'd_resnet_0', 3, 1,
-                                   self._is_train, self._reuse, norm=None,
-                                   activation=self._activation)
+            D = nn.residual2(input, self._num_filters, 'd_resnet_0', 3, 1,
+                             self._is_train, self._reuse, norm=None,
+                             activation=self._activation)
             D = tf.nn.avg_pool(D, [1, 2, 2, 1], [1, 2, 2, 1], 'SAME')
 
-            D = networks.residual2(D, self._num_filters*2, 'd_resnet_1', 3, 1,
-                                   self._is_train, self._reuse, self._norm,
-                                   self._activation)
+            D = nn.residual2(D, self._num_filters*2, 'd_resnet_1', 3, 1,
+                             self._is_train, self._reuse, self._norm,
+                             self._activation)
             D = tf.nn.avg_pool(D, [1, 2, 2, 1], [1, 2, 2, 1], 'SAME')
 
-            D = networks.residual2(D, self._num_filters*4, 'd_resnet_3', 3, 1,
-                                   self._is_train, self._reuse, self._norm,
-                                   self._activation)
+            D = nn.residual2(D, self._num_filters*4, 'd_resnet_3', 3, 1,
+                             self._is_train, self._reuse, self._norm,
+                             self._activation)
             D = tf.nn.avg_pool(D, [1, 2, 2, 1], [1, 2, 2, 1], 'SAME')
 
-            D = networks.residual2(D, self._num_filters*8, 'd_resnet_4', 3, 1,
-                                   self._is_train, self._reuse, self._norm,
-                                   self._activation)
+            D = nn.residual2(D, self._num_filters*8, 'd_resnet_4', 3, 1,
+                             self._is_train, self._reuse, self._norm,
+                             self._activation)
             D = tf.nn.avg_pool(D, [1, 2, 2, 1], [1, 2, 2, 1], 'SAME')
 
-            D = networks._activation(D, self._activation)
+            D = nn.activation_fn(D, self._activation)
             D = tf.nn.avg_pool(D, [1, 8, 8, 1], [1, 8, 8, 1], 'SAME')
 
-            D = networks._linear(tf.reshape(D, [input.get_shape()[0], -1]), 1,
-                                 name='d_linear_resnet_5')
+            D = nn.linear(tf.reshape(D, [input.get_shape()[0], -1]), 1,
+                          name='d_linear_resnet_5')
 
             self._reuse = True
             self.var_list = tf.get_collection(tf.GraphKeys.TRAINABLE_VARIABLES,
@@ -258,21 +259,21 @@ class Discriminator(object):
     def _convnet(self, input):
 
         with tf.variable_scope(self.name, reuse=self._reuse):
-            D = networks.conv_block(input, self._num_filters, 'd_conv_0', 4, 2,
-                                    self._is_train, self._reuse, norm=None,
-                                    activation=self._activation)
-            D = networks.conv_block(D, self._num_filters*2, 'd_conv_1', 4, 2,
-                                    self._is_train, self._reuse, self._norm,
-                                    self._activation)
-            D = networks.conv_block(D, self._num_filters*4, 'd_conv_3', 4, 2,
-                                    self._is_train, self._reuse, self._norm,
-                                    self._activation)
-            D = networks.conv_block(D, self._num_filters*8, 'd_conv_4', 4, 2,
-                                    self._is_train, self._reuse, self._norm,
-                                    self._activation)
+            D = nn.conv_block(input, self._num_filters, 'd_conv_0', 4, 2,
+                              self._is_train, self._reuse, norm=None,
+                              activation=self._activation)
+            D = nn.conv_block(D, self._num_filters*2, 'd_conv_1', 4, 2,
+                              self._is_train, self._reuse, self._norm,
+                              self._activation)
+            D = nn.conv_block(D, self._num_filters*4, 'd_conv_3', 4, 2,
+                              self._is_train, self._reuse, self._norm,
+                              self._activation)
+            D = nn.conv_block(D, self._num_filters*8, 'd_conv_4', 4, 2,
+                              self._is_train, self._reuse, self._norm,
+                              self._activation)
 
-            D = networks._linear(tf.reshape(D, [input.get_shape()[0], -1]), 1,
-                                 name='d_linear_5')
+            D = nn.linear(tf.reshape(D, [input.get_shape()[0], -1]), 1,
+                          name='d_linear_5')
 
             self._reuse = True
             self.var_list = tf.get_collection(tf.GraphKeys.TRAINABLE_VARIABLES,
@@ -307,7 +308,7 @@ class Classifier(object):
             x_list.append(resized_)
 
             for i in range(5):
-                resized_ = networks.mean_pool(
+                resized_ = nn.mean_pool(
                     resized_, data_format=data_format)
                 x_list.append(resized_)
             x_list = x_list[::-1]
@@ -325,11 +326,11 @@ class Classifier(object):
             if reuse:
                 scope.reuse_variables()
 
-            h0 = networks.conv2d2(x_list[-1], 8, kernel_size=7, sn=sn, stride=1, data_format=data_format,
-                                  activation_fn=activation_fn_d,
-                                  normalizer_fn=normalizer_fn_d,
-                                  normalizer_params=normalizer_params_d,
-                                  weights_initializer=weight_initializer)
+            h0 = nn.conv2d2(x_list[-1], 8, kernel_size=7, sn=sn, stride=1, data_format=data_format,
+                            activation_fn=activation_fn_d,
+                            normalizer_fn=normalizer_fn_d,
+                            normalizer_params=normalizer_params_d,
+                            weights_initializer=weight_initializer)
 
             # Initial memory state
             hidden_state_shape = h0.get_shape().as_list()
@@ -341,56 +342,56 @@ class Classifier(object):
                                              initializer=tf.zeros_initializer()), [batch_size, 1, 1, 1])
                 hts_0.append(h0)
 
-            hts_1 = networks.mru_conv(x_list[-1], hts_0,
-                                      size * 2, sn=sn, stride=2, dilate_rate=1,
-                                      data_format=data_format, num_blocks=num_blocks,
-                                      last_unit=False,
-                                      activation_fn=activation_fn_d,
-                                      normalizer_fn=normalizer_fn_d,
-                                      normalizer_params=normalizer_params_d,
-                                      weights_initializer=weight_initializer,
-                                      unit_num=1)
-            hts_2 = networks.mru_conv(x_list[-2], hts_1,
-                                      size * 4, sn=sn, stride=2, dilate_rate=1,
-                                      data_format=data_format, num_blocks=num_blocks,
-                                      last_unit=False,
-                                      activation_fn=activation_fn_d,
-                                      normalizer_fn=normalizer_fn_d,
-                                      normalizer_params=normalizer_params_d,
-                                      weights_initializer=weight_initializer,
-                                      unit_num=2)
-            hts_3 = networks.mru_conv(x_list[-3], hts_2,
-                                      size * 8, sn=sn, stride=2, dilate_rate=1,
-                                      data_format=data_format, num_blocks=num_blocks,
-                                      last_unit=False,
-                                      activation_fn=activation_fn_d,
-                                      normalizer_fn=normalizer_fn_d,
-                                      normalizer_params=normalizer_params_d,
-                                      weights_initializer=weight_initializer,
-                                      unit_num=3)
-            hts_4 = networks.mru_conv(x_list[-4], hts_3,
-                                      size * 12, sn=sn, stride=2, dilate_rate=1,
-                                      data_format=data_format, num_blocks=num_blocks,
-                                      last_unit=True,
-                                      activation_fn=activation_fn_d,
-                                      normalizer_fn=normalizer_fn_d,
-                                      normalizer_params=normalizer_params_d,
-                                      weights_initializer=weight_initializer,
-                                      unit_num=4)
+            hts_1 = nn.mru_conv(x_list[-1], hts_0,
+                                size * 2, sn=sn, stride=2, dilate_rate=1,
+                                data_format=data_format, num_blocks=num_blocks,
+                                last_unit=False,
+                                activation_fn=activation_fn_d,
+                                normalizer_fn=normalizer_fn_d,
+                                normalizer_params=normalizer_params_d,
+                                weights_initializer=weight_initializer,
+                                unit_num=1)
+            hts_2 = nn.mru_conv(x_list[-2], hts_1,
+                                size * 4, sn=sn, stride=2, dilate_rate=1,
+                                data_format=data_format, num_blocks=num_blocks,
+                                last_unit=False,
+                                activation_fn=activation_fn_d,
+                                normalizer_fn=normalizer_fn_d,
+                                normalizer_params=normalizer_params_d,
+                                weights_initializer=weight_initializer,
+                                unit_num=2)
+            hts_3 = nn.mru_conv(x_list[-3], hts_2,
+                                size * 8, sn=sn, stride=2, dilate_rate=1,
+                                data_format=data_format, num_blocks=num_blocks,
+                                last_unit=False,
+                                activation_fn=activation_fn_d,
+                                normalizer_fn=normalizer_fn_d,
+                                normalizer_params=normalizer_params_d,
+                                weights_initializer=weight_initializer,
+                                unit_num=3)
+            hts_4 = nn.mru_conv(x_list[-4], hts_3,
+                                size * 12, sn=sn, stride=2, dilate_rate=1,
+                                data_format=data_format, num_blocks=num_blocks,
+                                last_unit=True,
+                                activation_fn=activation_fn_d,
+                                normalizer_fn=normalizer_fn_d,
+                                normalizer_params=normalizer_params_d,
+                                weights_initializer=weight_initializer,
+                                unit_num=4)
 
             img = hts_4[-1]
             img_shape = img.get_shape().as_list()
 
             # discriminator end
-            disc = networks.conv2d2(img, output_dim, kernel_size=1, sn=sn, stride=1, data_format=data_format,
-                                    activation_fn=None, normalizer_fn=None,
-                                    weights_initializer=weight_initializer)
+            disc = nn.conv2d2(img, output_dim, kernel_size=1, sn=sn, stride=1, data_format=data_format,
+                              activation_fn=None, normalizer_fn=None,
+                              weights_initializer=weight_initializer)
 
             # classification end
             img = tf.reduce_mean(img, axis=(
                 2, 3) if data_format == 'NCHW' else (1, 2))
-            logits = networks.fully_connected(img, num_classes, sn=sn, activation_fn=None,
-                                              normalizer_fn=None, SPECTRAL_NORM_UPDATE_OPS=self.SPECTRAL_NORM_UPDATE_OPS)
+            logits = nn.fully_connected(img, num_classes, sn=sn, activation_fn=None,
+                                        normalizer_fn=None, SPECTRAL_NORM_UPDATE_OPS=self.SPECTRAL_NORM_UPDATE_OPS)
 
             self.var_list = tf.get_collection(tf.GraphKeys.TRAINABLE_VARIABLES,
                                               self.name)
@@ -420,17 +421,17 @@ class Discriminator_patch(object):
 
     def _convnet(self, input):
         with tf.variable_scope(self.name, reuse=self._reuse):
-            D = networks.conv_block(input, self._num_filters, 'd_patch_conv_0', 4, 2,
-                                    self._is_train, self._reuse, norm=None,
-                                    activation=self._activation)
-            D = networks.conv_block(D, self._num_filters*2, 'd_patch_conv_1', 4, 1,
+            D = nn.conv_block(input, self._num_filters, 'd_patch_conv_0', 4, 2,
+                              self._is_train, self._reuse, norm=None,
+                              activation=self._activation)
+            D = nn.conv_block(D, self._num_filters*2, 'd_patch_conv_1', 4, 1,
+                              self._is_train, self._reuse, self._norm,
+                              self._activation)
+            D = nn.conv_block(D, 1, 'd_patch_conv_2', 4, 1,
                                     self._is_train, self._reuse, self._norm,
                                     self._activation)
-            D = networks.conv_block(D, 1, 'd_patch_conv_2', 4, 1,
-                                    self._is_train, self._reuse, self._norm,
-                                    self._activation)
-            D = networks._linear(tf.reshape(D, [input.get_shape()[0], -1]), 1,
-                                 name='d_patch_linear_3')
+            D = nn.linear(tf.reshape(D, [input.get_shape()[0], -1]), 1,
+                          name='d_patch_linear_3')
 
             self._reuse = True
             self.var_list = tf.get_collection(tf.GraphKeys.TRAINABLE_VARIABLES,

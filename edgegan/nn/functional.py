@@ -1,3 +1,4 @@
+import numpy as np
 import tensorflow as tf
 
 
@@ -38,3 +39,7 @@ def generator_ganloss(output):
 
 def l1loss(output, target, weight):
     return weight * tf.reduce_mean(tf.abs(output - target))
+
+
+def flatten(input):
+    return tf.reshape(input, [-1, np.prod(input.get_shape().as_list()[1:])])

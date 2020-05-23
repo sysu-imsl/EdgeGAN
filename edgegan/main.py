@@ -11,7 +11,7 @@ from numpy.random import seed
 from edgegan.nn.model import DCGAN
 from edgegan.utils import makedirs, pp, show_all_variables, to_json
 
-os.environ['CUDA_VISIBLE_DEVICES'] = '0'
+os.environ['CUDA_VISIBLE_DEVICES'] = '1'
 
 
 seed(2333)
@@ -167,8 +167,8 @@ def main(_):
         dir_tmp += str(FLAGS.sizeOfIn_patch3)
         dir_tmp += '_'
     dir_tmp += '2G'
-    FLAGS.checkpoint_dir = os.path.join(checkpoint_root, 'checkpoint_' + \
-        FLAGS.type + '_instanceEGD' + '_' + dir_tmp)
+    FLAGS.checkpoint_dir = os.path.join(checkpoint_root, 'checkpoint_' +
+                                        FLAGS.type + '_instanceEGD' + '_' + dir_tmp)
 
     print(FLAGS.checkpoint_dir)
 
