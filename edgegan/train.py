@@ -1,6 +1,7 @@
 # -*- coding:utf8 -*-
 # the entry of the project
 
+import json
 import os
 
 import numpy as np
@@ -42,36 +43,13 @@ _FLAGS.DEFINE_string("checkpoint_dir", None,
 _FLAGS.DEFINE_string("logdir", None,
                      "Directory name to save the logs")
 _FLAGS.DEFINE_string("data_dir", "./data", "Root directory of dataset [data]")
-_FLAGS.DEFINE_string("sample_dir", "samples_gpwgan_instanceEGD_noOriginD_patch2_128_patch3_128_patchGAN_insN_wgan_2G",
-                     "Directory name to save the image samples [samples]")
-_FLAGS.DEFINE_boolean(
-    "train", False, "True for training, False for testing [False]")
 _FLAGS.DEFINE_integer("save_checkpoint_frequency", 500,
                       "frequency for saving checkpoint")
 _FLAGS.DEFINE_boolean(
     "crop", False, "True for training, False for testing [False]")
 
 
-# setting of testing
-_FLAGS.DEFINE_boolean("Random_test", False,
-                      "IS effect when E_stage1 is True.True for testing random z, else for input images")
-_FLAGS.DEFINE_boolean("Test_singleLabel", True,
-                      "IS effect when Random_test is True or False.True for testing single label. For multi-class model")
-_FLAGS.DEFINE_integer(
-    "test_label", 3, "symbol of class, is effect when E_stage1 and Test_singleLabel are true, Random_test is false")
-_FLAGS.DEFINE_boolean("Test_allLabel", True,
-                      "Highest priority, True for testing all label, Test_singleLabel should be True. For multi-class model")
-_FLAGS.DEFINE_boolean("single_model", False,
-                      "True for testing single-class model")
-_FLAGS.DEFINE_string("output_form", "batch",
-                     "The format of output image: batch or single")
-_FLAGS.DEFINE_string("output_combination", "full",
-                     "The combination of output image: full(input+output), inputL_outputR(the left of input combine the right of output),outputL_inputR, outputR")
-
 # weight of loss
-_FLAGS.DEFINE_float("stage2_g_loss", 0.0, "weight of g loss")
-_FLAGS.DEFINE_float("stage2_c_loss", 0.0, "weight of contexture loss")
-_FLAGS.DEFINE_float("stage2_l1_loss", 0.0, "weight of l1 loss")
 _FLAGS.DEFINE_float("stage1_zl_loss", 10.0, "weight of z l1 loss")
 
 # multi class
@@ -79,11 +57,6 @@ _FLAGS.DEFINE_boolean("if_focal_loss", True, "if use focal loss")
 _FLAGS.DEFINE_integer("num_classes", 14, "num of classes")
 _FLAGS.DEFINE_string("SPECTRAL_NORM_UPDATE_OPS",
                      "spectral_norm_update_ops", "")
-
-_FLAGS.DEFINE_string("type", "gpwgan", "gan type: [dcgan | wgan | gpwgan]")
-_FLAGS.DEFINE_string("optim", "rmsprop", "optimizer type: [adam | rmsprop]")
-_FLAGS.DEFINE_string("model", "old", "which base model(G and D): [old | new]")
-
 
 _FLAGS.DEFINE_boolean("if_resnet_e", True, "if use resnet for E")
 _FLAGS.DEFINE_boolean("if_resnet_g", False, "if use resnet for G")
@@ -105,18 +78,12 @@ _FLAGS.DEFINE_string("D_norm", "instance",
 
 _FLAGS.DEFINE_boolean("use_D_patch2", True,
                       "True for using patch discriminator, modify the size of input of discriminator")
-# flags.DEFINE_integer("scale_num", 2, "num of of multi-discriminator")
 _FLAGS.DEFINE_integer("sizeOfIn_patch2", 128, "The size of input for D_patch2")
-
-# flags.DEFINE_integer("scale_num", 2, "num of of multi-discriminator")
 _FLAGS.DEFINE_integer("sizeOfIn_patch2_2", 256,
                       "The size of input for D_patch2_2")
-
 _FLAGS.DEFINE_boolean("use_D_patch3", True,
                       "True for using patch discriminator, modify the size of input of discriminator, user for edge discriminator when G_num == 2")
 _FLAGS.DEFINE_integer("sizeOfIn_patch3", 128, "The size of input for D_patch2")
-
-
 _FLAGS.DEFINE_float("D_origin_loss", 1.0,
                     "weight of origin discriminative loss, is ineffective when use_D_origin is false")
 _FLAGS.DEFINE_float("D_patch2_loss", 1.0,
@@ -132,7 +99,7 @@ def make_outputs_dir(flags):
     makedirs(flags.logdir)
 
 
-def update_flags(flags):
+def update_and_save_flags(flags):
     if flags.input_width is None:
         flags.input_width = flags.input_height
     if flags.output_width is None:
@@ -141,12 +108,15 @@ def update_flags(flags):
     path = os.path.join(flags.outputsroot, flags.name)
     setattr(flags, 'checkpoint_dir', os.path.join(path, 'checkpoints'))
     setattr(flags, 'logdir', os.path.join(path, 'logs'))
+    flag_dict = flags.flag_values_dict()
+    with open(os.path.join(path, 'flags.json'), 'w') as f:
+        json.dump(flag_dict, f, indent=4)
 
     return flags
 
 
 def main(_):
-    flags = update_flags(FLAGS)
+    flags = update_and_save_flags(FLAGS)
     pp.pprint(flags.__flags)
     make_outputs_dir(flags)
 
@@ -155,32 +125,7 @@ def main(_):
 
     with tf.Session(config=run_config) as sess:
         dcgan = DCGAN(sess, flags)
-
-        if flags.train:
-            dcgan.train()
-        else:
-            if flags.Test_allLabel:
-                for label in xrange(0, flags.num_classes):
-                    flags.test_label = label
-                    if flags.output_form is "batch":
-                        makedirs(flags.sample_dir + "/stage1_AddE_specified/" + flags.dataset + '/' + str(
-                            flags.test_label) + '/')
-                    else:
-                        makedirs(flags.sample_dir + "/stage1_AddE_specified/" + flags.dataset + '_singleTest/' + str(
-                            flags.test_label) + '/')
-                    dcgan.test2()
-            elif not flags.Random_test:
-                if flags.output_form is "batch":
-                    makedirs(flags.sample_dir + "/stage1_AddE_specified/" + flags.dataset + '/' + str(
-                        flags.test_label) + '/')
-                else:
-                    makedirs(flags.sample_dir + "/stage1_AddE_specified/" + flags.dataset + '_singleTest/' + str(
-                        flags.test_label) + '/')
-                dcgan.test2()
-            elif flags.Random_test and flags.Test_singleLabel:
-                dcgan.test1(flags.num_classes * flags.batch_size)
-            else:
-                dcgan.test1(10*flags.batch_size)
+        dcgan.train()
 
 
 if __name__ == '__main__':

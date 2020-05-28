@@ -395,7 +395,7 @@ class DCGAN(object):
 
         utils.show_all_variables()
 
-    def train1(self):
+    def train(self):
         def allclose(a, b):
             assert type(a) == type(b)
             if isinstance(a, np.ndarray):
@@ -424,10 +424,10 @@ class DCGAN(object):
 
         def checksum_load(*names):
             def load(filename):
-                if extension(path) == '.npy':
-                    return np.load(path)
-                elif extension(path) == '.pkl':
-                    with open(path, 'rb') as f:
+                if extension(filename) == '.npy':
+                    return np.load(filename)
+                elif extension(filename) == '.pkl':
+                    with open(filename, 'rb') as f:
                         return pickle.load(f)
                 else:
                     raise NotImplementedError
