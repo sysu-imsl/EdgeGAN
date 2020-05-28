@@ -483,10 +483,8 @@ class DCGAN(object):
             tf.initialize_all_variables().run()
 
         # init summary writer
-        self.writer = nn.SummaryWriter(config.logdir, self.sess.graph)
-        # self.writer = nn.SummaryWriter("./logs_2", self.sess.graph)
+        self.writer = nn.SummaryWriter(self.config.logdir, self.sess.graph)
 
-        # load model if exist
         counter = 1
         start_time = time.time()
         could_load, checkpoint_counter = self.load(
@@ -866,13 +864,6 @@ class DCGAN(object):
         return "{}_{}_{}_{}".format(
             self.config.dataset, self.config.batch_size,
             self.config.output_height, self.config.output_width)
-
-    @property
-    def model_dir2(self):
-        return "{}_{}_{}_{}__{}_{}_{}".format(
-            self.config.dataset, self.config.batch_size,
-            self.config.output_height, self.config.output_width,
-            self.config.stage2_g_loss, self.config.stage2_c_loss, self.config.stage2_l1_loss)
 
     def save(self, saver, checkpoint_dir, model_dir, step):
         print(" [*] Saving checkpoints...")
