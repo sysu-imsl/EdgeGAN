@@ -483,14 +483,14 @@ class DCGAN(object):
             tf.initialize_all_variables().run()
 
         # init summary writer
-        self.writer = nn.SummaryWriter("./logs", self.sess.graph)
+        self.writer = nn.SummaryWriter(config.logdir, self.sess.graph)
         # self.writer = nn.SummaryWriter("./logs_2", self.sess.graph)
 
         # load model if exist
         counter = 1
         start_time = time.time()
         could_load, checkpoint_counter = self.load(
-            self.saver2, self.config.checkpoint_dir+"/stage1_AddE", self.model_dir)
+            self.saver2, self.config.checkpoint_dir, self.model_dir)
         if could_load:
             counter = checkpoint_counter
             print(" [*] Load SUCCESS")
@@ -584,7 +584,7 @@ class DCGAN(object):
                 assert allclose(restore_errD_real, errD_real)
                 assert allclose(restore_errG, errG)
                 print('assert successed!')
-                # self.save(self.saver2, self.config.checkpoint_dir + "/stage1_AddE", self.model_dir, counter)
+                # self.save(self.saver2, self.config.checkpoint_dir, self.model_dir, counter)
                 exit()
 
     def test1(self, num):
@@ -599,7 +599,7 @@ class DCGAN(object):
         # load model if exist
         counter = 1
         start_time = time.time()
-        could_load, checkpoint_counter = self.load(self.saver, self.config.checkpoint_dir + "/stage1_AddE",
+        could_load, checkpoint_counter = self.load(self.saver, self.config.checkpoint_dir,
                                                    self.model_dir)
         if could_load:
             counter = checkpoint_counter
@@ -785,7 +785,7 @@ class DCGAN(object):
         start_time = time.time()
         # test step 1 model which has Encoder
         could_load, checkpoint_counter = self.load(
-            self.saver2, self.config.checkpoint_dir+"/stage1_AddE", self.model_dir)
+            self.saver2, self.config.checkpoint_dir, self.model_dir)
         if could_load:
             counter = checkpoint_counter
             print(" [*] Load SUCCESS")
