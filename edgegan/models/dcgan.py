@@ -44,7 +44,7 @@ def penalty(synthesized, real, nn_func, batchsize, weight):
 
 
 class DCGAN(object):
-    def __init__(self, sess, config,
+    def __init__(self, sess, config, dataset,
                  z_dim=100, gf_dim=64, df_dim=64,
                  gfc_dim=1024, dfc_dim=1024, c_dim=3):
         """
@@ -72,6 +72,7 @@ class DCGAN(object):
 
         self.c_dim = c_dim
         self.optimizers = []
+        self.dataset = dataset
 
     def register_optim_if(self, name, optims, cond=True, repeat=1):
         if not cond:
@@ -129,18 +130,14 @@ class DCGAN(object):
                                     output_dim=self.c_dim,
                                     use_resnet=self.config.if_resnet_g)
 
-        # classifier
         if self.config.if_focal_loss:
             self.classifier = Classifier(
                 'D2', self.config.SPECTRAL_NORM_UPDATE_OPS)
 
-        # origin discrminator
         self.discriminator = Discriminator('D', is_train=True,
                                            norm=self.config.D_norm,
                                            num_filters=self.df_dim,
                                            use_resnet=self.config.if_resnet_d)
-
-        # multi-scale discriminators
 
         if self.config.use_D_patch2 is True:
             self.discriminator_patch2 = Discriminator('D_patch2', is_train=True,
@@ -451,18 +448,18 @@ class DCGAN(object):
         if self.config.if_focal_loss:
             self.data = []
             for i in xrange(self.config.num_classes):
-                data_path = os.path.join(self.config.data_dir,
+                data_path = os.path.join(self.config.dataroot,
                                          self.config.dataset,
                                          "stage1", "train", str(i),
                                          "*.png")
                 self.data.extend(glob(data_path))
-                data_path = os.path.join(self.config.data_dir,
+                data_path = os.path.join(self.config.dataroot,
                                          self.config.dataset,
                                          "stage1", "train", str(i),
                                          "*.jpg")
                 self.data.extend(glob(data_path))
         else:
-            data_path = os.path.join(self.config.data_dir,
+            data_path = os.path.join(self.config.dataroot,
                                      self.config.dataset,
                                      "stage1", "train",
                                      self.config.input_fname_pattern)
@@ -498,31 +495,42 @@ class DCGAN(object):
 
         # train
         for epoch in xrange(1):
-            np.random.shuffle(self.data)
-            batch_idxs = min(
-                len(self.data), self.config.train_size) // self.config.batch_size
+            # np.random.shuffle(self.data)
+            # batch_idxs = min(
+            #     len(self.data), self.config.train_size) // self.config.batch_size
+            # assert sorted(self.dataset.data) == sorted(self.data)
+            self.dataset.shuffle()
+            # self.dataset.data = self.data
 
             for idx in xrange(1):
-                # batch_files = self.data[idx*self.config.batch_size : (idx+1)*self.config.batch_size]
+                # batch_files = self.data[idx *
+                #                         self.config.batch_size: (idx+1)*self.config.batch_size]
                 # batch = [
                 #     utils.get_image(batch_file,
-                #             input_height=self.config.input_height,
-                #             input_width=self.config.input_width,
-                #             resize_height=self.config.output_height,
-                #             resize_width=self.config.output_width,
-                #             crop=self.config.crop,
-                #             grayscale=self.grayscale) for batch_file in batch_files]
+                #                     input_height=self.config.input_height,
+                #                     input_width=self.config.input_width,
+                #                     resize_height=self.config.output_height,
+                #                     resize_width=self.config.output_width,
+                #                     crop=self.config.crop,
+                #                     grayscale=self.grayscale) for batch_file in batch_files]
                 # if self.grayscale:
-                #     batch_images = np.array(batch).astype(np.float32)[:, :, :, None]
+                #     batch_images = np.array(batch).astype(
+                #         np.float32)[:, :, :, None]
                 # else:
                 #     batch_images = np.array(batch).astype(np.float32)
 
-                # batch_z = np.random.normal(size=(self.config.batch_size, self.z_dim))
-                # checksum_save({
-                #     'batch_files': batch_files,
-                #     'batch_images': batch_images,
-                #     'batch_z': batch_z,
-                # })
+                # batch_z = np.random.normal(
+                #     size=(self.config.batch_size, self.z_dim))
+                # if self.config.if_focal_loss:
+                #     def getClass(filePath):
+                #         end = filePath.rfind("/")
+                #         start = filePath.rfind("/", 0, end)
+                #         return int(filePath[start+1:end])
+                #     batch_classes = [getClass(batch_file)
+                #                      for batch_file in batch_files]
+                #     batch_classes = np.array(batch_classes).reshape(
+                #         (self.config.batch_size, 1))
+                #     batch_z = np.concatenate((batch_z, batch_classes), axis=1)
 
                 (batch_files, batch_images, batch_z) = checksum_load(
                     'batch_files.pkl', 'batch_images.npy', 'batch_z.npy')
@@ -537,6 +545,10 @@ class DCGAN(object):
                     batch_classes = np.array(batch_classes).reshape(
                         (self.config.batch_size, 1))
                     batch_z = np.concatenate((batch_z, batch_classes), axis=1)
+
+                img_from_dataset, z_from_dataset = self.dataset[0]
+                assert allclose(batch_images, img_from_dataset)
+                assert batch_z.shape == z_from_dataset.shape
 
                 self.update_model(batch_images, batch_z)
 
@@ -569,7 +581,7 @@ class DCGAN(object):
 
                 counter += 1
                 print("Epoch: [%2d/%2d] [%4d/%4d] time: %4.4f, d_loss: %.8f, g_loss: %.8f"
-                      % (epoch, self.config.epoch, idx, batch_idxs,
+                      % (epoch, self.config.epoch, idx, len(self.dataset),
                          time.time() - start_time, errD_fake+errD_real, errG))
 
                 outputL = self.sess.run(self.G1,
@@ -738,25 +750,25 @@ class DCGAN(object):
         # load data
         data_tmp = []
         if self.config.single_model == False:
-            data_path = os.path.join(self.config.data_dir,
+            data_path = os.path.join(self.config.dataroot,
                                      self.config.dataset,
                                      "stage1", "sketch_instance", str(
                                          self.config.test_label),
                                      "*.png")
             data_tmp.extend(glob(data_path))
-            data_path = os.path.join(self.config.data_dir,
+            data_path = os.path.join(self.config.dataroot,
                                      self.config.dataset,
                                      "stage1", "sketch_instance", str(
                                          self.config.test_label),
                                      "*.jpg")
             data_tmp.extend(glob(data_path))
         else:
-            data_path = os.path.join(self.config.data_dir,
+            data_path = os.path.join(self.config.dataroot,
                                      self.config.dataset,
                                      "stage1", "test",
                                      "*.png")
             data_tmp.extend(glob(data_path))
-            data_path = os.path.join(self.config.data_dir,
+            data_path = os.path.join(self.config.dataroot,
                                      self.config.dataset,
                                      "stage1", "test",
                                      "*.jpg")

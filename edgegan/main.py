@@ -41,7 +41,7 @@ _FLAGS.DEFINE_string("checkpoint_dir", None,
                      "Directory name to save the checkpoints [checkpoint]")
 _FLAGS.DEFINE_string("logdir", None,
                      "Directory name to save the logs")
-_FLAGS.DEFINE_string("data_dir", "./data", "Root directory of dataset [data]")
+_FLAGS.DEFINE_string("dataroot", "./data", "Root directory of dataset [data]")
 _FLAGS.DEFINE_string("sample_dir", "samples_gpwgan_instanceEGD_noOriginD_patch2_128_patch3_128_patchGAN_insN_wgan_2G",
                      "Directory name to save the image samples [samples]")
 _FLAGS.DEFINE_boolean(

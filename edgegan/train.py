@@ -10,8 +10,9 @@ from numpy.random import seed
 
 from edgegan.models import DCGAN
 from edgegan.utils import makedirs, pp
+from edgegan.utils.data import Dataset
 
-os.environ['CUDA_VISIBLE_DEVICES'] = '2'
+os.environ['CUDA_VISIBLE_DEVICES'] = '1'
 
 
 seed(2333)
@@ -35,14 +36,14 @@ _FLAGS.DEFINE_integer("output_height", 64,
 _FLAGS.DEFINE_integer("output_width", 128,
                       "The size of the output images to produce. If None, same value as output_height [None]")
 _FLAGS.DEFINE_string("dataset", "class14_png_aug",
-                     "The name of dataset [celebA, mnist, lsun]")
+                     "The name of dataset [class14_png_aug,]")
 _FLAGS.DEFINE_string("input_fname_pattern", "*png",
                      "Glob pattern of filename of input images [*]")
 _FLAGS.DEFINE_string("checkpoint_dir", None,
                      "Directory name to save the checkpoints [checkpoint]")
 _FLAGS.DEFINE_string("logdir", None,
                      "Directory name to save the logs")
-_FLAGS.DEFINE_string("data_dir", "./data", "Root directory of dataset [data]")
+_FLAGS.DEFINE_string("dataroot", "./data", "Root directory of dataset [data]")
 _FLAGS.DEFINE_integer("save_checkpoint_frequency", 500,
                       "frequency for saving checkpoint")
 _FLAGS.DEFINE_boolean(
@@ -90,6 +91,7 @@ _FLAGS.DEFINE_float("D_patch2_loss", 1.0,
                     "weight of patch discriminative loss, is ineffective when use_D_patch2 is false")
 _FLAGS.DEFINE_float("D_patch3_loss", 1.0,
                     "weight of patch discriminative loss, is ineffective when use_D_patch3 is false")
+_FLAGS.DEFINE_integer("z_dim", 100, "dimension of random vector z")
 FLAGS = _FLAGS.FLAGS
 
 
@@ -105,6 +107,9 @@ def update_and_save_flags(flags):
     if flags.output_width is None:
         flags.output_width = flags.output_height
 
+    if not flags.if_focal_loss:
+        flags.num_classes = None
+
     path = os.path.join(flags.outputsroot, flags.name)
     setattr(flags, 'checkpoint_dir', os.path.join(path, 'checkpoints'))
     setattr(flags, 'logdir', os.path.join(path, 'logs'))
@@ -116,15 +121,29 @@ def update_and_save_flags(flags):
 
 
 def main(_):
+    phase = 'train'
     flags = update_and_save_flags(FLAGS)
     pp.pprint(flags.__flags)
     make_outputs_dir(flags)
 
     run_config = tf.ConfigProto()
     run_config.gpu_options.allow_growth = True
+    dataset_config = {
+        'input_height': flags.input_height,
+        'input_width': flags.input_width,
+        'output_height': flags.output_height,
+        'output_width': flags.output_width,
+        'crop': flags.crop,
+        'grayscale': False,
+        'z_dim': flags.z_dim,
+    }
 
     with tf.Session(config=run_config) as sess:
-        dcgan = DCGAN(sess, flags)
+        dataset = Dataset(
+            flags.dataroot, flags.dataset,
+            flags.train_size, flags.batch_size,
+            dataset_config, flags.num_classes, phase)
+        dcgan = DCGAN(sess, flags, dataset, z_dim=flags.z_dim)
         dcgan.train()
 
 

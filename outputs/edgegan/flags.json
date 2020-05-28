@@ -12,7 +12,6 @@
     "if_focal_loss": true, 
     "clamp_lower": -0.01, 
     "stage1_zl_loss": 10.0, 
-    "data_dir": "./data", 
     "SPECTRAL_NORM_UPDATE_OPS": "spectral_norm_update_ops", 
     "if_resnet_e": true, 
     "if_resnet_d": false, 
@@ -28,6 +27,7 @@
     "G_norm": "instance", 
     "helpshort": false, 
     "learning_rate": 0.0002, 
+    "z_dim": 100, 
     "batch_size": 64, 
     "crop": false, 
     "sizeOfIn_patch2_2": 256, 
@@ -41,5 +41,6 @@
     "sizeOfIn_patch2": 128, 
     "h": false, 
     "input_width": 128, 
-    "outputsroot": "outputs"
+    "outputsroot": "outputs", 
+    "dataroot": "./data"
 }
