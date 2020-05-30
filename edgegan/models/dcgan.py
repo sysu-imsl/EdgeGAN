@@ -394,7 +394,6 @@ class DCGAN(object):
 
     def train(self):
         def allclose(a, b):
-            assert type(a) == type(b)
             if isinstance(a, np.ndarray):
                 print('output error: {}'.format(np.mean(np.abs(a-b))))
                 return np.mean(np.abs(a-b)) < 5e-4
@@ -441,6 +440,14 @@ class DCGAN(object):
                 enforce_exists(path)
                 result.append(load(path))
             return result
+
+        def add_summary(images, z, counter):
+            discriminator_summary = self.sess.run(
+                self.d_sum, feed_dict={self.inputs: images, self.z: z})
+            self.writer.add_summary(discriminator_summary, counter)
+            generator_summary = self.sess.run(
+                self.g_sum, feed_dict={self.inputs: images, self.z: z})
+            self.writer.add_summary(generator_summary, counter)
 
         self.build_model1()
 
@@ -551,38 +558,41 @@ class DCGAN(object):
                 assert batch_z.shape == z_from_dataset.shape
 
                 self.update_model(batch_images, batch_z)
+                add_summary(batch_images, batch_z, counter)
 
-                summary_str_d_sum = self.sess.run(self.d_sum,
-                                                  feed_dict={self.inputs: batch_images, self.z: batch_z})
-                self.writer.add_summary(summary_str_d_sum, counter)
+                def evaluate(obj):
+                    return getattr(obj, 'eval')(
+                        {self.inputs: batch_images, self.z: batch_z})
 
-                summary_str = self.sess.run(self.g_sum,
-                                            feed_dict={self.z: batch_z, self.inputs: batch_images})
-                self.writer.add_summary(summary_str, counter)
-
-                errD_fake_tmp1 = self.d_loss.eval(
-                    {self.inputs: batch_images, self.z: batch_z})
-                errD_fake_tmp2 = 0
+                discriminator_err = evaluate(self.d_loss)
                 if self.config.use_D_patch2:
-                    errD_fake_tmp3 = self.d_loss_patch2.eval(
-                        {self.inputs: batch_images, self.z: batch_z})
-                else:
-                    errD_fake_tmp3 = 0
+                    discriminator_err += evaluate(self.d_loss_patch2)
                 if self.config.use_D_patch3:
-                    errD_fake_tmp4 = self.d_loss_patch3.eval(
-                        {self.inputs: batch_images, self.z: batch_z})
-                else:
-                    errD_fake_tmp4 = 0
-                errD_fake = errD_fake_tmp1 + errD_fake_tmp2 + errD_fake_tmp3 + errD_fake_tmp4
-                errD_real = errD_fake
-                errG = self.g1_loss.eval({self.z: batch_z, self.inputs: batch_images}) + \
-                    self.g2_loss.eval(
-                        {self.z: batch_z, self.inputs: batch_images})
+                    discriminator_err += evaluate(self.d_loss_patch3)
+                # errD_fake_tmp1 = self.d_loss.eval(
+                #     {self.inputs: batch_images, self.z: batch_z})
+                # errD_fake_tmp2 = 0
+                # if self.config.use_D_patch2:
+                #     errD_fake_tmp3 = self.d_loss_patch2.eval(
+                #         {self.inputs: batch_images, self.z: batch_z})
+                # else:
+                #     errD_fake_tmp3 = 0
+                # if self.config.use_D_patch3:
+                #     errD_fake_tmp4 = self.d_loss_patch3.eval(
+                #         {self.inputs: batch_images, self.z: batch_z})
+                # else:
+                #     errD_fake_tmp4 = 0
+                # errD_fake = errD_fake_tmp1 + errD_fake_tmp2 + errD_fake_tmp3 + errD_fake_tmp4
+                # errD_real = errD_fake
+                # errG = self.g1_loss.eval({self.z: batch_z, self.inputs: batch_images}) + \
+                #     self.g2_loss.eval(
+                #         {self.z: batch_z, self.inputs: batch_images})
+                generator_err = evaluate(self.g1_loss) + evaluate(self.g2_loss)
 
                 counter += 1
                 print("Epoch: [%2d/%2d] [%4d/%4d] time: %4.4f, d_loss: %.8f, g_loss: %.8f"
                       % (epoch, self.config.epoch, idx, len(self.dataset),
-                         time.time() - start_time, errD_fake+errD_real, errG))
+                         time.time() - start_time, 2 * discriminator_err, generator_err))
 
                 outputL = self.sess.run(self.G1,
                                         feed_dict={self.z: batch_z, self.inputs: batch_images})
@@ -590,9 +600,8 @@ class DCGAN(object):
                 restore_outputL, restore_errD_fake, restore_errD_real, restore_errG = checksum_load(
                     "outputL.npy", "errD_fake.pkl", "errD_real.pkl", "errG.pkl",)
                 assert allclose(restore_outputL, outputL)
-                assert allclose(restore_errD_fake, errD_fake)
-                assert allclose(restore_errD_real, errD_real)
-                assert allclose(restore_errG, errG)
+                assert allclose(restore_errD_fake, discriminator_err)
+                assert allclose(restore_errG, generator_err)
                 print('assert successed!')
                 # self.save(self.saver2, self.config.checkpoint_dir, self.model_dir, counter)
                 exit()
