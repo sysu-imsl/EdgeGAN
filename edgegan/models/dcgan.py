@@ -451,36 +451,6 @@ class DCGAN(object):
 
         self.build_model1()
 
-        # load data
-        if self.config.if_focal_loss:
-            self.data = []
-            for i in xrange(self.config.num_classes):
-                data_path = os.path.join(self.config.dataroot,
-                                         self.config.dataset,
-                                         "stage1", "train", str(i),
-                                         "*.png")
-                self.data.extend(glob(data_path))
-                data_path = os.path.join(self.config.dataroot,
-                                         self.config.dataset,
-                                         "stage1", "train", str(i),
-                                         "*.jpg")
-                self.data.extend(glob(data_path))
-        else:
-            data_path = os.path.join(self.config.dataroot,
-                                     self.config.dataset,
-                                     "stage1", "train",
-                                     self.config.input_fname_pattern)
-            self.data = glob(data_path)
-
-        if len(self.data) == 0:
-            raise Exception("[!] No data found in '" + data_path + "'")
-        if len(self.data) < self.config.batch_size:
-            raise Exception(
-                "[!] Entire dataset size is less than the configured batch_size")
-
-        self.grayscale = (self.c_dim == 1)
-
-        # init var
         try:
             tf.global_variables_initializer().run()
         except:
@@ -491,9 +461,9 @@ class DCGAN(object):
 
         counter = 1
         start_time = time.time()
-        could_load, checkpoint_counter = self.load(
+        loaded, checkpoint_counter = self.load(
             self.saver2, self.config.checkpoint_dir, self.model_dir)
-        if could_load:
+        if loaded:
             counter = checkpoint_counter
             print(" [*] Load SUCCESS")
         else:
@@ -502,43 +472,8 @@ class DCGAN(object):
 
         # train
         for epoch in xrange(1):
-            # np.random.shuffle(self.data)
-            # batch_idxs = min(
-            #     len(self.data), self.config.train_size) // self.config.batch_size
-            # assert sorted(self.dataset.data) == sorted(self.data)
             self.dataset.shuffle()
-            # self.dataset.data = self.data
-
             for idx in xrange(1):
-                # batch_files = self.data[idx *
-                #                         self.config.batch_size: (idx+1)*self.config.batch_size]
-                # batch = [
-                #     utils.get_image(batch_file,
-                #                     input_height=self.config.input_height,
-                #                     input_width=self.config.input_width,
-                #                     resize_height=self.config.output_height,
-                #                     resize_width=self.config.output_width,
-                #                     crop=self.config.crop,
-                #                     grayscale=self.grayscale) for batch_file in batch_files]
-                # if self.grayscale:
-                #     batch_images = np.array(batch).astype(
-                #         np.float32)[:, :, :, None]
-                # else:
-                #     batch_images = np.array(batch).astype(np.float32)
-
-                # batch_z = np.random.normal(
-                #     size=(self.config.batch_size, self.z_dim))
-                # if self.config.if_focal_loss:
-                #     def getClass(filePath):
-                #         end = filePath.rfind("/")
-                #         start = filePath.rfind("/", 0, end)
-                #         return int(filePath[start+1:end])
-                #     batch_classes = [getClass(batch_file)
-                #                      for batch_file in batch_files]
-                #     batch_classes = np.array(batch_classes).reshape(
-                #         (self.config.batch_size, 1))
-                #     batch_z = np.concatenate((batch_z, batch_classes), axis=1)
-
                 (batch_files, batch_images, batch_z) = checksum_load(
                     'batch_files.pkl', 'batch_images.npy', 'batch_z.npy')
 
@@ -569,24 +504,7 @@ class DCGAN(object):
                     discriminator_err += evaluate(self.d_loss_patch2)
                 if self.config.use_D_patch3:
                     discriminator_err += evaluate(self.d_loss_patch3)
-                # errD_fake_tmp1 = self.d_loss.eval(
-                #     {self.inputs: batch_images, self.z: batch_z})
-                # errD_fake_tmp2 = 0
-                # if self.config.use_D_patch2:
-                #     errD_fake_tmp3 = self.d_loss_patch2.eval(
-                #         {self.inputs: batch_images, self.z: batch_z})
-                # else:
-                #     errD_fake_tmp3 = 0
-                # if self.config.use_D_patch3:
-                #     errD_fake_tmp4 = self.d_loss_patch3.eval(
-                #         {self.inputs: batch_images, self.z: batch_z})
-                # else:
-                #     errD_fake_tmp4 = 0
-                # errD_fake = errD_fake_tmp1 + errD_fake_tmp2 + errD_fake_tmp3 + errD_fake_tmp4
-                # errD_real = errD_fake
-                # errG = self.g1_loss.eval({self.z: batch_z, self.inputs: batch_images}) + \
-                #     self.g2_loss.eval(
-                #         {self.z: batch_z, self.inputs: batch_images})
+
                 generator_err = evaluate(self.g1_loss) + evaluate(self.g2_loss)
 
                 counter += 1

@@ -131,8 +131,9 @@ dmypy.json
 sample*/
 checkpoint*/
 logs/
-data/
 .vscode/
 checksum/
 *.pkl
 backup/
+data/
+!edgegan/utils/data/
