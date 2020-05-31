@@ -25,6 +25,54 @@ from .generator import Generator
 reload(sys)
 sys.setdefaultencoding('utf8')
 
+def allclose(a, b):
+    if isinstance(a, np.ndarray):
+        print('output error: {}'.format(np.mean(np.abs(a-b))))
+        return np.mean(np.abs(a-b)) < 5e-4
+    else:
+        return abs((a-b) / a) < 0.01
+
+def extension(filename):
+    return os.path.splitext(filename)[-1]
+
+def checksum_save(input_dict):
+    checksum_path = utils.checksum_path
+    utils.makedirs(checksum_path)
+
+    def save(filename, obj):
+        p = os.path.join(checksum_path, filename)
+        if isinstance(obj, np.ndarray):
+            np.save(p + '.npy', val)
+        else:
+            with open(p + '.pkl', 'wb') as f:
+                pickle.dump(obj, f)
+
+    for key, val in input_dict.items():
+        save(key, val)
+
+def checksum_load(*names):
+    def load(filename):
+        if extension(filename) == '.npy':
+            return np.load(filename)
+        elif extension(filename) == '.pkl':
+            with open(filename, 'rb') as f:
+                return pickle.load(f)
+        else:
+            raise NotImplementedError
+
+    def enforce_exists(path):
+        if not os.path.exists(path):
+            print('missing loading item: {}'.format(path))
+            raise ValueError
+
+    checksum_path = utils.checksum_path
+    result = []
+    print(names)
+    for name in names:
+        path = os.path.join(checksum_path, name)
+        enforce_exists(path)
+        result.append(load(path))
+    return result
 
 def channel_first(input):
     return tf.transpose(input, [0, 3, 1, 2])
@@ -393,53 +441,7 @@ class DCGAN(object):
         utils.show_all_variables()
 
     def train(self):
-        def allclose(a, b):
-            if isinstance(a, np.ndarray):
-                print('output error: {}'.format(np.mean(np.abs(a-b))))
-                return np.mean(np.abs(a-b)) < 5e-4
-            else:
-                return abs((a-b) / a) < 0.01
 
-        def extension(filename):
-            return os.path.splitext(filename)[-1]
-
-        def checksum_save(input_dict):
-            checksum_path = utils.checksum_path
-            utils.makedirs(checksum_path)
-
-            def save(filename, obj):
-                p = os.path.join(checksum_path, filename)
-                if isinstance(obj, np.ndarray):
-                    np.save(p + '.npy', val)
-                else:
-                    with open(p + '.pkl', 'wb') as f:
-                        pickle.dump(obj, f)
-
-            for key, val in input_dict.items():
-                save(key, val)
-
-        def checksum_load(*names):
-            def load(filename):
-                if extension(filename) == '.npy':
-                    return np.load(filename)
-                elif extension(filename) == '.pkl':
-                    with open(filename, 'rb') as f:
-                        return pickle.load(f)
-                else:
-                    raise NotImplementedError
-
-            def enforce_exists(path):
-                if not os.path.exists(path):
-                    print('missing loading item: {}'.format(path))
-                    raise ValueError
-
-            checksum_path = utils.checksum_path
-            result = []
-            for name in names:
-                path = os.path.join(checksum_path, name)
-                enforce_exists(path)
-                result.append(load(path))
-            return result
 
         def add_summary(images, z, counter):
             discriminator_summary = self.sess.run(
@@ -524,78 +526,8 @@ class DCGAN(object):
                 # self.save(self.saver2, self.config.checkpoint_dir, self.model_dir, counter)
                 exit()
 
-    def test1(self, num):
-        self.build_model1()
-
-        # init var
-        try:
-            tf.global_variables_initializer().run()
-        except:
-            tf.initialize_all_variables().run()
-
-        # load model if exist
-        counter = 1
-        start_time = time.time()
-        could_load, checkpoint_counter = self.load(self.saver, self.config.checkpoint_dir,
-                                                   self.model_dir)
-        if could_load:
-            counter = checkpoint_counter
-            print(" [*] Load SUCCESS")
-        else:
-            print(" [!] Load failed...")
-            return
-
-        # test
-        batch_idxs = min(num, self.config.train_size) // self.config.batch_size
-
-        for idx in xrange(0, int(batch_idxs)):
-            # init z by batch
-            batch_z = np.random.uniform(-1, 1,
-                                        [self.config.batch_size, self.z_dim]).astype(np.float32)
-            if self.config.if_focal_loss:
-                if self.config.Test_singleLabel:
-                    # batch_classes = np.floor(np.random.uniform(0, 5,
-                    #                                            [self.config.batch_size, 1]).astype(
-                    #     np.float32) * self.config.num_classes)
-                    # batch_classes = tf.fill([self.config.batch_size, 1], idx)
-                    batch_classes = np.full(
-                        (self.config.batch_size, 1), idx, dtype=np.float32)
-                    # batch_classes = tf.fill(batch_classes.size(), idx)
-                    # batch_classes = np.floor(np.random.uniform(1, 2,
-                    #                                            [self.config.batch_size, 1]).astype(
-                    #     np.float32) * 1)
-                    batch_z = np.concatenate((batch_z, batch_classes), axis=1)
-                else:
-                    batch_classes = np.floor(np.random.uniform(0, 5,
-                                                               [self.config.batch_size, 1]).astype(np.float32)*self.config.num_classes)
-                    # batch_classes = np.floor(np.random.uniform(1, 2,
-                    #                                            [self.config.batch_size, 1]).astype(
-                    #     np.float32) * 1)
-                    batch_z = np.concatenate((batch_z, batch_classes), axis=1)
-            # batch_z = np.random.normal(size=(self.config.batch_size, self.z_dim))
-            #
-            # if self.config.if_focal_loss:
-            #     batch_classes = tf.floor(np.random.uniform(0, 1,
-            #             [self.config.batch_size, 1]).astype(np.float32)*self.config.num_classes)
-            #     batch_z = tf.concat([batch_z, batch_classes], 1)
-
-            # generate images
-            results = self.sess.run(self.G, feed_dict={self.z: batch_z})
-
-            image_frame_dim = int(math.ceil(self.config.batch_size**.5))
-            utils.save_images(results, [image_frame_dim, image_frame_dim],
-                              self.config.sample_dir + '/stage1_AddE_random/' + self.config.dataset + '/' +
-                              self.model_dir + '__test_%s.png' % idx)
-
-            print("Test: [%4d/%4d]" % (idx, batch_idxs))
 
     def build_model2(self):
-        # Define models
-        # self.encoder = Encoder('E', is_train=True,
-        #                 image_size=self.config.input_height,
-        #                 latent_dim=self.z_dim,
-        #                 use_resnet=True)
-
         # for testing
         if self.config.output_form is "batch":
             batch_size_mid = self.config.batch_size
@@ -784,6 +716,11 @@ class DCGAN(object):
             else:
                 results = np.append(batch_images, outputL, axis=2)
                 results = np.append(results, outputR, axis=2)
+
+            recon_results = checksum_load('test2_reuslt.npy')
+            assert allclose(results, recon_results)
+            print('assertion successed!')
+            exit(0)
 
             image_frame_dim = int(math.ceil(batch_size_tmp**.5))
             if self.config.output_form == "batch":

@@ -154,7 +154,7 @@ def main(_):
     run_config.gpu_options.allow_growth = True
 
     with tf.Session(config=run_config) as sess:
-        dcgan = DCGAN(sess, flags)
+        dcgan = DCGAN(sess, flags, None)
 
         if flags.train:
             dcgan.train()
