@@ -25,6 +25,7 @@ from .generator import Generator
 reload(sys)
 sys.setdefaultencoding('utf8')
 
+
 def allclose(a, b):
     if isinstance(a, np.ndarray):
         print('output error: {}'.format(np.mean(np.abs(a-b))))
@@ -32,8 +33,10 @@ def allclose(a, b):
     else:
         return abs((a-b) / a) < 0.01
 
+
 def extension(filename):
     return os.path.splitext(filename)[-1]
+
 
 def checksum_save(input_dict):
     checksum_path = utils.checksum_path
@@ -49,6 +52,7 @@ def checksum_save(input_dict):
 
     for key, val in input_dict.items():
         save(key, val)
+
 
 def checksum_load(*names):
     def load(filename):
@@ -73,6 +77,7 @@ def checksum_load(*names):
         enforce_exists(path)
         result.append(load(path))
     return result
+
 
 def channel_first(input):
     return tf.transpose(input, [0, 3, 1, 2])
@@ -442,7 +447,6 @@ class DCGAN(object):
 
     def train(self):
 
-
         def add_summary(images, z, counter):
             discriminator_summary = self.sess.run(
                 self.d_sum, feed_dict={self.inputs: images, self.z: z})
@@ -558,20 +562,13 @@ class DCGAN(object):
         self.G2 = self.generator2(self.z)
 
     def build_model2(self):
-        assert (not self.config.Test_allLabel) or (self.config.Test_singleLabel and self.config.test_label == 0)
-        if self.config.if_focal_loss:
-            self.encoder = Encoder('E', is_train=True,
-                                    norm=self.config.E_norm,
-                                    image_size=self.config.input_height,
-                                    latent_dim=self.z_dim,
-                                    use_resnet=self.config.if_resnet_e)
-        else:
-            # TODO latent_dim is corret?
-            self.encoder = Encoder('E', is_train=True,
-                                    norm=self.config.E_norm,
-                                    image_size=self.config.input_height,
-                                    latent_dim=self.z_dim,
-                                    use_resnet=self.config.if_resnet_e)
+        assert (not self.config.Test_allLabel) or (
+            self.config.Test_singleLabel and self.config.test_label == 0)
+        self.encoder = Encoder('E', is_train=True,
+                               norm=self.config.E_norm,
+                               image_size=self.config.input_height,
+                               latent_dim=self.z_dim,
+                               use_resnet=self.config.if_resnet_e)
 
         self.generator1 = Generator('G1', is_train=False,
                                     norm=self.config.G_norm,
@@ -657,23 +654,17 @@ class DCGAN(object):
             print(" [!] Load failed...")
             return
 
-        # test
-        # np.random.shuffle(self.data)
-
-        if self.config.output_form == "batch":
-            # name saved in txt
-            filename = self.config.sample_dir + '/stage1_AddE_specified/' + self.config.dataset + '/' + str(
-                self.config.test_label) + '/' + self.model_dir + '.txt'
-            file = open(filename, 'w')
-            file.truncate()
-            for i in range(len(self.data)):
-                s = str(self.data[i])
-                cropped = s.split('/')[-1]
-                file.write(cropped + '\n')
-            file.close()
-            batch_size_tmp = self.config.batch_size
-        else:
-            batch_size_tmp = 1
+        # name saved in txt
+        filename = self.config.sample_dir + '/stage1_AddE_specified/' + self.config.dataset + '/' + str(
+            self.config.test_label) + '/' + self.model_dir + '.txt'
+        file = open(filename, 'w')
+        file.truncate()
+        for i in range(len(self.data)):
+            s = str(self.data[i])
+            cropped = s.split('/')[-1]
+            file.write(cropped + '\n')
+        file.close()
+        batch_size_tmp = self.config.batch_size
 
         batch_idxs = min(
             len(self.data), self.config.train_size) // batch_size_tmp
