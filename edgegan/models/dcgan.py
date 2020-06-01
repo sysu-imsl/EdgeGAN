@@ -686,6 +686,10 @@ class DCGAN(object):
             else:
                 batch_images = np.array(batch).astype(np.float32)
 
+            recon_batch_images = self.dataset[idx]
+            assert allclose(recon_batch_images, batch_images)
+            print('dataset assert successed!')
+
             # generate images
             inputL = batch_images[:, :, 0:int(self.config.output_width / 2), :]
             outputL = self.sess.run(self.G1,
