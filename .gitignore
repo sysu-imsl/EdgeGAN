@@ -138,3 +138,4 @@ backup/
 data/
 !edgegan/utils/data/
 data
+outputs

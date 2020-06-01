@@ -641,7 +641,7 @@ class DCGAN(object):
                 utils.save_images(
                     img, [1, 1],
                     os.path.join(
-                        self.config.sample_dir, 'stage1_AddE_specified',
+                        self.config.test_output_dir, 'stage1_AddE_specified',
                         self.config.dataset, str(self.config.test_label), name,
                     )
                 )

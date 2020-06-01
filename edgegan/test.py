@@ -43,7 +43,7 @@ _FLAGS.DEFINE_string("checkpoint_dir", None,
 _FLAGS.DEFINE_string("logdir", None,
                      "Directory name to save the logs")
 _FLAGS.DEFINE_string("dataroot", "./data", "Root directory of dataset [data]")
-_FLAGS.DEFINE_string("sample_dir", "samples_gpwgan_instanceEGD_noOriginD_patch2_128_patch3_128_patchGAN_insN_wgan_2G",
+_FLAGS.DEFINE_string("test_output_dir", "test_output",
                      "Directory name to save the image samples [samples]")
 _FLAGS.DEFINE_boolean(
     "crop", False, "True for training, False for testing [False]")
@@ -100,6 +100,7 @@ def update_flags(flags):
     path = os.path.join(flags.outputsroot, flags.name)
     setattr(flags, 'checkpoint_dir', os.path.join(path, 'checkpoints'))
     setattr(flags, 'logdir', os.path.join(path, 'logs'))
+    setattr(flags, 'test_output_dir', os.path.join(path, 'test_output'))
 
     return flags
 
@@ -130,27 +131,18 @@ def main(_):
     run_config.gpu_options.allow_growth = True
 
     with tf.Session(config=run_config) as sess:
-
         dcgan = DCGAN(sess, flags, None)
         if flags.Test_allLabel:
             for label in xrange(0, flags.num_classes):
                 flags.test_label = label
                 dcgan.dataset = create_dataset(flags)
-                if flags.output_form is "batch":
-                    makedirs(flags.sample_dir + "/stage1_AddE_specified/" + flags.dataset + '/' + str(
-                        flags.test_label) + '/')
-                else:
-                    makedirs(flags.sample_dir + "/stage1_AddE_specified/" + flags.dataset + '_singleTest/' + str(
-                        flags.test_label) + '/')
+                makedirs(flags.test_output_dir + "/stage1_AddE_specified/" + flags.dataset + '/' + str(
+                    flags.test_label) + '/')
                 dcgan.test2()
         else:
             dcgan.dataset = create_dataset(flags)
-            if flags.output_form is "batch":
-                makedirs(flags.sample_dir + "/stage1_AddE_specified/" + flags.dataset + '/' + str(
-                    flags.test_label) + '/')
-            else:
-                makedirs(flags.sample_dir + "/stage1_AddE_specified/" + flags.dataset + '_singleTest/' + str(
-                    flags.test_label) + '/')
+            makedirs(flags.test_output_dir + "/stage1_AddE_specified/" + flags.dataset + '/' + str(
+                flags.test_label) + '/')
             dcgan.test2()
 
 

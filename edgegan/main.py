@@ -42,7 +42,7 @@ _FLAGS.DEFINE_string("checkpoint_dir", None,
 _FLAGS.DEFINE_string("logdir", None,
                      "Directory name to save the logs")
 _FLAGS.DEFINE_string("dataroot", "./data", "Root directory of dataset [data]")
-_FLAGS.DEFINE_string("sample_dir", "samples_gpwgan_instanceEGD_noOriginD_patch2_128_patch3_128_patchGAN_insN_wgan_2G",
+_FLAGS.DEFINE_string("test_output_dir", "samples_gpwgan_instanceEGD_noOriginD_patch2_128_patch3_128_patchGAN_insN_wgan_2G",
                      "Directory name to save the image samples [samples]")
 _FLAGS.DEFINE_boolean(
     "train", False, "True for training, False for testing [False]")
@@ -163,18 +163,18 @@ def main(_):
                 for label in xrange(0, flags.num_classes):
                     flags.test_label = label
                     if flags.output_form is "batch":
-                        makedirs(flags.sample_dir + "/stage1_AddE_specified/" + flags.dataset + '/' + str(
+                        makedirs(flags.test_output_dir + "/stage1_AddE_specified/" + flags.dataset + '/' + str(
                             flags.test_label) + '/')
                     else:
-                        makedirs(flags.sample_dir + "/stage1_AddE_specified/" + flags.dataset + '_singleTest/' + str(
+                        makedirs(flags.test_output_dir + "/stage1_AddE_specified/" + flags.dataset + '_singleTest/' + str(
                             flags.test_label) + '/')
                     dcgan.test2()
             elif not flags.Random_test:
                 if flags.output_form is "batch":
-                    makedirs(flags.sample_dir + "/stage1_AddE_specified/" + flags.dataset + '/' + str(
+                    makedirs(flags.test_output_dir + "/stage1_AddE_specified/" + flags.dataset + '/' + str(
                         flags.test_label) + '/')
                 else:
-                    makedirs(flags.sample_dir + "/stage1_AddE_specified/" + flags.dataset + '_singleTest/' + str(
+                    makedirs(flags.test_output_dir + "/stage1_AddE_specified/" + flags.dataset + '_singleTest/' + str(
                         flags.test_label) + '/')
                 dcgan.test2()
             elif flags.Random_test and flags.Test_singleLabel:
