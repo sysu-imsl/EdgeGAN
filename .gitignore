@@ -137,3 +137,4 @@ checksum/
 backup/
 data/
 !edgegan/utils/data/
+data
