@@ -141,9 +141,9 @@ class DCGAN(object):
         self.register_optim_if('d_optim', tf.train.RMSPropOptimizer(self.config.learning_rate).minimize(
             self.d_loss, var_list=self.joint_discriminator.var_list))
         self.register_optim_if('d_optim_patch2', tf.train.RMSPropOptimizer(self.config.learning_rate).minimize(
-            self.d_loss_patch2, var_list=self.discriminator_patch2.var_list), self.config.use_D_patch2)
+            self.d_loss_patch2, var_list=self.image_discriminator.var_list), self.config.use_image_discriminator)
         self.register_optim_if('d_optim_patch3', tf.train.RMSPropOptimizer(self.config.learning_rate).minimize(
-            self.d_loss_patch3, var_list=self.discriminator_patch3.var_list), self.config.use_D_patch3)
+            self.d_loss_patch3, var_list=self.edge_discriminator.var_list), self.config.use_edge_discriminator)
         self.register_optim_if('d_optim2', tf.train.RMSPropOptimizer(self.config.learning_rate).minimize(
             self.loss_d_ac, var_list=self.classifier.var_list), self.config.multiclasses)
         self.register_optim_if(
@@ -192,14 +192,14 @@ class DCGAN(object):
                                                  num_filters=self.df_dim,
                                                  use_resnet=self.config.if_resnet_d)
 
-        if self.config.use_D_patch2 is True:
-            self.discriminator_patch2 = Discriminator('D_patch2', is_train=True,
+        if self.config.use_image_discriminator is True:
+            self.image_discriminator = Discriminator('D_patch2', is_train=True,
                                                       norm=self.config.D_norm,
                                                       num_filters=self.df_dim,
                                                       use_resnet=self.config.if_resnet_d)
 
-        if self.config.use_D_patch3 is True:
-            self.discriminator_patch3 = Discriminator('D_patch3', is_train=True,
+        if self.config.use_edge_discriminator is True:
+            self.edge_discriminator = Discriminator('D_patch3', is_train=True,
                                                       norm=self.config.D_norm,
                                                       num_filters=self.df_dim,
                                                       use_resnet=self.config.if_resnet_d)
@@ -249,7 +249,7 @@ class DCGAN(object):
         def delete_it_later():
             pictures = self.inputs[:, :, int(
                 self.config.output_width / 2):self.config.output_width, :]
-            _ = tf.image.resize_images(pictures, [self.config.sizeOfIn_patch3, self.config.sizeOfIn_patch3],
+            _ = tf.image.resize_images(pictures, [self.config.edge_dis_size, self.config.edge_dis_size],
                                        method=2)
 
         if self.config.multiclasses:
@@ -281,27 +281,27 @@ class DCGAN(object):
             self.joint_output, reuse=True)
         edges, pictures = split_inputs(self.inputs)
 
-        if self.config.use_D_patch2:
-            self.resized_inputs = resize(pictures, self.config.sizeOfIn_patch2)
-            self.patch2_D, self.patch2_D_logits = self.discriminator_patch2(
+        if self.config.use_image_discriminator:
+            self.resized_inputs = resize(pictures, self.config.image_dis_size)
+            self.imageD, self.trueimage_dis_output = self.image_discriminator(
                 self.resized_inputs)
 
-            self.resized_G2_p2 = resize(
-                self.image_output, self.config.sizeOfIn_patch2)
-            self.patch2_D_, self.patch2_D_logits_ = self.discriminator_patch2(
-                self.resized_G2_p2, reuse=True)
+            self.resized_image_output = resize(
+                self.image_output, self.config.image_dis_size)
+            self.imageDfake, self.fakeimage_dis_output = self.image_discriminator(
+                self.resized_image_output, reuse=True)
 
-        if self.config.use_D_patch3:
-            self.resized_inputs_p3 = resize(edges, self.config.sizeOfIn_patch3)
+        if self.config.use_edge_discriminator:
+            self.resized_edges = resize(edges, self.config.edge_dis_size)
 
             delete_it_later()
-            self.patch3_D, self.patch3_D_logits = self.discriminator_patch3(
-                self.resized_inputs_p3)
+            self.edgeD, self.trueedge_dis_output = self.edge_discriminator(
+                self.resized_edges)
 
-            self.resized_G1_p3 = resize(
-                self.edge_output, self.config.sizeOfIn_patch3)
-            self.patch3_D_, self.patch3_D_logits_ = self.discriminator_patch3(
-                self.resized_G1_p3, reuse=True)
+            self.resized_edge_output = resize(
+                self.edge_output, self.config.edge_dis_size)
+            self.edgeDfake, self.fakeedge_dis_output = self.edge_discriminator(
+                self.resized_edge_output, reuse=True)
 
         self.z_recon, _, _ = self.encoder(self.edge_output)
 
@@ -315,28 +315,28 @@ class DCGAN(object):
         )
         self.g_loss = F.generator_ganloss(self.fakejoint_dis_output)
 
-        if self.config.use_D_patch2:
+        if self.config.use_image_discriminator:
             self.d_loss_patch2 = (
-                F.discriminator_ganloss(self.patch2_D_logits_, self.patch2_D_logits) +
+                F.discriminator_ganloss(self.fakeimage_dis_output, self.trueimage_dis_output) +
                 penalty(
-                    self.resized_G2_p2, self.resized_inputs, self.discriminator_patch2,
+                    self.resized_image_output, self.resized_inputs, self.image_discriminator,
                     self.config.batch_size, self.config.lambda_gp
                 )
             )
-            self.g_loss_patch2 = F.generator_ganloss(self.patch2_D_logits_)
+            self.g_loss_patch2 = F.generator_ganloss(self.fakeimage_dis_output)
         else:
             self.d_loss_patch2 = 0
             self.g_loss_patch2 = 0
 
-        if self.config.use_D_patch3:
+        if self.config.use_edge_discriminator:
             self.d_loss_patch3 = (
-                F.discriminator_ganloss(self.patch3_D_logits_, self.patch3_D_logits) +
+                F.discriminator_ganloss(self.fakeedge_dis_output, self.trueedge_dis_output) +
                 penalty(
-                    self.resized_G1_p3, self.resized_inputs_p3, self.discriminator_patch3,
+                    self.resized_edge_output, self.resized_edges, self.edge_discriminator,
                     self.config.batch_size, self.config.lambda_gp
                 )
             )
-            self.g_loss_patch3 = F.generator_ganloss(self.patch3_D_logits_)
+            self.g_loss_patch3 = F.generator_ganloss(self.fakeedge_dis_output)
         else:
             self.d_loss_patch3 = 0
             self.g_loss_patch3 = 0
@@ -402,15 +402,15 @@ class DCGAN(object):
         self.g_sum = nn.merge_summary([self.g_sum, self.d__sum_tmp])
         self.d_sum = nn.merge_summary([self.d_sum, self.d_sum_tmp])
 
-        if self.config.use_D_patch2:
+        if self.config.use_image_discriminator:
             self.d_patch2_sum = nn.histogram_summary(
-                "patch2_d", self.patch2_D)
+                "imageD", self.imageD)
             self.d__patch2_sum = nn.histogram_summary(
-                "patch2_d_", self.patch2_D_)
+                "imageDfake", self.imageDfake)
             self.resized_inputs_sum = nn.image_summary(
                 "resized_inputs_image", self.resized_inputs)
             self.resized_G_sum = nn.image_summary(
-                "resized_G_image", self.resized_G2_p2)
+                "resized_G_image", self.resized_image_output)
             self.d_loss_patch2_sum = nn.scalar_summary(
                 "d_loss_patch2", self.d_loss_patch2)
             self.g_loss_patch2_sum = nn.scalar_summary(
@@ -420,15 +420,15 @@ class DCGAN(object):
             self.d_sum = nn.merge_summary(
                 [self.d_sum, self.d_patch2_sum, self.resized_inputs_sum, self.d_loss_patch2_sum])
 
-        if self.config.use_D_patch3:
+        if self.config.use_edge_discriminator:
             self.d_patch3_sum = nn.histogram_summary(
-                "patch3_d", self.patch3_D)
+                "edgeD", self.edgeD)
             self.d__patch3_sum = nn.histogram_summary(
-                "patch3_d_", self.patch3_D_)
+                "edgeDfake", self.edgeDfake)
             self.resized_inputs_p3_sum = nn.image_summary(
-                "resized_inputs_p3_image", self.resized_inputs_p3)
+                "resized_inputs_p3_image", self.resized_edges)
             self.resized_G_p3_sum = nn.image_summary(
-                "resized_G_p3_image", self.resized_G1_p3)
+                "resized_G_p3_image", self.resized_edge_output)
             self.d_loss_patch3_sum = nn.scalar_summary(
                 "d_loss_patch3", self.d_loss_patch3)
             self.g_loss_patch3_sum = nn.scalar_summary(
@@ -495,9 +495,9 @@ class DCGAN(object):
                         {self.inputs: batch_images, self.z: batch_z})
 
                 discriminator_err = evaluate(self.d_loss)
-                if self.config.use_D_patch2:
+                if self.config.use_image_discriminator:
                     discriminator_err += evaluate(self.d_loss_patch2)
-                if self.config.use_D_patch3:
+                if self.config.use_edge_discriminator:
                     discriminator_err += evaluate(self.d_loss_patch3)
 
                 generator_err = evaluate(self.g1_loss) + evaluate(self.g2_loss)
