@@ -478,23 +478,7 @@ class DCGAN(object):
         for epoch in xrange(self.config.epoch):
             self.dataset.shuffle()
             for idx in xrange(len(self.dataset)):
-                (batch_files, batch_images, batch_z) = checksum_load(
-                    'batch_files.pkl', 'batch_images.npy', 'batch_z.npy')
-
-                if self.config.if_focal_loss:
-                    def getClass(filePath):
-                        end = filePath.rfind("/")
-                        start = filePath.rfind("/", 0, end)
-                        return int(filePath[start+1:end])
-                    batch_classes = [getClass(batch_file)
-                                     for batch_file in batch_files]
-                    batch_classes = np.array(batch_classes).reshape(
-                        (self.config.batch_size, 1))
-                    batch_z = np.concatenate((batch_z, batch_classes), axis=1)
-
-                img_from_dataset, z_from_dataset = self.dataset[0]
-                assert allclose(batch_images, img_from_dataset)
-                assert batch_z.shape == z_from_dataset.shape
+                batch_images, batch_z = self.dataset[0]
 
                 self.update_model(batch_images, batch_z)
                 add_summary(batch_images, batch_z, counter)

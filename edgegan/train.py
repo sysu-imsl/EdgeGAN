@@ -12,7 +12,7 @@ from edgegan.models import DCGAN
 from edgegan.utils import makedirs, pp
 from edgegan.utils.data import Dataset
 
-os.environ['CUDA_VISIBLE_DEVICES'] = '0'
+os.environ['CUDA_VISIBLE_DEVICES'] = '1'
 
 
 seed(2333)
