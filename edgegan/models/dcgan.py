@@ -139,7 +139,7 @@ class DCGAN(object):
 
     def construct_optimizers(self):
         self.register_optim_if('d_optim', tf.train.RMSPropOptimizer(self.config.learning_rate).minimize(
-            self.d_loss, var_list=self.discriminator.var_list))
+            self.d_loss, var_list=self.joint_discriminator.var_list))
         self.register_optim_if('d_optim_patch2', tf.train.RMSPropOptimizer(self.config.learning_rate).minimize(
             self.d_loss_patch2, var_list=self.discriminator_patch2.var_list), self.config.use_D_patch2)
         self.register_optim_if('d_optim_patch3', tf.train.RMSPropOptimizer(self.config.learning_rate).minimize(
@@ -187,10 +187,10 @@ class DCGAN(object):
             self.classifier = Classifier(
                 'D2', self.config.SPECTRAL_NORM_UPDATE_OPS)
 
-        self.discriminator = Discriminator('D', is_train=True,
-                                           norm=self.config.D_norm,
-                                           num_filters=self.df_dim,
-                                           use_resnet=self.config.if_resnet_d)
+        self.joint_discriminator = Discriminator('D', is_train=True,
+                                                 norm=self.config.D_norm,
+                                                 num_filters=self.df_dim,
+                                                 use_resnet=self.config.if_resnet_d)
 
         if self.config.use_D_patch2 is True:
             self.discriminator_patch2 = Discriminator('D_patch2', is_train=True,
@@ -253,11 +253,11 @@ class DCGAN(object):
                                        method=2)
 
         if self.config.multiclasses:
-            self.G1 = self.edge_generator(self.z_onehot)
-            self.G2 = self.image_generator(self.z_onehot)
+            self.edge_output = self.edge_generator(self.z_onehot)
+            self.image_output = self.image_generator(self.z_onehot)
         else:
-            self.G1 = self.edge_generator(self.z)
-            self.G2 = self.image_generator(self.z)
+            self.edge_output = self.edge_generator(self.z)
+            self.image_output = self.image_generator(self.z)
 
         if self.config.multiclasses:
             def classify(inputs, reuse):
@@ -271,11 +271,14 @@ class DCGAN(object):
 
             self.trueimage_class_output = classify(
                 self.inputs[:, :, int(self.image_dims[1]/2):, :], reuse=False)
-            self.fakeimage_class_output = classify(self.G2, reuse=True)
+            self.fakeimage_class_output = classify(
+                self.image_output, reuse=True)
 
-        self.D, self.D_logits = self.discriminator(self.inputs)
-        self.G_all = tf.concat([self.G1, self.G2], 2)
-        self.D_, self.D_logits_ = self.discriminator(self.G_all, reuse=True)
+        self.D, self.truejoint_dis_output = self.joint_discriminator(
+            self.inputs)
+        self.joint_output = tf.concat([self.edge_output, self.image_output], 2)
+        self.D_, self.fakejoint_dis_output = self.joint_discriminator(
+            self.joint_output, reuse=True)
         edges, pictures = split_inputs(self.inputs)
 
         if self.config.use_D_patch2:
@@ -283,7 +286,8 @@ class DCGAN(object):
             self.patch2_D, self.patch2_D_logits = self.discriminator_patch2(
                 self.resized_inputs)
 
-            self.resized_G2_p2 = resize(self.G2, self.config.sizeOfIn_patch2)
+            self.resized_G2_p2 = resize(
+                self.image_output, self.config.sizeOfIn_patch2)
             self.patch2_D_, self.patch2_D_logits_ = self.discriminator_patch2(
                 self.resized_G2_p2, reuse=True)
 
@@ -294,21 +298,22 @@ class DCGAN(object):
             self.patch3_D, self.patch3_D_logits = self.discriminator_patch3(
                 self.resized_inputs_p3)
 
-            self.resized_G1_p3 = resize(self.G1, self.config.sizeOfIn_patch3)
+            self.resized_G1_p3 = resize(
+                self.edge_output, self.config.sizeOfIn_patch3)
             self.patch3_D_, self.patch3_D_logits_ = self.discriminator_patch3(
                 self.resized_G1_p3, reuse=True)
 
-        self.z_recon, _, _ = self.encoder(self.G1)
+        self.z_recon, _, _ = self.encoder(self.edge_output)
 
     def define_losses(self):
         self.d_loss = (
-            F.discriminator_ganloss(self.D_logits_, self.D_logits) +
+            F.discriminator_ganloss(self.fakejoint_dis_output, self.truejoint_dis_output) +
             penalty(
-                self.G_all, self.inputs, self.discriminator,
+                self.joint_output, self.inputs, self.joint_discriminator,
                 self.config.batch_size, self.config.lambda_gp
             )
         )
-        self.g_loss = F.generator_ganloss(self.D_logits_)
+        self.g_loss = F.generator_ganloss(self.fakejoint_dis_output)
 
         if self.config.use_D_patch2:
             self.d_loss_patch2 = (
@@ -370,8 +375,8 @@ class DCGAN(object):
         self.z_sum = nn.histogram_summary("z", self.z)
         self.inputs_sum = nn.image_summary("inputs", self.inputs)
 
-        self.G1_sum = nn.image_summary("G1", self.G1)
-        self.G2_sum = nn.image_summary("G2", self.G2)
+        self.G1_sum = nn.image_summary("G1", self.edge_output)
+        self.G2_sum = nn.image_summary("G2", self.image_output)
 
         self.g1_loss_sum = nn.scalar_summary("g1_loss", self.g1_loss)
         self.g2_loss_sum = nn.scalar_summary("g2_loss", self.g2_loss)
@@ -502,7 +507,7 @@ class DCGAN(object):
                       % (epoch, self.config.epoch, idx, len(self.dataset),
                          time.time() - start_time, 2 * discriminator_err, generator_err))
 
-                outputL = self.sess.run(self.G1,
+                outputL = self.sess.run(self.edge_output,
                                         feed_dict={self.z: batch_z, self.inputs: batch_images})
 
                 restore_outputL, restore_errD_fake, restore_errD_real, restore_errG = checksum_load(
@@ -539,8 +544,8 @@ class DCGAN(object):
                                                on_value=1., off_value=0., dtype=tf.float32)
                 self.z = tf.concat([z_encoded, self.class_onehot], 1)
 
-        self.G1 = self.edge_generator(self.z)
-        self.G2 = self.image_generator(self.z)
+        self.edge_output = self.edge_generator(self.z)
+        self.image_output = self.image_generator(self.z)
 
     def build_test_model(self):
         assert (not self.config.Test_allLabel) or (
@@ -601,9 +606,9 @@ class DCGAN(object):
 
             # generate images
             inputL = batch_images[:, :, 0:int(self.config.output_width / 2), :]
-            outputL = self.sess.run(self.G1,
+            outputL = self.sess.run(self.edge_output,
                                     feed_dict={self.inputs: batch_images})
-            outputR = self.sess.run(self.G2,
+            outputR = self.sess.run(self.image_output,
                                     feed_dict={self.inputs: batch_images})
 
             if self.config.output_combination == "inputL_outputR":
