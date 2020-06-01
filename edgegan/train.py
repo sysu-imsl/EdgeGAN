@@ -54,7 +54,7 @@ _FLAGS.DEFINE_boolean(
 _FLAGS.DEFINE_float("stage1_zl_loss", 10.0, "weight of z l1 loss")
 
 # multi class
-_FLAGS.DEFINE_boolean("if_focal_loss", True, "if use focal loss")
+_FLAGS.DEFINE_boolean("multiclasses", True, "if use focal loss")
 _FLAGS.DEFINE_integer("num_classes", 14, "num of classes")
 _FLAGS.DEFINE_string("SPECTRAL_NORM_UPDATE_OPS",
                      "spectral_norm_update_ops", "")
@@ -107,7 +107,7 @@ def update_and_save_flags(flags):
     if flags.output_width is None:
         flags.output_width = flags.output_height
 
-    if not flags.if_focal_loss:
+    if not flags.multiclasses:
         flags.num_classes = None
 
     path = os.path.join(flags.outputsroot, flags.name)

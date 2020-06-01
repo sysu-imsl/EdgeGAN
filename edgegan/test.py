@@ -64,7 +64,7 @@ _FLAGS.DEFINE_string("output_combination", "full",
                      "The combination of output image: full(input+output), inputL_outputR(the left of input combine the right of output),outputL_inputR, outputR")
 
 # # multi class
-_FLAGS.DEFINE_boolean("if_focal_loss", True, "if use focal loss")
+_FLAGS.DEFINE_boolean("multiclasses", True, "if use focal loss")
 _FLAGS.DEFINE_integer("num_classes", 14, "num of classes")
 
 _FLAGS.DEFINE_string("type", "gpwgan", "gan type: [dcgan | wgan | gpwgan]")

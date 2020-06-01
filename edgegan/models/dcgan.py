@@ -145,13 +145,13 @@ class DCGAN(object):
         self.register_optim_if('d_optim_patch3', tf.train.RMSPropOptimizer(self.config.learning_rate).minimize(
             self.d_loss_patch3, var_list=self.discriminator_patch3.var_list), self.config.use_D_patch3)
         self.register_optim_if('d_optim2', tf.train.RMSPropOptimizer(self.config.learning_rate).minimize(
-            self.loss_d_ac, var_list=self.classifier.var_list), self.config.if_focal_loss)
+            self.loss_d_ac, var_list=self.classifier.var_list), self.config.multiclasses)
         self.register_optim_if(
             'g_optim', [
                 tf.train.RMSPropOptimizer(self.config.learning_rate).minimize(
-                    self.g1_loss, var_list=self.generator1.var_list),
+                    self.g1_loss, var_list=self.edge_generator.var_list),
                 tf.train.RMSPropOptimizer(self.config.learning_rate).minimize(
-                    self.g2_loss, var_list=self.generator2.var_list)],
+                    self.g2_loss, var_list=self.image_generator.var_list)],
             repeat=2
         )
         self.register_optim_if('e_optim', tf.train.RMSPropOptimizer(self.config.learning_rate).minimize(
@@ -164,26 +164,26 @@ class DCGAN(object):
                 _ = self.sess.run(optims, {self.inputs: images, self.z: z})
 
     def build_networks(self):
-        self.generator1 = Generator('G1', is_train=True,
-                                    norm=self.config.G_norm,
-                                    batch_size=self.config.batch_size,
-                                    output_height=self.config.output_height,
-                                    output_width=int(
-                                        self.config.output_width/2),
-                                    input_dim=self.gf_dim,
-                                    output_dim=self.c_dim,
-                                    use_resnet=self.config.if_resnet_g)
-        self.generator2 = Generator('G2', is_train=True,
-                                    norm=self.config.G_norm,
-                                    batch_size=self.config.batch_size,
-                                    output_height=self.config.output_height,
-                                    output_width=int(
-                                        self.config.output_width/2),
-                                    input_dim=self.gf_dim,
-                                    output_dim=self.c_dim,
-                                    use_resnet=self.config.if_resnet_g)
+        self.edge_generator = Generator('G1', is_train=True,
+                                        norm=self.config.G_norm,
+                                        batch_size=self.config.batch_size,
+                                        output_height=self.config.output_height,
+                                        output_width=int(
+                                            self.config.output_width/2),
+                                        input_dim=self.gf_dim,
+                                        output_dim=self.c_dim,
+                                        use_resnet=self.config.if_resnet_g)
+        self.image_generator = Generator('G2', is_train=True,
+                                         norm=self.config.G_norm,
+                                         batch_size=self.config.batch_size,
+                                         output_height=self.config.output_height,
+                                         output_width=int(
+                                             self.config.output_width/2),
+                                         input_dim=self.gf_dim,
+                                         output_dim=self.c_dim,
+                                         use_resnet=self.config.if_resnet_g)
 
-        if self.config.if_focal_loss:
+        if self.config.multiclasses:
             self.classifier = Classifier(
                 'D2', self.config.SPECTRAL_NORM_UPDATE_OPS)
 
@@ -219,7 +219,7 @@ class DCGAN(object):
         self.inputs = tf.placeholder(
             tf.float32, [self.config.batch_size] + self.image_dims, name='real_images')
 
-        if self.config.if_focal_loss:
+        if self.config.multiclasses:
             self.z = tf.placeholder(
                 tf.float32, [None, self.z_dim+1], name='z')
             class_onehot = tf.one_hot(
@@ -252,14 +252,14 @@ class DCGAN(object):
             _ = tf.image.resize_images(pictures, [self.config.sizeOfIn_patch3, self.config.sizeOfIn_patch3],
                                        method=2)
 
-        if self.config.if_focal_loss:
-            self.G1 = self.generator1(self.z_onehot)
-            self.G2 = self.generator2(self.z_onehot)
+        if self.config.multiclasses:
+            self.G1 = self.edge_generator(self.z_onehot)
+            self.G2 = self.image_generator(self.z_onehot)
         else:
-            self.G1 = self.generator1(self.z)
-            self.G2 = self.generator2(self.z)
+            self.G1 = self.edge_generator(self.z)
+            self.G2 = self.image_generator(self.z)
 
-        if self.config.if_focal_loss:
+        if self.config.multiclasses:
             def classify(inputs, reuse):
                 _, _, result = self.classifier(
                     channel_first(inputs),
@@ -269,9 +269,9 @@ class DCGAN(object):
                 )
                 return result
 
-            self.D_logits2 = classify(
+            self.trueimage_class_output = classify(
                 self.inputs[:, :, int(self.image_dims[1]/2):, :], reuse=False)
-            self.D_logits2_ = classify(self.G2, reuse=True)
+            self.fakeimage_class_output = classify(self.G2, reuse=True)
 
         self.D, self.D_logits = self.discriminator(self.inputs)
         self.G_all = tf.concat([self.G1, self.G2], 2)
@@ -346,10 +346,12 @@ class DCGAN(object):
         )
 
         # focal loss
-        if self.config.if_focal_loss:
+        if self.config.multiclasses:
             self.loss_g_ac, self.loss_d_ac = F.get_acgan_loss_focal(
-                self.D_logits2, tf.cast(self.z[:, -1], dtype=tf.int32),
-                self.D_logits2_, tf.cast(self.z[:, -1], dtype=tf.int32),
+                self.trueimage_class_output, tf.cast(
+                    self.z[:, -1], dtype=tf.int32),
+                self.fakeimage_class_output, tf.cast(
+                    self.z[:, -1], dtype=tf.int32),
                 num_classes=self.config.num_classes)
 
             self.g2_loss += self.loss_g_ac
@@ -358,7 +360,7 @@ class DCGAN(object):
             self.loss_d_ac = 0
 
         z_target = self.z[:,
-                          :self.z_dim] if self.config.if_focal_loss else self.z
+                          :self.z_dim] if self.config.multiclasses else self.z
         self.zl_loss = F.l1loss(
             z_target, self.z_recon,
             weight=self.config.stage1_zl_loss
@@ -431,7 +433,7 @@ class DCGAN(object):
             self.d_sum = nn.merge_summary(
                 [self.d_sum, self.d_patch3_sum, self.resized_inputs_p3_sum, self.d_loss_patch3_sum])
 
-    def build_model1(self):
+    def build_train_model(self):
         self.build_networks()
         self.define_inputs()
         self.forward()
@@ -453,7 +455,7 @@ class DCGAN(object):
                 self.g_sum, feed_dict={self.inputs: images, self.z: z})
             self.writer.add_summary(generator_summary, counter)
 
-        self.build_model1()
+        self.build_train_model()
 
         try:
             tf.global_variables_initializer().run()
@@ -529,7 +531,7 @@ class DCGAN(object):
         z_encoded, z_encoded_mu, z_encoded_log_sigma = self.encoder(
             self.input_left)
         self.z = z_encoded
-        if self.config.if_focal_loss:
+        if self.config.multiclasses:
             if self.config.Test_singleLabel:
                 batch_classes = np.full(
                     (self.config.batch_size, 1), self.config.test_label, dtype=np.float32)
@@ -537,10 +539,10 @@ class DCGAN(object):
                                                on_value=1., off_value=0., dtype=tf.float32)
                 self.z = tf.concat([z_encoded, self.class_onehot], 1)
 
-        self.G1 = self.generator1(self.z)
-        self.G2 = self.generator2(self.z)
+        self.G1 = self.edge_generator(self.z)
+        self.G2 = self.image_generator(self.z)
 
-    def build_model2(self):
+    def build_test_model(self):
         assert (not self.config.Test_allLabel) or (
             self.config.Test_singleLabel and self.config.test_label == 0)
         self.encoder = Encoder('E', is_train=True,
@@ -549,24 +551,24 @@ class DCGAN(object):
                                latent_dim=self.z_dim,
                                use_resnet=self.config.if_resnet_e)
 
-        self.generator1 = Generator('G1', is_train=False,
-                                    norm=self.config.G_norm,
-                                    batch_size=self.config.batch_size,
-                                    output_height=self.config.output_height,
-                                    output_width=int(
-                                        self.config.output_width/2),
-                                    input_dim=self.gf_dim,
-                                    output_dim=self.c_dim,
-                                    use_resnet=self.config.if_resnet_g)
-        self.generator2 = Generator('G2', is_train=False,
-                                    norm=self.config.G_norm,
-                                    batch_size=self.config.batch_size,
-                                    output_height=self.config.output_height,
-                                    output_width=int(
-                                        self.config.output_width/2),
-                                    input_dim=self.gf_dim,
-                                    output_dim=self.c_dim,
-                                    use_resnet=self.config.if_resnet_g)
+        self.edge_generator = Generator('G1', is_train=False,
+                                        norm=self.config.G_norm,
+                                        batch_size=self.config.batch_size,
+                                        output_height=self.config.output_height,
+                                        output_width=int(
+                                            self.config.output_width/2),
+                                        input_dim=self.gf_dim,
+                                        output_dim=self.c_dim,
+                                        use_resnet=self.config.if_resnet_g)
+        self.image_generator = Generator('G2', is_train=False,
+                                         norm=self.config.G_norm,
+                                         batch_size=self.config.batch_size,
+                                         output_height=self.config.output_height,
+                                         output_width=int(
+                                             self.config.output_width/2),
+                                         input_dim=self.gf_dim,
+                                         output_dim=self.c_dim,
+                                         use_resnet=self.config.if_resnet_g)
 
         self.define_test_input()
 
@@ -575,7 +577,7 @@ class DCGAN(object):
         utils.show_all_variables()
 
     def test2(self):
-        self.build_model2()
+        self.build_test_model()
 
         # init var
         try:
