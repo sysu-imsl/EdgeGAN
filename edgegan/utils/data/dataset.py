@@ -8,7 +8,7 @@ from edgegan.utils import get_image
 
 class Dataset():
     def __init__(self, dataroot, name, size, batchsize, config, num_classes=None, phase='train'):
-        assert phase in ['train', 'test',]
+        assert phase in ['train', 'test', ]
         self.batchsize = batchsize
         self.num_classes = num_classes
         self.config = config
@@ -74,9 +74,13 @@ class Dataset():
                     end = filePath.rfind("/")
                     start = filePath.rfind("/", 0, end)
                     return int(filePath[start+1:end])
-                batch_classes = [get_class(batch_file) for batch_file in filenames]
+                batch_classes = [get_class(batch_file)
+                                 for batch_file in filenames]
                 batch_classes = np.array(
                     batch_classes).reshape((self.batchsize, 1))
                 batch_z = np.concatenate((batch_z, batch_classes), axis=1)
 
-        return (batch_images, batch_z) if self.phase == 'train' else batch_images
+        if self.phase == 'test':
+            assert batch_images.shape[0] == len(filenames)
+
+        return (batch_images, batch_z) if self.phase == 'train' else (batch_images, filenames)

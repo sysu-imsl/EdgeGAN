@@ -439,9 +439,7 @@ class DCGAN(object):
         self.construct_optimizers()
         self.define_summaries()
 
-        self.saver = tf.train.Saver(
-            {v.op.name: v for v in self.generator1.var_list + self.generator2.var_list})
-        self.saver2 = tf.train.Saver()
+        self.saver = tf.train.Saver()
 
         utils.show_all_variables()
 
@@ -468,7 +466,7 @@ class DCGAN(object):
         counter = 1
         start_time = time.time()
         loaded, checkpoint_counter = self.load(
-            self.saver2, self.config.checkpoint_dir, self.model_dir)
+            self.saver, self.config.checkpoint_dir, self.model_dir)
         if loaded:
             counter = checkpoint_counter
             print(" [*] Load SUCCESS")
@@ -591,7 +589,7 @@ class DCGAN(object):
 
         self.define_test_input()
 
-        self.saver2 = tf.train.Saver()
+        self.saver = tf.train.Saver()
 
         utils.show_all_variables()
 
@@ -609,7 +607,7 @@ class DCGAN(object):
         start_time = time.time()
         # test step 1 model which has Encoder
         loaded, checkpoint_counter = self.load(
-            self.saver2, self.config.checkpoint_dir, self.model_dir)
+            self.saver, self.config.checkpoint_dir, self.model_dir)
         if loaded:
             counter = checkpoint_counter
             print(" [*] Load SUCCESS")
@@ -617,19 +615,19 @@ class DCGAN(object):
             print(" [!] Load failed...")
             return
 
-        # name saved in txt
-        filename = self.config.sample_dir + '/stage1_AddE_specified/' + self.config.dataset + '/' + str(
-            self.config.test_label) + '/' + self.model_dir + '.txt'
-        f = open(filename, 'w')
-        f.truncate()
-        for i in range(len(self.dataset.data)):
-            s = str(self.dataset.data[i])
-            cropped = s.split('/')[-1]
-            f.write(cropped + '\n')
-        f.close()
+        # # name saved in txt
+        # filename = self.config.sample_dir + '/stage1_AddE_specified/' + self.config.dataset + '/' + str(
+        #     self.config.test_label) + '/' + self.model_dir + '.txt'
+        # f = open(filename, 'w')
+        # f.truncate()
+        # for i in range(len(self.dataset.data)):
+        #     s = str(self.dataset.data[i])
+        #     cropped = s.split('/')[-1]
+        #     f.write(cropped + '\n')
+        # f.close()
 
         for idx in xrange(len(self.dataset)):
-            batch_images = self.dataset[idx]
+            batch_images, filenames = self.dataset[idx]
 
             # generate images
             inputL = batch_images[:, :, 0:int(self.config.output_width / 2), :]
@@ -652,9 +650,24 @@ class DCGAN(object):
             assert allclose(results, recon_results)
             print('assertion successed!')
 
-            image_frame_dim = int(math.ceil(self.config.batch_size**.5))
-            utils.save_images(results, [image_frame_dim, image_frame_dim],
-                                self.config.sample_dir + '/stage1_AddE_specified/' + self.config.dataset + '/' + str(self.config.test_label) + '/' + self.model_dir + '__test_%s.png' % idx)
+            assert results.shape[0] == len(filenames)
+            for fname, img in zip(filenames, results):
+                name = fname.split('/')[- 1]
+                img = img[np.newaxis, ...]
+                utils.save_images(
+                    img, [1, 1],
+                    os.path.join(
+                        self.config.sample_dir,
+                        'stage1_AddE_specified',
+                        self.config.dataset,
+                        str(self.config.test_label),
+                        name,
+                    )
+                )
+
+            # image_frame_dim = int(math.ceil(self.config.batch_size**.5))
+            # utils.save_images(results, [image_frame_dim, image_frame_dim],
+            #                   self.config.sample_dir + '/stage1_AddE_specified/' + self.config.dataset + '/' + str(self.config.test_label) + '/' + self.model_dir + '__test_%s.png' % idx)
 
             print("Test: [%4d/%4d]" % (idx, len(self.dataset)))
             exit(0)

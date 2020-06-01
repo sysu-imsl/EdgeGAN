@@ -45,17 +45,11 @@ _FLAGS.DEFINE_string("logdir", None,
 _FLAGS.DEFINE_string("dataroot", "./data", "Root directory of dataset [data]")
 _FLAGS.DEFINE_string("sample_dir", "samples_gpwgan_instanceEGD_noOriginD_patch2_128_patch3_128_patchGAN_insN_wgan_2G",
                      "Directory name to save the image samples [samples]")
-# _FLAGS.DEFINE_boolean(
-#     "train", False, "True for training, False for testing [False]")
-# _FLAGS.DEFINE_integer("save_checkpoint_frequency", 500,
-#                       "frequency for saving checkpoint")
 _FLAGS.DEFINE_boolean(
     "crop", False, "True for training, False for testing [False]")
 
 
 # setting of testing
-# _FLAGS.DEFINE_boolean("Random_test", False,
-#                       "IS effect when E_stage1 is True.True for testing random z, else for input images")
 _FLAGS.DEFINE_boolean("Test_singleLabel", True,
                       "IS effect when Random_test is True or False.True for testing single label. For multi-class model")
 _FLAGS.DEFINE_integer(
@@ -69,17 +63,9 @@ _FLAGS.DEFINE_string("output_form", "batch",
 _FLAGS.DEFINE_string("output_combination", "full",
                      "The combination of output image: full(input+output), inputL_outputR(the left of input combine the right of output),outputL_inputR, outputR")
 
-# # weight of loss
-# _FLAGS.DEFINE_float("stage2_g_loss", 0.0, "weight of g loss")
-# _FLAGS.DEFINE_float("stage2_c_loss", 0.0, "weight of contexture loss")
-# _FLAGS.DEFINE_float("stage2_l1_loss", 0.0, "weight of l1 loss")
-# _FLAGS.DEFINE_float("stage1_zl_loss", 10.0, "weight of z l1 loss")
-
 # # multi class
 _FLAGS.DEFINE_boolean("if_focal_loss", True, "if use focal loss")
 _FLAGS.DEFINE_integer("num_classes", 14, "num of classes")
-# _FLAGS.DEFINE_string("SPECTRAL_NORM_UPDATE_OPS",
-#                      "spectral_norm_update_ops", "")
 
 _FLAGS.DEFINE_string("type", "gpwgan", "gan type: [dcgan | wgan | gpwgan]")
 _FLAGS.DEFINE_string("optim", "rmsprop", "optimizer type: [adam | rmsprop]")
@@ -89,13 +75,6 @@ _FLAGS.DEFINE_string("model", "old", "which base model(G and D): [old | new]")
 _FLAGS.DEFINE_boolean("if_resnet_e", True, "if use resnet for E")
 _FLAGS.DEFINE_boolean("if_resnet_g", False, "if use resnet for G")
 _FLAGS.DEFINE_boolean("if_resnet_d", False, "if use resnet for origin D")
-# _FLAGS.DEFINE_float("lambda_gp", 10.0,
-#                     "if 'gpwgan' is chosen the corresponding lambda must be filled")
-# _FLAGS.DEFINE_float("clamp_lower", -0.01,
-#                     "if 'wgan' is chosen the corresponding lambda must be filled, the upper bound of parameters in disc")
-# _FLAGS.DEFINE_float("clamp_upper", 0.01,
-#                     "if 'wgan' is chosen the corresponding lambda must be filled, the upper bound of parameters in disc")
-
 _FLAGS.DEFINE_string("E_norm", "instance",
                      "normalization options:[instance, batch, norm]")
 _FLAGS.DEFINE_string("G_norm", "instance",
@@ -103,25 +82,6 @@ _FLAGS.DEFINE_string("G_norm", "instance",
 _FLAGS.DEFINE_string("D_norm", "instance",
                      "normalization options:[instance, batch, norm]")
 
-
-# _FLAGS.DEFINE_boolean("use_D_patch2", True,
-#                       "True for using patch discriminator, modify the size of input of discriminator")
-# _FLAGS.DEFINE_integer("sizeOfIn_patch2", 128, "The size of input for D_patch2")
-
-# _FLAGS.DEFINE_integer("sizeOfIn_patch2_2", 256,
-#                       "The size of input for D_patch2_2")
-
-# _FLAGS.DEFINE_boolean("use_D_patch3", True,
-#                       "True for using patch discriminator, modify the size of input of discriminator, user for edge discriminator when G_num == 2")
-# _FLAGS.DEFINE_integer("sizeOfIn_patch3", 128, "The size of input for D_patch2")
-
-
-# _FLAGS.DEFINE_float("D_origin_loss", 1.0,
-#                     "weight of origin discriminative loss, is ineffective when use_D_origin is false")
-# _FLAGS.DEFINE_float("D_patch2_loss", 1.0,
-#                     "weight of patch discriminative loss, is ineffective when use_D_patch2 is false")
-# _FLAGS.DEFINE_float("D_patch3_loss", 1.0,
-#                     "weight of patch discriminative loss, is ineffective when use_D_patch3 is false")
 FLAGS = _FLAGS.FLAGS
 
 
