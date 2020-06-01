@@ -139,19 +139,19 @@ class DCGAN(object):
 
     def construct_optimizers(self):
         self.register_optim_if('d_optim', tf.train.RMSPropOptimizer(self.config.learning_rate).minimize(
-            self.d_loss, var_list=self.joint_discriminator.var_list))
+            self.joint_dis_dloss, var_list=self.joint_discriminator.var_list))
         self.register_optim_if('d_optim_patch2', tf.train.RMSPropOptimizer(self.config.learning_rate).minimize(
-            self.d_loss_patch2, var_list=self.image_discriminator.var_list), self.config.use_image_discriminator)
+            self.image_dis_dloss, var_list=self.image_discriminator.var_list), self.config.use_image_discriminator)
         self.register_optim_if('d_optim_patch3', tf.train.RMSPropOptimizer(self.config.learning_rate).minimize(
-            self.d_loss_patch3, var_list=self.edge_discriminator.var_list), self.config.use_edge_discriminator)
+            self.edge_dis_dloss, var_list=self.edge_discriminator.var_list), self.config.use_edge_discriminator)
         self.register_optim_if('d_optim2', tf.train.RMSPropOptimizer(self.config.learning_rate).minimize(
             self.loss_d_ac, var_list=self.classifier.var_list), self.config.multiclasses)
         self.register_optim_if(
             'g_optim', [
                 tf.train.RMSPropOptimizer(self.config.learning_rate).minimize(
-                    self.g1_loss, var_list=self.edge_generator.var_list),
+                    self.edge_gloss, var_list=self.edge_generator.var_list),
                 tf.train.RMSPropOptimizer(self.config.learning_rate).minimize(
-                    self.g2_loss, var_list=self.image_generator.var_list)],
+                    self.image_gloss, var_list=self.image_generator.var_list)],
             repeat=2
         )
         self.register_optim_if('e_optim', tf.train.RMSPropOptimizer(self.config.learning_rate).minimize(
@@ -194,15 +194,15 @@ class DCGAN(object):
 
         if self.config.use_image_discriminator is True:
             self.image_discriminator = Discriminator('D_patch2', is_train=True,
-                                                      norm=self.config.D_norm,
-                                                      num_filters=self.df_dim,
-                                                      use_resnet=self.config.if_resnet_d)
+                                                     norm=self.config.D_norm,
+                                                     num_filters=self.df_dim,
+                                                     use_resnet=self.config.if_resnet_d)
 
         if self.config.use_edge_discriminator is True:
             self.edge_discriminator = Discriminator('D_patch3', is_train=True,
-                                                      norm=self.config.D_norm,
-                                                      num_filters=self.df_dim,
-                                                      use_resnet=self.config.if_resnet_d)
+                                                    norm=self.config.D_norm,
+                                                    num_filters=self.df_dim,
+                                                    use_resnet=self.config.if_resnet_d)
 
         self.encoder = Encoder('E', is_train=True,
                                norm=self.config.E_norm,
@@ -306,48 +306,48 @@ class DCGAN(object):
         self.z_recon, _, _ = self.encoder(self.edge_output)
 
     def define_losses(self):
-        self.d_loss = (
+        self.joint_dis_dloss = (
             F.discriminator_ganloss(self.fakejoint_dis_output, self.truejoint_dis_output) +
             penalty(
                 self.joint_output, self.inputs, self.joint_discriminator,
                 self.config.batch_size, self.config.lambda_gp
             )
         )
-        self.g_loss = F.generator_ganloss(self.fakejoint_dis_output)
+        self.joint_dis_gloss = F.generator_ganloss(self.fakejoint_dis_output)
 
         if self.config.use_image_discriminator:
-            self.d_loss_patch2 = (
+            self.image_dis_dloss = (
                 F.discriminator_ganloss(self.fakeimage_dis_output, self.trueimage_dis_output) +
                 penalty(
                     self.resized_image_output, self.resized_inputs, self.image_discriminator,
                     self.config.batch_size, self.config.lambda_gp
                 )
             )
-            self.g_loss_patch2 = F.generator_ganloss(self.fakeimage_dis_output)
+            self.image_dis_gloss = F.generator_ganloss(self.fakeimage_dis_output)
         else:
-            self.d_loss_patch2 = 0
-            self.g_loss_patch2 = 0
+            self.image_dis_dloss = 0
+            self.image_dis_gloss = 0
 
         if self.config.use_edge_discriminator:
-            self.d_loss_patch3 = (
+            self.edge_dis_dloss = (
                 F.discriminator_ganloss(self.fakeedge_dis_output, self.trueedge_dis_output) +
                 penalty(
                     self.resized_edge_output, self.resized_edges, self.edge_discriminator,
                     self.config.batch_size, self.config.lambda_gp
                 )
             )
-            self.g_loss_patch3 = F.generator_ganloss(self.fakeedge_dis_output)
+            self.edge_dis_gloss = F.generator_ganloss(self.fakeedge_dis_output)
         else:
-            self.d_loss_patch3 = 0
-            self.g_loss_patch3 = 0
+            self.edge_dis_dloss = 0
+            self.edge_dis_gloss = 0
 
-        self.g1_loss = (
-            self.config.D_origin_loss * self.g_loss +
-            self.config.D_patch3_loss * self.g_loss_patch3
+        self.edge_gloss = (
+            self.config.joint_dweight * self.joint_dis_gloss +
+            self.config.edge_dweight * self.edge_dis_gloss
         )
-        self.g2_loss = (
-            self.config.D_origin_loss * self.g_loss +
-            self.config.D_patch2_loss * self.g_loss_patch2
+        self.image_gloss = (
+            self.config.joint_dweight * self.joint_dis_gloss +
+            self.config.image_dweight * self.image_dis_gloss
         )
 
         # focal loss
@@ -359,13 +359,12 @@ class DCGAN(object):
                     self.z[:, -1], dtype=tf.int32),
                 num_classes=self.config.num_classes)
 
-            self.g2_loss += self.loss_g_ac
+            self.image_gloss += self.loss_g_ac
         else:
             self.loss_g_ac = 0
             self.loss_d_ac = 0
 
-        z_target = self.z[:,
-                          :self.z_dim] if self.config.multiclasses else self.z
+        z_target = self.z[:, :self.z_dim] if self.config.multiclasses else self.z
         self.zl_loss = F.l1loss(
             z_target, self.z_recon,
             weight=self.config.stage1_zl_loss
@@ -378,12 +377,12 @@ class DCGAN(object):
         self.G1_sum = nn.image_summary("G1", self.edge_output)
         self.G2_sum = nn.image_summary("G2", self.image_output)
 
-        self.g1_loss_sum = nn.scalar_summary("g1_loss", self.g1_loss)
-        self.g2_loss_sum = nn.scalar_summary("g2_loss", self.g2_loss)
+        self.g1_loss_sum = nn.scalar_summary("edge_gloss", self.edge_gloss)
+        self.g2_loss_sum = nn.scalar_summary("image_gloss", self.image_gloss)
 
-        self.g_loss_sum = nn.scalar_summary("g_loss", self.g_loss)
+        self.g_loss_sum = nn.scalar_summary("joint_dis_gloss", self.joint_dis_gloss)
 
-        self.d_loss_sum = nn.scalar_summary("d_loss", self.d_loss)
+        self.d_loss_sum = nn.scalar_summary("joint_dis_dloss", self.joint_dis_dloss)
 
         self.zl_loss_sum = nn.scalar_summary("zl_loss", self.zl_loss)
 
@@ -412,9 +411,9 @@ class DCGAN(object):
             self.resized_G_sum = nn.image_summary(
                 "resized_G_image", self.resized_image_output)
             self.d_loss_patch2_sum = nn.scalar_summary(
-                "d_loss_patch2", self.d_loss_patch2)
+                "image_dis_dloss", self.image_dis_dloss)
             self.g_loss_patch2_sum = nn.scalar_summary(
-                "g_loss_patch2", self.g_loss_patch2)
+                "image_dis_gloss", self.image_dis_gloss)
             self.g_sum = nn.merge_summary(
                 [self.g_sum, self.d__patch2_sum, self.resized_G_sum, self.g_loss_patch2_sum])
             self.d_sum = nn.merge_summary(
@@ -430,9 +429,9 @@ class DCGAN(object):
             self.resized_G_p3_sum = nn.image_summary(
                 "resized_G_p3_image", self.resized_edge_output)
             self.d_loss_patch3_sum = nn.scalar_summary(
-                "d_loss_patch3", self.d_loss_patch3)
+                "edge_dis_dloss", self.edge_dis_dloss)
             self.g_loss_patch3_sum = nn.scalar_summary(
-                "g_loss_patch3", self.g_loss_patch3)
+                "edge_dis_gloss", self.edge_dis_gloss)
             self.g_sum = nn.merge_summary(
                 [self.g_sum, self.d__patch3_sum, self.resized_G_p3_sum, self.g_loss_patch3_sum])
             self.d_sum = nn.merge_summary(
@@ -494,16 +493,16 @@ class DCGAN(object):
                     return getattr(obj, 'eval')(
                         {self.inputs: batch_images, self.z: batch_z})
 
-                discriminator_err = evaluate(self.d_loss)
+                discriminator_err = evaluate(self.joint_dis_dloss)
                 if self.config.use_image_discriminator:
-                    discriminator_err += evaluate(self.d_loss_patch2)
+                    discriminator_err += evaluate(self.image_dis_dloss)
                 if self.config.use_edge_discriminator:
-                    discriminator_err += evaluate(self.d_loss_patch3)
+                    discriminator_err += evaluate(self.edge_dis_dloss)
 
-                generator_err = evaluate(self.g1_loss) + evaluate(self.g2_loss)
+                generator_err = evaluate(self.edge_gloss) + evaluate(self.image_gloss)
 
                 counter += 1
-                print("Epoch: [%2d/%2d] [%4d/%4d] time: %4.4f, d_loss: %.8f, g_loss: %.8f"
+                print("Epoch: [%2d/%2d] [%4d/%4d] time: %4.4f, joint_dis_dloss: %.8f, joint_dis_gloss: %.8f"
                       % (epoch, self.config.epoch, idx, len(self.dataset),
                          time.time() - start_time, 2 * discriminator_err, generator_err))
 

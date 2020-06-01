@@ -117,11 +117,11 @@ _FLAGS.DEFINE_boolean("use_edge_discriminator", True,
 _FLAGS.DEFINE_integer("edge_dis_size", 128, "The size of input for D_patch2")
 
 
-_FLAGS.DEFINE_float("D_origin_loss", 1.0,
+_FLAGS.DEFINE_float("joint_dweight", 1.0,
                     "weight of origin discriminative loss, is ineffective when use_D_origin is false")
-_FLAGS.DEFINE_float("D_patch2_loss", 1.0,
+_FLAGS.DEFINE_float("image_dweight", 1.0,
                     "weight of patch discriminative loss, is ineffective when use_edge_discriminator is false")
-_FLAGS.DEFINE_float("D_patch3_loss", 1.0,
+_FLAGS.DEFINE_float("edge_dweight", 1.0,
                     "weight of patch discriminative loss, is ineffective when use_edge_discriminator is false")
 FLAGS = _FLAGS.FLAGS
 
