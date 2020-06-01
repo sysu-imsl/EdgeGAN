@@ -11,7 +11,7 @@ from edgegan.models import DCGAN
 from edgegan.utils import makedirs, pp
 from edgegan.utils.data import Dataset
 
-os.environ['CUDA_VISIBLE_DEVICES'] = '2'
+os.environ['CUDA_VISIBLE_DEVICES'] = '0'
 phase = 'test'
 
 seed(2333)

@@ -477,9 +477,9 @@ class DCGAN(object):
             print(" [!] Load failed...")
 
         # train
-        for epoch in xrange(1):
+        for epoch in xrange(self.config.epoch):
             self.dataset.shuffle()
-            for idx in xrange(1):
+            for idx in xrange(len(self.dataset)):
                 (batch_files, batch_images, batch_z) = checksum_load(
                     'batch_files.pkl', 'batch_images.npy', 'batch_z.npy')
 
@@ -598,43 +598,6 @@ class DCGAN(object):
     def test2(self):
         self.build_model2()
 
-        # load data
-        data_tmp = []
-        if self.config.single_model == False:
-            data_path = os.path.join(self.config.dataroot,
-                                     self.config.dataset,
-                                     "stage1", "sketch_instance", str(
-                                         self.config.test_label),
-                                     "*.png")
-            data_tmp.extend(glob(data_path))
-            data_path = os.path.join(self.config.dataroot,
-                                     self.config.dataset,
-                                     "stage1", "sketch_instance", str(
-                                         self.config.test_label),
-                                     "*.jpg")
-            data_tmp.extend(glob(data_path))
-        else:
-            data_path = os.path.join(self.config.dataroot,
-                                     self.config.dataset,
-                                     "stage1", "test",
-                                     "*.png")
-            data_tmp.extend(glob(data_path))
-            data_path = os.path.join(self.config.dataroot,
-                                     self.config.dataset,
-                                     "stage1", "test",
-                                     "*.jpg")
-            data_tmp.extend(glob(data_path))
-
-        self.data = sorted(data_tmp)
-
-        if len(self.data) == 0:
-            raise Exception("[!] No data found in '" + data_path + "'")
-        if len(self.data) < self.config.batch_size and self.config.output_form is "batch":
-            raise Exception(
-                "[!] Entire dataset size is less than the configured batch_size")
-
-        self.grayscale = (self.c_dim == 1)
-
         # init var
         try:
             tf.global_variables_initializer().run()
@@ -645,9 +608,9 @@ class DCGAN(object):
         counter = 1
         start_time = time.time()
         # test step 1 model which has Encoder
-        could_load, checkpoint_counter = self.load(
+        loaded, checkpoint_counter = self.load(
             self.saver2, self.config.checkpoint_dir, self.model_dir)
-        if could_load:
+        if loaded:
             counter = checkpoint_counter
             print(" [*] Load SUCCESS")
         else:
@@ -657,38 +620,16 @@ class DCGAN(object):
         # name saved in txt
         filename = self.config.sample_dir + '/stage1_AddE_specified/' + self.config.dataset + '/' + str(
             self.config.test_label) + '/' + self.model_dir + '.txt'
-        file = open(filename, 'w')
-        file.truncate()
-        for i in range(len(self.data)):
-            s = str(self.data[i])
+        f = open(filename, 'w')
+        f.truncate()
+        for i in range(len(self.dataset.data)):
+            s = str(self.dataset.data[i])
             cropped = s.split('/')[-1]
-            file.write(cropped + '\n')
-        file.close()
-        batch_size_tmp = self.config.batch_size
+            f.write(cropped + '\n')
+        f.close()
 
-        batch_idxs = min(
-            len(self.data), self.config.train_size) // batch_size_tmp
-
-        for idx in xrange(0, int(batch_idxs)):
-            # read image by batch
-            batch_files = self.data[idx*batch_size_tmp: (idx+1)*batch_size_tmp]
-            batch = [
-                utils.get_image(batch_file,
-                                input_height=self.config.input_height,
-                                input_width=self.config.input_width,
-                                resize_height=self.config.output_height,
-                                resize_width=self.config.output_width,
-                                crop=self.config.crop,
-                                grayscale=self.grayscale) for batch_file in batch_files]
-            if self.grayscale:
-                batch_images = np.array(batch).astype(
-                    np.float32)[:, :, :, None]
-            else:
-                batch_images = np.array(batch).astype(np.float32)
-
-            recon_batch_images = self.dataset[idx]
-            assert allclose(recon_batch_images, batch_images)
-            print('dataset assert successed!')
+        for idx in xrange(len(self.dataset)):
+            batch_images = self.dataset[idx]
 
             # generate images
             inputL = batch_images[:, :, 0:int(self.config.output_width / 2), :]
@@ -710,20 +651,13 @@ class DCGAN(object):
             recon_results = checksum_load('test2_reuslt.npy')
             assert allclose(results, recon_results)
             print('assertion successed!')
+
+            image_frame_dim = int(math.ceil(self.config.batch_size**.5))
+            utils.save_images(results, [image_frame_dim, image_frame_dim],
+                                self.config.sample_dir + '/stage1_AddE_specified/' + self.config.dataset + '/' + str(self.config.test_label) + '/' + self.model_dir + '__test_%s.png' % idx)
+
+            print("Test: [%4d/%4d]" % (idx, len(self.dataset)))
             exit(0)
-
-            image_frame_dim = int(math.ceil(batch_size_tmp**.5))
-            if self.config.output_form == "batch":
-                utils.save_images(results, [image_frame_dim, image_frame_dim],
-                                  self.config.sample_dir + '/stage1_AddE_specified/' + self.config.dataset + '/' + str(self.config.test_label) + '/' + self.model_dir + '__test_%s.png' % idx)
-            else:
-                s2 = str(batch_files[0])
-                name = s2.split('/')[-1]
-                utils.save_images(results, [image_frame_dim, image_frame_dim],
-                                  self.config.sample_dir + '/stage1_AddE_specified/' + self.config.dataset + '_singleTest/' + str(
-                    self.config.test_label) + '/' + name)
-
-            print("Test: [%4d/%4d]" % (idx, batch_idxs))
 
     @property
     def model_dir(self):
