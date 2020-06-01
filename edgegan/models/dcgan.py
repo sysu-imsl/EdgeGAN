@@ -526,49 +526,7 @@ class DCGAN(object):
                 # self.save(self.saver2, self.config.checkpoint_dir, self.model_dir, counter)
                 exit()
 
-
-    def build_model2(self):
-        # for testing
-        if self.config.output_form is "batch":
-            batch_size_mid = self.config.batch_size
-        else:
-            batch_size_mid = 1
-
-        #  for testing
-        if (not self.config.Test_allLabel) or (self.config.Test_singleLabel and self.config.test_label == 0):
-            if self.config.if_focal_loss:
-                self.encoder = Encoder('E', is_train=True,
-                                       norm=self.config.E_norm,
-                                       image_size=self.config.input_height,
-                                       latent_dim=self.z_dim,
-                                       use_resnet=self.config.if_resnet_e)
-            else:
-                # TODO latent_dim is corret?
-                self.encoder = Encoder('E', is_train=True,
-                                       norm=self.config.E_norm,
-                                       image_size=self.config.input_height,
-                                       latent_dim=self.z_dim,
-                                       use_resnet=self.config.if_resnet_e)
-
-            self.generator1 = Generator('G1', is_train=False,
-                                        norm=self.config.G_norm,
-                                        batch_size=batch_size_mid,
-                                        output_height=self.config.output_height,
-                                        output_width=int(
-                                            self.config.output_width/2),
-                                        input_dim=self.gf_dim,
-                                        output_dim=self.c_dim,
-                                        use_resnet=self.config.if_resnet_g)
-            self.generator2 = Generator('G2', is_train=False,
-                                        norm=self.config.G_norm,
-                                        batch_size=batch_size_mid,
-                                        output_height=self.config.output_height,
-                                        output_width=int(
-                                            self.config.output_width/2),
-                                        input_dim=self.gf_dim,
-                                        output_dim=self.c_dim,
-                                        use_resnet=self.config.if_resnet_g)
-
+    def define_test_input(self):
         # define inputs
         if self.config.crop:
             self.image_dims = [self.config.output_height, self.config.output_width,
@@ -577,12 +535,12 @@ class DCGAN(object):
             self.image_dims = [self.config.input_height, self.config.input_width,
                                self.c_dim]
         self.inputs = tf.placeholder(
-            tf.float32, [batch_size_mid] + self.image_dims, name='real_images')
+            tf.float32, [self.config.batch_size] + self.image_dims, name='real_images')
 
         self.masks = tf.placeholder(
-            tf.float32, [batch_size_mid] + self.image_dims, name='mask_images')
+            tf.float32, [self.config.batch_size] + self.image_dims, name='mask_images')
 
-        self.input_left = self.inputs[0:batch_size_mid, 0:self.image_dims[0], 0:int(
+        self.input_left = self.inputs[0:self.config.batch_size, 0:self.image_dims[0], 0:int(
             self.image_dims[1]/2), 0:self.image_dims[2]]
         z_encoded, z_encoded_mu, z_encoded_log_sigma = self.encoder(
             self.input_left)
@@ -590,7 +548,7 @@ class DCGAN(object):
         if self.config.if_focal_loss:
             if self.config.Test_singleLabel:
                 batch_classes = np.full(
-                    (batch_size_mid, 1), self.config.test_label, dtype=np.float32)
+                    (self.config.batch_size, 1), self.config.test_label, dtype=np.float32)
                 # batch_z = np.concatenate((z_encoded, batch_classes), axis=1)
                 self.class_onehot = tf.one_hot(tf.cast(batch_classes[:, -1], dtype=tf.int32), self.config.num_classes,
                                                on_value=1., off_value=0., dtype=tf.float32)
@@ -598,6 +556,43 @@ class DCGAN(object):
 
         self.G1 = self.generator1(self.z)
         self.G2 = self.generator2(self.z)
+
+    def build_model2(self):
+        assert (not self.config.Test_allLabel) or (self.config.Test_singleLabel and self.config.test_label == 0)
+        if self.config.if_focal_loss:
+            self.encoder = Encoder('E', is_train=True,
+                                    norm=self.config.E_norm,
+                                    image_size=self.config.input_height,
+                                    latent_dim=self.z_dim,
+                                    use_resnet=self.config.if_resnet_e)
+        else:
+            # TODO latent_dim is corret?
+            self.encoder = Encoder('E', is_train=True,
+                                    norm=self.config.E_norm,
+                                    image_size=self.config.input_height,
+                                    latent_dim=self.z_dim,
+                                    use_resnet=self.config.if_resnet_e)
+
+        self.generator1 = Generator('G1', is_train=False,
+                                    norm=self.config.G_norm,
+                                    batch_size=self.config.batch_size,
+                                    output_height=self.config.output_height,
+                                    output_width=int(
+                                        self.config.output_width/2),
+                                    input_dim=self.gf_dim,
+                                    output_dim=self.c_dim,
+                                    use_resnet=self.config.if_resnet_g)
+        self.generator2 = Generator('G2', is_train=False,
+                                    norm=self.config.G_norm,
+                                    batch_size=self.config.batch_size,
+                                    output_height=self.config.output_height,
+                                    output_width=int(
+                                        self.config.output_width/2),
+                                    input_dim=self.gf_dim,
+                                    output_dim=self.c_dim,
+                                    use_resnet=self.config.if_resnet_g)
+
+        self.define_test_input()
 
         self.saver2 = tf.train.Saver()
 
