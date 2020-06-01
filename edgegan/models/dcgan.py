@@ -525,11 +525,9 @@ class DCGAN(object):
                 assert allclose(restore_errD_fake, discriminator_err)
                 assert allclose(restore_errG, generator_err)
                 print('assert successed!')
-                # self.save(self.saver2, self.config.checkpoint_dir, self.model_dir, counter)
                 exit()
 
     def define_test_input(self):
-        # define inputs
         if self.config.crop:
             self.image_dims = [self.config.output_height, self.config.output_width,
                                self.c_dim]
@@ -551,7 +549,6 @@ class DCGAN(object):
             if self.config.Test_singleLabel:
                 batch_classes = np.full(
                     (self.config.batch_size, 1), self.config.test_label, dtype=np.float32)
-                # batch_z = np.concatenate((z_encoded, batch_classes), axis=1)
                 self.class_onehot = tf.one_hot(tf.cast(batch_classes[:, -1], dtype=tf.int32), self.config.num_classes,
                                                on_value=1., off_value=0., dtype=tf.float32)
                 self.z = tf.concat([z_encoded, self.class_onehot], 1)
@@ -602,10 +599,8 @@ class DCGAN(object):
         except:
             tf.initialize_all_variables().run()
 
-        # load model if exist
         counter = 1
         start_time = time.time()
-        # test step 1 model which has Encoder
         loaded, checkpoint_counter = self.load(
             self.saver, self.config.checkpoint_dir, self.model_dir)
         if loaded:
@@ -614,17 +609,6 @@ class DCGAN(object):
         else:
             print(" [!] Load failed...")
             return
-
-        # # name saved in txt
-        # filename = self.config.sample_dir + '/stage1_AddE_specified/' + self.config.dataset + '/' + str(
-        #     self.config.test_label) + '/' + self.model_dir + '.txt'
-        # f = open(filename, 'w')
-        # f.truncate()
-        # for i in range(len(self.dataset.data)):
-        #     s = str(self.dataset.data[i])
-        #     cropped = s.split('/')[-1]
-        #     f.write(cropped + '\n')
-        # f.close()
 
         for idx in xrange(len(self.dataset)):
             batch_images, filenames = self.dataset[idx]
@@ -657,17 +641,10 @@ class DCGAN(object):
                 utils.save_images(
                     img, [1, 1],
                     os.path.join(
-                        self.config.sample_dir,
-                        'stage1_AddE_specified',
-                        self.config.dataset,
-                        str(self.config.test_label),
-                        name,
+                        self.config.sample_dir, 'stage1_AddE_specified',
+                        self.config.dataset, str(self.config.test_label), name,
                     )
                 )
-
-            # image_frame_dim = int(math.ceil(self.config.batch_size**.5))
-            # utils.save_images(results, [image_frame_dim, image_frame_dim],
-            #                   self.config.sample_dir + '/stage1_AddE_specified/' + self.config.dataset + '/' + str(self.config.test_label) + '/' + self.model_dir + '__test_%s.png' % idx)
 
             print("Test: [%4d/%4d]" % (idx, len(self.dataset)))
             exit(0)
