@@ -11,8 +11,6 @@ from edgegan.utils.data import Dataset
 
 
 
-seed(2333)
-tf.set_random_seed(6666)
 
 _FLAGS = tf.app.flags
 _FLAGS.DEFINE_string("gpu", "0", "Gpu ID")
@@ -32,7 +30,7 @@ _FLAGS.DEFINE_integer("output_height", 64,
                       "The size of the output images to produce [64]")
 _FLAGS.DEFINE_integer("output_width", 128,
                       "The size of the output images to produce. If None, same value as output_height [None]")
-_FLAGS.DEFINE_string("dataset", "class14_png_aug",
+_FLAGS.DEFINE_string("dataset", "class14",
                      "The name of dataset [class14_png_aug,]")
 _FLAGS.DEFINE_string("input_fname_pattern", "*png",
                      "Glob pattern of filename of input images [*]")
