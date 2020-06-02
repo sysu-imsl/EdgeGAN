@@ -135,12 +135,12 @@ def main(_):
                 dcgan.dataset = create_dataset(flags)
                 makedirs(flags.test_output_dir + "/stage1_AddE_specified/" + flags.dataset + '/' + str(
                     flags.test_label) + '/')
-                dcgan.test2()
+                dcgan.test()
         else:
             dcgan.dataset = create_dataset(flags)
             makedirs(flags.test_output_dir + "/stage1_AddE_specified/" + flags.dataset + '/' + str(
                 flags.test_label) + '/')
-            dcgan.test2()
+            dcgan.test()
 
 
 if __name__ == '__main__':

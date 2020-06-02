@@ -20,59 +20,6 @@ from .encoder import Encoder
 from .generator import Generator
 
 
-def allclose(a, b):
-    if isinstance(a, np.ndarray):
-        print('output error: {}'.format(np.mean(np.abs(a-b))))
-        return np.mean(np.abs(a-b)) < 5e-4
-    else:
-        return abs((a-b) / a) < 0.01
-
-
-def extension(filename):
-    return os.path.splitext(filename)[-1]
-
-
-def checksum_save(input_dict):
-    checksum_path = utils.checksum_path
-    utils.makedirs(checksum_path)
-
-    def save(filename, obj):
-        p = os.path.join(checksum_path, filename)
-        if isinstance(obj, np.ndarray):
-            np.save(p + '.npy', val)
-        else:
-            with open(p + '.pkl', 'wb') as f:
-                pickle.dump(obj, f)
-
-    for key, val in input_dict.items():
-        save(key, val)
-
-
-def checksum_load(*names):
-    def load(filename):
-        if extension(filename) == '.npy':
-            return np.load(filename)
-        elif extension(filename) == '.pkl':
-            with open(filename, 'rb') as f:
-                return pickle.load(f)
-        else:
-            raise NotImplementedError
-
-    def enforce_exists(path):
-        if not os.path.exists(path):
-            print('missing loading item: {}'.format(path))
-            raise ValueError
-
-    checksum_path = utils.checksum_path
-    result = []
-    print(names)
-    for name in names:
-        path = os.path.join(checksum_path, name)
-        enforce_exists(path)
-        result.append(load(path))
-    return result
-
-
 def channel_first(input):
     return tf.transpose(input, [0, 3, 1, 2])
 
@@ -505,16 +452,6 @@ class DCGAN(object):
                       % (epoch, self.config.epoch, idx, len(self.dataset),
                          time.time() - start_time, 2 * discriminator_err, generator_err))
 
-                outputL = self.sess.run(self.edge_output,
-                                        feed_dict={self.z: batch_z, self.inputs: batch_images})
-
-                restore_outputL, restore_errD_fake, restore_errD_real, restore_errG = checksum_load(
-                    "outputL.npy", "errD_fake.pkl", "errD_real.pkl", "errG.pkl",)
-                assert allclose(restore_outputL, outputL)
-                assert allclose(restore_errD_fake, discriminator_err)
-                assert allclose(restore_errG, generator_err)
-                print('assert successed!')
-                exit()
 
     def define_test_input(self):
         if self.config.crop:
@@ -579,7 +516,7 @@ class DCGAN(object):
 
         utils.show_all_variables()
 
-    def test2(self):
+    def test(self):
         self.build_test_model()
 
         # init var
@@ -619,9 +556,6 @@ class DCGAN(object):
                 results = np.append(batch_images, outputL, axis=2)
                 results = np.append(results, outputR, axis=2)
 
-            recon_results = checksum_load('test2_reuslt.npy')
-            assert allclose(results, recon_results)
-            print('assertion successed!')
 
             assert results.shape[0] == len(filenames)
             for fname, img in zip(filenames, results):
