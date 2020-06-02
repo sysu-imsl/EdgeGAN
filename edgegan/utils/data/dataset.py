@@ -16,7 +16,7 @@ class Dataset():
         if phase == 'train':
             if num_classes is not None:
                 self.data = []
-                for i in xrange(num_classes):
+                for i in range(num_classes):
                     for ext in ['*.png', '*.jpg']:
                         data_path = os.path.join(
                             dataroot, name, "stage1", phase, str(i), ext)

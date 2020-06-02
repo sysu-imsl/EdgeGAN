@@ -1,6 +1,3 @@
-# -*- coding:utf8 -*-
-# the entry of the project
-
 import json
 import os
 
@@ -12,7 +9,7 @@ from edgegan.models import DCGAN
 from edgegan.utils import makedirs, pp
 from edgegan.utils.data import Dataset
 
-os.environ['CUDA_VISIBLE_DEVICES'] = '1'
+os.environ['CUDA_VISIBLE_DEVICES'] = '2'
 
 
 seed(2333)

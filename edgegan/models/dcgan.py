@@ -1,6 +1,3 @@
-# -*- coding:utf8 -*-
-# defination of dcgan
-
 from __future__ import division, print_function
 
 import math
@@ -12,7 +9,7 @@ from glob import glob
 
 import numpy as np
 import tensorflow as tf
-from six.moves import xrange
+from six.moves import range
 
 import edgegan.nn.functional as F
 from edgegan import nn, utils
@@ -21,9 +18,6 @@ from .classifier import Classifier
 from .discriminator import Discriminator
 from .encoder import Encoder
 from .generator import Generator
-
-reload(sys)
-sys.setdefaultencoding('utf8')
 
 
 def allclose(a, b):
@@ -323,7 +317,8 @@ class DCGAN(object):
                     self.config.batch_size, self.config.lambda_gp
                 )
             )
-            self.image_dis_gloss = F.generator_ganloss(self.fakeimage_dis_output)
+            self.image_dis_gloss = F.generator_ganloss(
+                self.fakeimage_dis_output)
         else:
             self.image_dis_dloss = 0
             self.image_dis_gloss = 0
@@ -364,7 +359,8 @@ class DCGAN(object):
             self.loss_g_ac = 0
             self.loss_d_ac = 0
 
-        z_target = self.z[:, :self.z_dim] if self.config.multiclasses else self.z
+        z_target = self.z[:,
+                          :self.z_dim] if self.config.multiclasses else self.z
         self.zl_loss = F.l1loss(
             z_target, self.z_recon,
             weight=self.config.stage1_zl_loss
@@ -380,9 +376,11 @@ class DCGAN(object):
         self.g1_loss_sum = nn.scalar_summary("edge_gloss", self.edge_gloss)
         self.g2_loss_sum = nn.scalar_summary("image_gloss", self.image_gloss)
 
-        self.g_loss_sum = nn.scalar_summary("joint_dis_gloss", self.joint_dis_gloss)
+        self.g_loss_sum = nn.scalar_summary(
+            "joint_dis_gloss", self.joint_dis_gloss)
 
-        self.d_loss_sum = nn.scalar_summary("joint_dis_dloss", self.joint_dis_dloss)
+        self.d_loss_sum = nn.scalar_summary(
+            "joint_dis_dloss", self.joint_dis_dloss)
 
         self.zl_loss_sum = nn.scalar_summary("zl_loss", self.zl_loss)
 
@@ -481,9 +479,9 @@ class DCGAN(object):
             print(" [!] Load failed...")
 
         # train
-        for epoch in xrange(self.config.epoch):
+        for epoch in range(self.config.epoch):
             self.dataset.shuffle()
-            for idx in xrange(len(self.dataset)):
+            for idx in range(len(self.dataset)):
                 batch_images, batch_z = self.dataset[0]
 
                 self.update_model(batch_images, batch_z)
@@ -499,7 +497,8 @@ class DCGAN(object):
                 if self.config.use_edge_discriminator:
                     discriminator_err += evaluate(self.edge_dis_dloss)
 
-                generator_err = evaluate(self.edge_gloss) + evaluate(self.image_gloss)
+                generator_err = evaluate(
+                    self.edge_gloss) + evaluate(self.image_gloss)
 
                 counter += 1
                 print("Epoch: [%2d/%2d] [%4d/%4d] time: %4.4f, joint_dis_dloss: %.8f, joint_dis_gloss: %.8f"
@@ -600,7 +599,7 @@ class DCGAN(object):
             print(" [!] Load failed...")
             return
 
-        for idx in xrange(len(self.dataset)):
+        for idx in range(len(self.dataset)):
             batch_images, filenames = self.dataset[idx]
 
             # generate images

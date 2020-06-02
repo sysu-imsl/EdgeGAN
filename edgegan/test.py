@@ -1,6 +1,3 @@
-# -*- coding:utf8 -*-
-# the entry of the project
-
 import os
 
 import numpy as np
@@ -133,7 +130,7 @@ def main(_):
     with tf.Session(config=run_config) as sess:
         dcgan = DCGAN(sess, flags, None)
         if flags.Test_allLabel:
-            for label in xrange(0, flags.num_classes):
+            for label in range(0, flags.num_classes):
                 flags.test_label = label
                 dcgan.dataset = create_dataset(flags)
                 makedirs(flags.test_output_dir + "/stage1_AddE_specified/" + flags.dataset + '/' + str(
