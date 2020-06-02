@@ -15,6 +15,7 @@ seed(2333)
 tf.set_random_seed(6666)
 
 _FLAGS = tf.app.flags
+_FLAGS.DEFINE_string("gpu", "0", "Gpu ID")
 _FLAGS.DEFINE_string("name", "edgegan", "Folder for all outputs")
 _FLAGS.DEFINE_string("outputsroot", "outputs", "Outputs root")
 _FLAGS.DEFINE_integer("epoch", 100, "Epoch to train [25]")
@@ -81,6 +82,7 @@ _FLAGS.DEFINE_string("D_norm", "instance",
 
 FLAGS = _FLAGS.FLAGS
 
+os.environ['CUDA_VISIBLE_DEVICES'] = FLAGS.gpu
 
 def make_outputs_dir(flags):
     makedirs(flags.outputsroot)

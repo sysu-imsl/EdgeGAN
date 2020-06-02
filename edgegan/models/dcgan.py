@@ -422,7 +422,6 @@ class DCGAN(object):
             counter = checkpoint_counter
             print(" [*] Load SUCCESS")
         else:
-            raise ValueError
             print(" [!] Load failed...")
 
         # train

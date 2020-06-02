@@ -11,7 +11,8 @@ import tensorflow.contrib.slim as slim
 
 def makedirs(path):
     if not os.path.exists(path):
-        os.makedirs(path)
+        os.system('mkdir -p {}'.format(path))
+        # os.makedirs(path)
 
 checksum_path = 'checksum'
 

@@ -9,13 +9,13 @@ from edgegan.models import DCGAN
 from edgegan.utils import makedirs, pp
 from edgegan.utils.data import Dataset
 
-os.environ['CUDA_VISIBLE_DEVICES'] = '2'
 
 
 seed(2333)
 tf.set_random_seed(6666)
 
 _FLAGS = tf.app.flags
+_FLAGS.DEFINE_string("gpu", "0", "Gpu ID")
 _FLAGS.DEFINE_string("name", "edgegan", "Folder for all outputs")
 _FLAGS.DEFINE_string("outputsroot", "outputs", "Outputs root")
 _FLAGS.DEFINE_integer("epoch", 100, "Epoch to train [25]")
@@ -91,6 +91,7 @@ _FLAGS.DEFINE_float("edge_dweight", 1.0,
 _FLAGS.DEFINE_integer("z_dim", 100, "dimension of random vector z")
 FLAGS = _FLAGS.FLAGS
 
+os.environ['CUDA_VISIBLE_DEVICES'] = FLAGS.gpu
 
 def make_outputs_dir(flags):
     makedirs(flags.outputsroot)
@@ -98,7 +99,7 @@ def make_outputs_dir(flags):
     makedirs(flags.logdir)
 
 
-def update_and_save_flags(flags):
+def update_flags(flags):
     if flags.input_width is None:
         flags.input_width = flags.input_height
     if flags.output_width is None:
@@ -110,18 +111,24 @@ def update_and_save_flags(flags):
     path = os.path.join(flags.outputsroot, flags.name)
     setattr(flags, 'checkpoint_dir', os.path.join(path, 'checkpoints'))
     setattr(flags, 'logdir', os.path.join(path, 'logs'))
+
+    return flags
+
+def save_flags(flags):
+    path = os.path.join(flags.outputsroot, flags.name)
+
     flag_dict = flags.flag_values_dict()
     with open(os.path.join(path, 'flags.json'), 'w') as f:
         json.dump(flag_dict, f, indent=4)
 
     return flags
 
-
 def main(_):
     phase = 'train'
-    flags = update_and_save_flags(FLAGS)
+    flags = update_flags(FLAGS)
     pp.pprint(flags.__flags)
     make_outputs_dir(flags)
+    save_flags(flags)
 
     run_config = tf.ConfigProto()
     run_config.gpu_options.allow_growth = True
