@@ -450,6 +450,9 @@ class DCGAN(object):
                 print("Epoch: [%2d/%2d] [%4d/%4d] time: %4.4f, joint_dis_dloss: %.8f, joint_dis_gloss: %.8f"
                       % (epoch, self.config.epoch, idx, len(self.dataset),
                          time.time() - start_time, 2 * discriminator_err, generator_err))
+                if np.mod(counter, self.config.save_checkpoint_frequency) == 2:
+                    self.save(self.saver, self.config.checkpoint_dir, self.model_dir, counter)
+
 
 
     def define_test_input(self):

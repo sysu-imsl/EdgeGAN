@@ -32,7 +32,7 @@ _FLAGS.DEFINE_integer("output_height", 64,
                       "The size of the output images to produce [64]")
 _FLAGS.DEFINE_integer("output_width", 128,
                       "The size of the output images to produce. If None, same value as output_height [None]")
-_FLAGS.DEFINE_string("dataset", "class14_png_aug",
+_FLAGS.DEFINE_string("dataset", "class14",
                      "The name of dataset [celebA, mnist, lsun]")
 _FLAGS.DEFINE_string("input_fname_pattern", "*png",
                      "Glob pattern of filename of input images [*]")
