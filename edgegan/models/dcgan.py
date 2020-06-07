@@ -9,7 +9,6 @@ from glob import glob
 
 import numpy as np
 import tensorflow as tf
-from six.moves import range
 
 import edgegan.nn.functional as F
 from edgegan import nn, utils
@@ -428,7 +427,7 @@ class DCGAN(object):
         for epoch in range(self.config.epoch):
             self.dataset.shuffle()
             for idx in range(len(self.dataset)):
-                batch_images, batch_z = self.dataset[0]
+                batch_images, batch_z = self.dataset[idx]
 
                 self.update_model(batch_images, batch_z)
                 add_summary(batch_images, batch_z, counter)
