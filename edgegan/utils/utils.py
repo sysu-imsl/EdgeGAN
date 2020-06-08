@@ -4,8 +4,8 @@ import math
 import pprint
 import scipy.misc
 import numpy as np
-from matplotlib import pyplot
 import imageio
+from PIL import Image
 
 import tensorflow as tf
 import tensorflow.contrib.slim as slim
@@ -92,14 +92,21 @@ def imsave(images, size, path):
     return imageio.imsave(path, (image * 255).astype(np.uint8))
 
 
+def imresize(img, size):
+    size[0], size[1] = size[1], size[0]
+    img = Image.fromarray(img)
+    resized = img.resize(size, Image.BILINEAR)
+    return np.array(resized)
+
+
 def center_crop(x, crop_h, crop_w, resize_h=64, resize_w=64):
     if crop_w is None:
         crop_w = crop_h
     h, w = x.shape[:2]
     j = int(round((h - crop_h) / 2.))
     i = int(round((w - crop_w) / 2.))
-    return scipy.misc.imresize(x[j:j + crop_h, i:i + crop_w],
-                               [resize_h, resize_w])
+    return imresize(x[j:j + crop_h, i:i + crop_w],
+                    [resize_h, resize_w])
 
 
 def transform(image,
@@ -112,9 +119,9 @@ def transform(image,
         cropped_image = center_crop(image, input_height, input_width,
                                     resize_height, resize_width)
     else:
-        cropped_image = scipy.misc.imresize(image,
-                                            [resize_height, resize_width])
-    return np.array(cropped_image) / 127.5 - 1.
+        cropped_image = imresize(image,
+                                 [resize_height, resize_width])
+    return cropped_image.astype(np.float32) / 127.5 - 1.
 
 
 def inverse_transform(images):
