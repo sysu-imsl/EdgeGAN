@@ -579,28 +579,17 @@ class DCGAN(object):
 
             print("Test: [%4d/%4d]" % (idx, len(self.dataset)))
 
-    @property
-    def model_dir(self):
-        return "{}_{}_{}_{}".format(
-            self.config.dataset, self.config.batch_size,
-            self.config.output_height, self.config.output_width)
 
-    def save(self, saver, checkpoint_dir, model_dir, step):
+    def save(self, saver, checkpoint_dir, step):
         print(" [*] Saving checkpoints...")
         model_name = 'DCGAN.model'
-        checkpoint_dir = os.path.join(checkpoint_dir, model_dir)
         utils.makedirs(checkpoint_dir)
+        saver.save(self.sess, checkpoint_dir, global_step=step)
 
-        saver.save(self.sess,
-                   os.path.join(checkpoint_dir, model_name),
-                   global_step=step)
-
-    def load(self, saver, checkpoint_dir, model_dir):
+    def load(self, saver, checkpoint_dir):
         import re
         print(" [*] Reading checkpoints...")
-        checkpoint_dir = os.path.join(checkpoint_dir, model_dir)
 
-        # print(checkpoint_dir)
         ckpt = tf.train.get_checkpoint_state(checkpoint_dir)
         if ckpt and ckpt.model_checkpoint_path:
             ckpt_name = os.path.basename(ckpt.model_checkpoint_path)
