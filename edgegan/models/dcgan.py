@@ -19,6 +19,11 @@ from .encoder import Encoder
 from .generator import Generator
 
 
+def pathsplit(path):
+    path = os.path.normpath(path)
+    return path.split(os.sep)
+
+
 def channel_first(input):
     return tf.transpose(input, [0, 3, 1, 2])
 
@@ -463,28 +468,29 @@ class DCGAN(object):
         self.inputs = tf.placeholder(
             tf.float32, [self.config.batch_size] + self.image_dims, name='real_images')
 
-        self.masks = tf.placeholder(
-            tf.float32, [self.config.batch_size] + self.image_dims, name='mask_images')
-
         self.input_left = self.inputs[0:self.config.batch_size, 0:self.image_dims[0], 0:int(
             self.image_dims[1]/2), 0:self.image_dims[2]]
-        z_encoded, z_encoded_mu, z_encoded_log_sigma = self.encoder(
-            self.input_left)
-        self.z = z_encoded
+        self.z, _, _ = self.encoder(self.input_left)
         if self.config.multiclasses:
-            if self.config.Test_singleLabel:
-                batch_classes = np.full(
-                    (self.config.batch_size, 1), self.config.test_label, dtype=np.float32)
-                self.class_onehot = tf.one_hot(tf.cast(batch_classes[:, -1], dtype=tf.int32), self.config.num_classes,
-                                               on_value=1., off_value=0., dtype=tf.float32)
-                self.z = tf.concat([z_encoded, self.class_onehot], 1)
+            self.classes = tf.placeholder(
+                tf.int32, shape=[None], name='classes')
+            self.class_onehot = tf.one_hot(
+                self.classes, self.config.num_classes,
+                on_value=1., off_value=0., dtype=tf.float32
+            )
+            self.z = tf.concat([self.z, self.class_onehot], 1)
+        # if self.config.multiclasses:
+        #     if self.config.Test_singleLabel:
+        #         batch_classes = np.full(
+        #             (self.config.batch_size, 1), self.config.test_label, dtype=np.float32)
+        #         self.class_onehot = tf.one_hot(tf.cast(batch_classes[:, -1], dtype=tf.int32), self.config.num_classes,
+        #                                        on_value=1., off_value=0., dtype=tf.float32)
+        #         self.z = tf.concat([self.output_z, self.class_onehot], 1)
 
         self.edge_output = self.edge_generator(self.z)
         self.image_output = self.image_generator(self.z)
 
     def build_test_model(self):
-        assert (not self.config.Test_allLabel) or (
-            self.config.Test_singleLabel and self.config.test_label == 0)
         self.encoder = Encoder('E', is_train=True,
                                norm=self.config.E_norm,
                                image_size=self.config.input_height,
@@ -517,10 +523,6 @@ class DCGAN(object):
         utils.show_all_variables()
 
     def test(self):
-        def pathsplit(path):
-            path = os.path.normpath(path)
-            return path.split(os.sep)
-
         def name_with_class(filename):
             splited = pathsplit(filename)
             return os.path.join(*splited[splited.index('test') + 1:])
@@ -546,13 +548,21 @@ class DCGAN(object):
 
         for idx in range(len(self.dataset)):
             batch_images, filenames = self.dataset[idx]
+            feed_dict = {self.inputs: batch_images}
+            if self.config.multiclasses:
+                classes = [int(pathsplit(path)[-2]) for path in filenames]
+                batch_classes = np.array(
+                    classes, dtype=np.int)
+                feed_dict.update({
+                    self.classes: batch_classes,
+                })
 
             # generate images
             inputL = batch_images[:, :, 0:int(self.config.output_width / 2), :]
             outputL = self.sess.run(self.edge_output,
-                                    feed_dict={self.inputs: batch_images})
+                                    feed_dict=feed_dict)
             outputR = self.sess.run(self.image_output,
-                                    feed_dict={self.inputs: batch_images})
+                                    feed_dict=feed_dict)
 
             if self.config.output_combination == "inputL_outputR":
                 results = np.append(inputL, outputR, axis=2)
@@ -566,7 +576,6 @@ class DCGAN(object):
 
             assert results.shape[0] == len(filenames)
             for fname, img in zip(filenames, results):
-                # name = fname.split('/')[- 1]
                 name = name_with_class(fname)
                 img = img[np.newaxis, ...]
                 utils.save_images(
@@ -579,10 +588,8 @@ class DCGAN(object):
 
             print("Test: [%4d/%4d]" % (idx, len(self.dataset)))
 
-
     def save(self, saver, checkpoint_dir, step):
         print(" [*] Saving checkpoints...")
-        model_name = 'DCGAN.model'
         utils.makedirs(checkpoint_dir)
         saver.save(self.sess, checkpoint_dir, global_step=step)
 

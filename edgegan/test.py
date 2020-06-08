@@ -48,16 +48,8 @@ _FLAGS.DEFINE_boolean(
 
 
 # setting of testing
-_FLAGS.DEFINE_boolean("Test_singleLabel", True,
-                      "IS effect when Random_test is True or False.True for testing single label. For multi-class model")
-_FLAGS.DEFINE_integer(
-    "test_label", 3, "symbol of class, is effect when E_stage1 and Test_singleLabel are true, Random_test is false")
-_FLAGS.DEFINE_boolean("Test_allLabel", True,
-                      "Highest priority, True for testing all label, Test_singleLabel should be True. For multi-class model")
 _FLAGS.DEFINE_boolean("single_model", False,
                       "True for testing single-class model")
-_FLAGS.DEFINE_string("output_form", "batch",
-                     "The format of output image: batch or single")
 _FLAGS.DEFINE_string("output_combination", "full",
                      "The combination of output image: full(input+output), inputL_outputR(the left of input combine the right of output),outputL_inputR, outputR")
 
@@ -91,9 +83,6 @@ def subdirs(root):
 
 
 def make_outputs_dir(flags):
-    makedirs(flags.outputsroot)
-    makedirs(flags.checkpoint_dir)
-    makedirs(flags.logdir)
     makedirs(os.path.join(flags.test_output_dir, flags.dataset))
     for path in subdirs(os.path.join(flags.dataroot, flags.dataset, phase)):
         makedirs(os.path.join(flags.test_output_dir, flags.dataset, path))
@@ -121,8 +110,6 @@ def create_dataset(flags):
         'output_width': flags.output_width,
         'crop': flags.crop,
         'grayscale': False,
-        'single_model': flags.single_model,
-        'test_label': flags.test_label,
     }
     return Dataset(
         flags.dataroot, flags.dataset,
@@ -140,17 +127,8 @@ def main(_):
 
     with tf.Session(config=run_config) as sess:
         dcgan = DCGAN(sess, flags, None)
-        # for label in range(0, flags.num_classes):
-        # flags.test_label = label
         dcgan.dataset = create_dataset(flags)
-        makedirs(flags.test_output_dir + "/stage1_AddE_specified/" + flags.dataset + '/' + str(
-            flags.test_label) + '/')
         dcgan.test()
-        # else:
-        #     dcgan.dataset = create_dataset(flags)
-        #     makedirs(flags.test_output_dir + "/stage1_AddE_specified/" + flags.dataset + '/' + str(
-        #         flags.test_label) + '/')
-        #     dcgan.test()
 
 
 if __name__ == '__main__':
