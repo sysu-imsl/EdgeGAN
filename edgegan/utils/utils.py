@@ -5,6 +5,7 @@ import pprint
 import scipy.misc
 import numpy as np
 from matplotlib import pyplot
+import imageio
 
 import tensorflow as tf
 import tensorflow.contrib.slim as slim
@@ -55,7 +56,8 @@ def save_images(images, size, image_path):
 
 def imread(path, grayscale=False):
     assert grayscale == False
-    return pyplot.imread(path).astype(np.float) * 255
+    # return pyplot.imread(path).astype(np.float) * 255
+    return imageio.imread(path)
 
 
 def merge_images(images, size):
@@ -86,7 +88,8 @@ def merge(images, size):
 
 def imsave(images, size, path):
     image = np.squeeze(merge(images, size))
-    return scipy.misc.imsave(path, image)
+    # return scipy.misc.imsave(path, image)
+    return imageio.imsave(path, (image * 255).astype(np.uint8))
 
 
 def center_crop(x, crop_h, crop_w, resize_h=64, resize_w=64):
