@@ -4,6 +4,7 @@ import math
 import pprint
 import scipy.misc
 import numpy as np
+from matplotlib import pyplot
 
 import tensorflow as tf
 import tensorflow.contrib.slim as slim
@@ -14,11 +15,14 @@ def makedirs(path):
         os.system('mkdir -p {}'.format(path))
         # os.makedirs(path)
 
+
 checksum_path = 'checksum'
 
 pp = pprint.PrettyPrinter()
 
-get_stddev = lambda x, k_h, k_w: 1 / math.sqrt(k_w * k_h * x.get_shape()[-1])
+
+def get_stddev(x, k_h, k_w): return 1 / \
+    math.sqrt(k_w * k_h * x.get_shape()[-1])
 
 
 def image_manifold_size(num_images):
@@ -50,10 +54,8 @@ def save_images(images, size, image_path):
 
 
 def imread(path, grayscale=False):
-    if (grayscale):
-        return scipy.misc.imread(path, flatten=True).astype(np.float)
-    else:
-        return scipy.misc.imread(path).astype(np.float)
+    assert grayscale == False
+    return pyplot.imread(path).astype(np.float) * 255
 
 
 def merge_images(images, size):
