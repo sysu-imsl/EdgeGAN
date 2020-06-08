@@ -39,17 +39,6 @@ class Dataset():
                 os.path.join(dataroot, name, phase),
                 ['*.png', '*.jpg']
             )
-            # self.data = []
-            # if self.config['single_model'] == False:
-            #     for ext in ['*.png', '*.jpg']:
-            #         data_path = os.path.join(
-            #             dataroot, name, "stage1", 'sketch_instance', str(self.config['test_label']), ext)
-            #         self.data.extend(glob(data_path))
-            # else:
-            #     for ext in ['*.png', '*.jpg']:
-            #         data_path = os.path.join(
-            #             dataroot, name, "stage1", phase, ext)
-            #         self.data.extend(glob(data_path))
             self.data = sorted(self.data)
 
         if len(self.data) == 0:

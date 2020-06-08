@@ -466,10 +466,12 @@ class DCGAN(object):
             self.image_dims = [self.config.input_height, self.config.input_width,
                                self.c_dim]
         self.inputs = tf.placeholder(
-            tf.float32, [self.config.batch_size] + self.image_dims, name='real_images')
+            tf.float32, [None] + self.image_dims, name='real_images')
 
-        self.input_left = self.inputs[0:self.config.batch_size, 0:self.image_dims[0], 0:int(
-            self.image_dims[1]/2), 0:self.image_dims[2]]
+        self.input_left = self.inputs[
+            ..., :self.image_dims[0],
+            :self.image_dims[1]//2, :self.image_dims[2]
+        ]
         self.z, _, _ = self.encoder(self.input_left)
         if self.config.multiclasses:
             self.classes = tf.placeholder(
@@ -479,13 +481,6 @@ class DCGAN(object):
                 on_value=1., off_value=0., dtype=tf.float32
             )
             self.z = tf.concat([self.z, self.class_onehot], 1)
-        # if self.config.multiclasses:
-        #     if self.config.Test_singleLabel:
-        #         batch_classes = np.full(
-        #             (self.config.batch_size, 1), self.config.test_label, dtype=np.float32)
-        #         self.class_onehot = tf.one_hot(tf.cast(batch_classes[:, -1], dtype=tf.int32), self.config.num_classes,
-        #                                        on_value=1., off_value=0., dtype=tf.float32)
-        #         self.z = tf.concat([self.output_z, self.class_onehot], 1)
 
         self.edge_output = self.edge_generator(self.z)
         self.image_output = self.image_generator(self.z)
@@ -527,6 +522,22 @@ class DCGAN(object):
             splited = pathsplit(filename)
             return os.path.join(*splited[splited.index('test') + 1:])
 
+        def classes(filenames):
+            result = []
+            mask = []
+            for path in filenames:
+                try:
+                    classid = int(pathsplit(path)[-2])
+                    if classid >= self.config.num_classes:
+                        mask.append(False)
+                        continue
+                    result.append(classid)
+                    mask.append(True)
+                except:
+                    mask.append(False)
+                    pass
+            return result, np.array(mask, dtype=np.bool)
+
         self.build_test_model()
 
         # init var
@@ -550,9 +561,11 @@ class DCGAN(object):
             batch_images, filenames = self.dataset[idx]
             feed_dict = {self.inputs: batch_images}
             if self.config.multiclasses:
-                classes = [int(pathsplit(path)[-2]) for path in filenames]
-                batch_classes = np.array(
-                    classes, dtype=np.int)
+                class_of_images, mask = classes(filenames)
+                if len(class_of_images) == 0:
+                    continue
+                batch_classes = np.array(class_of_images, dtype=np.int)
+                feed_dict[self.inputs] = feed_dict[self.inputs][mask]
                 feed_dict.update({
                     self.classes: batch_classes,
                 })

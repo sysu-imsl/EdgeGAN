@@ -31,7 +31,7 @@ def conv2d(input, output_dim, filter_size=5, stride=2, reuse=False,
         if bias:
             b = tf.get_variable('b', [output_dim],
                                 initializer=tf.constant_initializer(0.0))
-            conv = tf.reshape(tf.nn.bias_add(conv, b), conv.get_shape())
+            conv = tf.reshape(tf.nn.bias_add(conv, b), tf.shape(conv))
 
         return conv
 
