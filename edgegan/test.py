@@ -48,8 +48,6 @@ _FLAGS.DEFINE_boolean(
 
 
 # setting of testing
-_FLAGS.DEFINE_boolean("single_model", False,
-                      "True for testing single-class model")
 _FLAGS.DEFINE_string("output_combination", "full",
                      "The combination of output image: full(input+output), inputL_outputR(the left of input combine the right of output),outputL_inputR, outputR")
 
@@ -94,6 +92,8 @@ def update_flags(flags):
     if flags.output_width is None:
         flags.output_width = flags.output_height
 
+    flags.batch_size = 1
+
     path = os.path.join(flags.outputsroot, flags.name)
     setattr(flags, 'checkpoint_dir', os.path.join(path, 'checkpoints'))
     setattr(flags, 'logdir', os.path.join(path, 'logs'))
@@ -113,8 +113,9 @@ def create_dataset(flags):
     }
     return Dataset(
         flags.dataroot, flags.dataset,
-        flags.train_size, flags.batch_size,
-        dataset_config, None, phase)
+        flags.train_size, 1,
+        dataset_config, None, phase
+    )
 
 
 def main(_):
