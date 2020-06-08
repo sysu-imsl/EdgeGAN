@@ -84,10 +84,19 @@ FLAGS = _FLAGS.FLAGS
 
 os.environ['CUDA_VISIBLE_DEVICES'] = FLAGS.gpu
 
+
+def subdirs(root):
+    return [name for name in os.listdir(root)
+            if os.path.isdir(os.path.join(root, name))]
+
+
 def make_outputs_dir(flags):
     makedirs(flags.outputsroot)
     makedirs(flags.checkpoint_dir)
     makedirs(flags.logdir)
+    makedirs(os.path.join(flags.test_output_dir, flags.dataset))
+    for path in subdirs(os.path.join(flags.dataroot, flags.dataset, phase)):
+        makedirs(os.path.join(flags.test_output_dir, flags.dataset, path))
 
 
 def update_flags(flags):
@@ -131,18 +140,17 @@ def main(_):
 
     with tf.Session(config=run_config) as sess:
         dcgan = DCGAN(sess, flags, None)
-        if flags.Test_allLabel:
-            for label in range(0, flags.num_classes):
-                flags.test_label = label
-                dcgan.dataset = create_dataset(flags)
-                makedirs(flags.test_output_dir + "/stage1_AddE_specified/" + flags.dataset + '/' + str(
-                    flags.test_label) + '/')
-                dcgan.test()
-        else:
-            dcgan.dataset = create_dataset(flags)
-            makedirs(flags.test_output_dir + "/stage1_AddE_specified/" + flags.dataset + '/' + str(
-                flags.test_label) + '/')
-            dcgan.test()
+        # for label in range(0, flags.num_classes):
+        # flags.test_label = label
+        dcgan.dataset = create_dataset(flags)
+        makedirs(flags.test_output_dir + "/stage1_AddE_specified/" + flags.dataset + '/' + str(
+            flags.test_label) + '/')
+        dcgan.test()
+        # else:
+        #     dcgan.dataset = create_dataset(flags)
+        #     makedirs(flags.test_output_dir + "/stage1_AddE_specified/" + flags.dataset + '/' + str(
+        #         flags.test_label) + '/')
+        #     dcgan.test()
 
 
 if __name__ == '__main__':

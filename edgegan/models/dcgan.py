@@ -416,7 +416,7 @@ class DCGAN(object):
         counter = 1
         start_time = time.time()
         loaded, checkpoint_counter = self.load(
-            self.saver, self.config.checkpoint_dir, self.model_dir)
+            self.saver, self.config.checkpoint_dir)
         if loaded:
             counter = checkpoint_counter
             print(" [*] Load SUCCESS")
@@ -450,9 +450,8 @@ class DCGAN(object):
                       % (epoch, self.config.epoch, idx, len(self.dataset),
                          time.time() - start_time, 2 * discriminator_err, generator_err))
                 if np.mod(counter, self.config.save_checkpoint_frequency) == 2:
-                    self.save(self.saver, self.config.checkpoint_dir, self.model_dir, counter)
-
-
+                    self.save(self.saver, self.config.checkpoint_dir,
+                              counter)
 
     def define_test_input(self):
         if self.config.crop:
@@ -518,6 +517,14 @@ class DCGAN(object):
         utils.show_all_variables()
 
     def test(self):
+        def pathsplit(path):
+            path = os.path.normpath(path)
+            return path.split(os.sep)
+
+        def name_with_class(filename):
+            splited = pathsplit(filename)
+            return os.path.join(*splited[splited.index('test') + 1:])
+
         self.build_test_model()
 
         # init var
@@ -529,7 +536,7 @@ class DCGAN(object):
         counter = 1
         start_time = time.time()
         loaded, checkpoint_counter = self.load(
-            self.saver, self.config.checkpoint_dir, self.model_dir)
+            self.saver, self.config.checkpoint_dir)
         if loaded:
             counter = checkpoint_counter
             print(" [*] Load SUCCESS")
@@ -557,21 +564,20 @@ class DCGAN(object):
                 results = np.append(batch_images, outputL, axis=2)
                 results = np.append(results, outputR, axis=2)
 
-
             assert results.shape[0] == len(filenames)
             for fname, img in zip(filenames, results):
-                name = fname.split('/')[- 1]
+                # name = fname.split('/')[- 1]
+                name = name_with_class(fname)
                 img = img[np.newaxis, ...]
                 utils.save_images(
                     img, [1, 1],
                     os.path.join(
-                        self.config.test_output_dir, 'stage1_AddE_specified',
-                        self.config.dataset, str(self.config.test_label), name,
+                        self.config.test_output_dir,
+                        self.config.dataset, name,
                     )
                 )
 
             print("Test: [%4d/%4d]" % (idx, len(self.dataset)))
-            exit(0)
 
     @property
     def model_dir(self):

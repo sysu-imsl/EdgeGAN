@@ -1,9 +1,18 @@
 import os
 from glob import glob
+from pathlib import Path
 
 import numpy as np
 
 from edgegan.utils import get_image
+
+
+def extension_match_recursive(root, exts):
+    result = []
+    for ext in exts:
+        paths = [str(p) for p in Path(root).rglob(ext)]
+        result.extend(paths)
+    return result
 
 
 class Dataset():
@@ -26,17 +35,21 @@ class Dataset():
                     dataroot, name, "stage1", phase, '*.png')
                 self.data = glob(data_path)
         else:
-            self.data = []
-            if self.config['single_model'] == False:
-                for ext in ['*.png', '*.jpg']:
-                    data_path = os.path.join(
-                        dataroot, name, "stage1", 'sketch_instance', str(self.config['test_label']), ext)
-                    self.data.extend(glob(data_path))
-            else:
-                for ext in ['*.png', '*.jpg']:
-                    data_path = os.path.join(
-                        dataroot, name, "stage1", phase, ext)
-                    self.data.extend(glob(data_path))
+            self.data = extension_match_recursive(
+                os.path.join(dataroot, name, phase),
+                ['*.png', '*.jpg']
+            )
+            # self.data = []
+            # if self.config['single_model'] == False:
+            #     for ext in ['*.png', '*.jpg']:
+            #         data_path = os.path.join(
+            #             dataroot, name, "stage1", 'sketch_instance', str(self.config['test_label']), ext)
+            #         self.data.extend(glob(data_path))
+            # else:
+            #     for ext in ['*.png', '*.jpg']:
+            #         data_path = os.path.join(
+            #             dataroot, name, "stage1", phase, ext)
+            #         self.data.extend(glob(data_path))
             self.data = sorted(self.data)
 
         if len(self.data) == 0:
