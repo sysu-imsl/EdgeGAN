@@ -91,16 +91,16 @@ class DCGAN(object):
             self.edge_dis_dloss, var_list=self.edge_discriminator.var_list), self.config.use_edge_discriminator)
         self.register_optim_if('d_optim2', tf.train.RMSPropOptimizer(self.config.learning_rate).minimize(
             self.loss_d_ac, var_list=self.classifier.var_list), self.config.multiclasses)
-        self.register_optim_if(
-            'g_optim', [
-                tf.train.RMSPropOptimizer(self.config.learning_rate).minimize(
-                    self.edge_gloss, var_list=self.edge_generator.var_list),
-                tf.train.RMSPropOptimizer(self.config.learning_rate).minimize(
-                    self.image_gloss, var_list=self.image_generator.var_list)],
-            repeat=2
-        )
+        g_optim = [
+            tf.train.RMSPropOptimizer(self.config.learning_rate).minimize(
+                self.edge_gloss, var_list=self.edge_generator.var_list),
+            tf.train.RMSPropOptimizer(self.config.learning_rate).minimize(
+                self.image_gloss, var_list=self.image_generator.var_list)
+        ]
+        self.register_optim_if('g_optim_u', g_optim)
         self.register_optim_if('e_optim', tf.train.RMSPropOptimizer(self.config.learning_rate).minimize(
             self.zl_loss, var_list=self.encoder.var_list))
+        self.register_optim_if('g_optim_b', g_optim)
 
     def update_model(self, images, z):
         for optim_param in self.optimizers:
