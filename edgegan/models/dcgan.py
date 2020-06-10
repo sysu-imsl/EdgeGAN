@@ -609,9 +609,9 @@ class DCGAN(object):
 
     def load(self, saver, checkpoint_dir):
         import re
-        print(" [*] Reading checkpoints...")
 
-        checkpoint_dir = os.path.join(checkpoint_dir, self.model_name)
+        checkpoint_dir = os.path.join(checkpoint_dir)
+        print(" [*] Reading checkpoints {}...".format(checkpoint_dir))
         ckpt = tf.train.get_checkpoint_state(checkpoint_dir)
         if ckpt and ckpt.model_checkpoint_path:
             ckpt_name = os.path.basename(ckpt.model_checkpoint_path)
