@@ -6,6 +6,7 @@ import pickle
 import sys
 import time
 from glob import glob
+from functools import partial
 
 import numpy as np
 import tensorflow as tf
@@ -76,6 +77,7 @@ class DCGAN(object):
         if not cond:
             return
         optims = optims if isinstance(optims, list) else [optims, ]
+        optims = [item() for item in optims]
         self.optimizers.append({
             'name': name,
             'optims': optims,
@@ -83,24 +85,61 @@ class DCGAN(object):
         })
 
     def construct_optimizers(self):
-        self.register_optim_if('d_optim', tf.train.RMSPropOptimizer(self.config.learning_rate).minimize(
-            self.joint_dis_dloss, var_list=self.joint_discriminator.var_list))
-        self.register_optim_if('d_optim_patch2', tf.train.RMSPropOptimizer(self.config.learning_rate).minimize(
-            self.image_dis_dloss, var_list=self.image_discriminator.var_list), self.config.use_image_discriminator)
-        self.register_optim_if('d_optim_patch3', tf.train.RMSPropOptimizer(self.config.learning_rate).minimize(
-            self.edge_dis_dloss, var_list=self.edge_discriminator.var_list), self.config.use_edge_discriminator)
-        self.register_optim_if('d_optim2', tf.train.RMSPropOptimizer(self.config.learning_rate).minimize(
-            self.loss_d_ac, var_list=self.classifier.var_list), self.config.multiclasses)
+        class Empty:
+            pass
+
+        def var_list(module_name):
+            try:
+                return getattr(self, module_name).var_list
+            except:
+                return Empty()
+
+        def loss(loss_name):
+            try:
+                return getattr(self, loss_name)
+            except:
+                return Empty()
+
+        def optim_creator(loss_name, module_name):
+            return partial(
+                tf.train.RMSPropOptimizer(self.config.learning_rate).minimize,
+                loss=loss(loss_name), var_list=var_list(module_name)
+            )
+        # self.register_optim_if('d_optim', tf.train.RMSPropOptimizer(self.config.learning_rate).minimize(
+        #     self.joint_dis_dloss, var_list=self.joint_discriminator.var_list))
+        # self.register_optim_if('d_optim_patch2', tf.train.RMSPropOptimizer(self.config.learning_rate).minimize(
+        #     self.image_dis_dloss, var_list=self.image_discriminator.var_list), self.config.use_image_discriminator)
+        # self.register_optim_if('d_optim_patch3', tf.train.RMSPropOptimizer(self.config.learning_rate).minimize(
+        #     self.edge_dis_dloss, var_list=self.edge_discriminator.var_list), self.config.use_edge_discriminator)
+        # self.register_optim_if('d_optim2', tf.train.RMSPropOptimizer(self.config.learning_rate).minimize(
+        #     self.loss_d_ac, var_list=self.classifier.var_list), self.config.multiclasses)
+        # g_optim = [
+        #     tf.train.RMSPropOptimizer(self.config.learning_rate).minimize(
+        #         self.edge_gloss, var_list=self.edge_generator.var_list),
+        #     tf.train.RMSPropOptimizer(self.config.learning_rate).minimize(
+        #         self.image_gloss, var_list=self.image_generator.var_list)
+        # ]
+        # self.register_optim_if('g_optim_u', g_optim)
+        # self.register_optim_if('e_optim', tf.train.RMSPropOptimizer(self.config.learning_rate).minimize(
+        #     self.zl_loss, var_list=self.encoder.var_list))
+        # self.register_optim_if('g_optim_b', g_optim)
+        self.register_optim_if('d_optim', optim_creator('joint_dis_dloss', 'joint_discriminator'))
+        self.register_optim_if('d_optim_patch2', optim_creator(
+            'image_dis_dloss', 'image_discriminator'), self.config.use_image_discriminator)
+        self.register_optim_if('d_optim_patch3', optim_creator(
+            'edge_dis_dloss', 'edge_discriminator'), self.config.use_edge_discriminator)
+        self.register_optim_if('d_optim2', optim_creator(
+            'loss_d_ac', 'classifier'), self.config.multiclasses)
         g_optim = [
             tf.train.RMSPropOptimizer(self.config.learning_rate).minimize(
                 self.edge_gloss, var_list=self.edge_generator.var_list),
             tf.train.RMSPropOptimizer(self.config.learning_rate).minimize(
                 self.image_gloss, var_list=self.image_generator.var_list)
         ]
-        self.register_optim_if('g_optim_u', g_optim)
-        self.register_optim_if('e_optim', tf.train.RMSPropOptimizer(self.config.learning_rate).minimize(
-            self.zl_loss, var_list=self.encoder.var_list))
-        self.register_optim_if('g_optim_b', g_optim)
+        self.register_optim_if('g_optim_u', lambda :g_optim)
+        self.register_optim_if('e_optim',optim_creator('zl_loss', 'encoder'))
+        self.register_optim_if('g_optim_b', lambda :g_optim)
+
 
     def update_model(self, images, z):
         for optim_param in self.optimizers:
