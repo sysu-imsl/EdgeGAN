@@ -28,11 +28,11 @@ class Dataset():
                 for i in range(num_classes):
                     for ext in ['*.png', '*.jpg']:
                         data_path = os.path.join(
-                            dataroot, name, "stage1", phase, str(i), ext)
+                            dataroot, name, phase, str(i), ext)
                         self.data.extend(glob(data_path))
             else:
                 data_path = os.path.join(
-                    dataroot, name, "stage1", phase, '*.png')
+                    dataroot, name, phase, '*.png')
                 self.data = glob(data_path)
         else:
             self.data = extension_match_recursive(
