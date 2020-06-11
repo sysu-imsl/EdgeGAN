@@ -8,7 +8,9 @@ Clone this repo.
 git@github.com:liuq99/EdgeGAN.git
 cd EdgeGAN
 ```
-This repo requires TensorFlow 1.13.1 and python 3+  
+This repo requires TensorFlow 1.13.1 and python 3+.  
+`conda create/activate` is suggested to manage multiple versions of tensorflow.  
+After switching to proper conda environment, run `conda install --file requirements.txt`
 
 # Dataset
 
