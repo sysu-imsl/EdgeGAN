@@ -12,7 +12,7 @@ This repo requires TensorFlow 1.13.1 and python 3+
 
 # Dataset
 
-# Generating Images Using Pretrained Model
+# Testing Using Pretrained Model
 1. Download the pretrained model from the XXX, and run:
 ``` bash
 mkdir -p outputs/edgegan/checkpoints
@@ -21,13 +21,16 @@ cd ..
 ```
 2. Generate images uinsg pretrained model:
 ``` bash
-python -m edgegan.test --name=edgegan --dataroot=<root of dataset> --dataset=<dataset> --gpu=<gpuid>
+python -m edgegan.test --name=edgegan --dataroot=<root of dataset> --dataset=<dataset> --gpu=<gpuid> #(with multi-classes)
+python -m edgegan.test --name=edgegan --dataroot=<root of dataset> --dataset=<dataset> --nomulticlasses --gpu=<gpuid> #(without multi-classes)
 ```
 3. the outputs will be located at `outputs/edgegan/test_output/` by default
 
 # Training
 ``` bash
-python -m edgegan.train --name=<new_name> --dataroot=<root of dataset> --dataset=<datsaet_name>  --gpu=<gpuid>
+python -m edgegan.train --name=<new_name> --dataroot=<root of dataset> --dataset=<datsaet_name> --gpu=<gpuid> #(with multi-classes)
+python -m edgegan.train --name=<new_name> --dataroot=<root of dataset> --dataset=<datsaet_name> --nomulticlasses --gpu=<gpuid> #(without multi-classes)
+
 ```
 
 # Citation
