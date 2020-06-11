@@ -2,7 +2,6 @@ from __future__ import division
 import os
 import math
 import pprint
-import scipy.misc
 import numpy as np
 import imageio
 from PIL import Image
@@ -88,7 +87,6 @@ def merge(images, size):
 
 def imsave(images, size, path):
     image = np.squeeze(merge(images, size))
-    # return scipy.misc.imsave(path, image)
     return imageio.imsave(path, (image * 255).astype(np.uint8))
 
 

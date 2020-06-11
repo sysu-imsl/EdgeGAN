@@ -1,0 +1,5 @@
+numpy==1.18.1
+tensorflow_gpu==1.13.1
+imageio==2.6.1
+moviepy==1.0.3
+Pillow==7.1.2
