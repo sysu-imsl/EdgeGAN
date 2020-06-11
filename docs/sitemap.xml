@@ -1,0 +1,19 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<urlset xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://www.sitemaps.org/schemas/sitemap/0.9 http://www.sitemaps.org/schemas/sitemap/0.9/sitemap.xsd" xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
+<url>
+<loc>http://localhost:4000/test_for_building_pages/development/2018/05/28/welcome-to-jekyll.html</loc>
+<lastmod>2018-05-28T18:50:07+08:00</lastmod>
+</url>
+<url>
+<loc>http://localhost:4000/test_for_building_pages/about/</loc>
+</url>
+<url>
+<loc>http://localhost:4000/test_for_building_pages/dataset.html</loc>
+</url>
+<url>
+<loc>http://localhost:4000/test_for_building_pages/</loc>
+</url>
+<url>
+<loc>http://localhost:4000/test_for_building_pages/index2.html</loc>
+</url>
+</urlset>

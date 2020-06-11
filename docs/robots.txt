@@ -1,0 +1,1 @@
+Sitemap: http://localhost:4000/test_for_building_pages/sitemap.xml
