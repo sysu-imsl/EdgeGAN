@@ -2,6 +2,8 @@
 SketchyCOCO: Image Generation from Freehand Scene Sketches  
 Chengying Gao, Qi Liu, Qi Xu, Limin Wang, Jianzhuang Liu, Changqing Zou  
 
+**This repo is working in progress!**
+
 # Installation
 Clone this repo.  
 ```
