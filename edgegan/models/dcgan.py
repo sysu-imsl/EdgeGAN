@@ -19,6 +19,46 @@ from .discriminator import Discriminator
 from .encoder import Encoder
 from .generator import Generator
 
+def extension(filename):
+    return os.path.splitext(filename)[-1]
+
+def checksum_save(input_dict):
+    checksum_path = utils.checksum_path
+    utils.makedirs(checksum_path)
+
+    def save(filename, obj):
+        p = os.path.join(checksum_path, filename)
+        if isinstance(obj, np.ndarray):
+            np.save(p + '.npy', val)
+        else:
+            with open(p + '.pkl', 'wb') as f:
+                pickle.dump(obj, f)
+
+    for key, val in input_dict.items():
+        save(key, val)
+
+def checksum_load(*names):
+    def load(filename):
+        if extension(filename) == '.npy':
+            return np.load(filename)
+        elif extension(filename) == '.pkl':
+            with open(filename, 'rb') as f:
+                return pickle.load(f)
+        else:
+            raise NotImplementedError
+
+    def enforce_exists(path):
+        if not os.path.exists(path):
+            print('missing loading item: {}'.format(path))
+            raise ValueError
+
+    checksum_path = utils.checksum_path
+    result = []
+    for name in names:
+        path = os.path.join(checksum_path, name)
+        enforce_exists(path)
+        result.append(load(path))
+    return result
 
 def pathsplit(path):
     path = os.path.normpath(path)
@@ -442,13 +482,13 @@ class DCGAN(object):
 
         counter = 1
         start_time = time.time()
-        loaded, checkpoint_counter = self.load(
-            self.saver, self.config.checkpoint_dir)
-        if loaded:
-            counter = checkpoint_counter
-            print(" [*] Load SUCCESS")
-        else:
-            print(" [!] Load failed...")
+        # loaded, checkpoint_counter = self.load(
+        #     self.saver, self.config.checkpoint_dir)
+        # if loaded:
+        #     counter = checkpoint_counter
+        #     print(" [*] Load SUCCESS")
+        # else:
+        #     print(" [!] Load failed...")
 
         # train
         for epoch in range(self.config.epoch):
@@ -479,6 +519,24 @@ class DCGAN(object):
                 if np.mod(counter, self.config.save_checkpoint_frequency) == 2:
                     self.save(self.saver, self.config.checkpoint_dir,
                               counter)
+
+                outputL = self.sess.run(self.edge_output,
+                                        feed_dict={self.z: batch_z, self.inputs: batch_images})
+                if idx == 3:
+                    # checksum_save({
+                    #     "outputL": outputL,
+                    #     "errD_fake": errD_fake,
+                    #     "errD_real": errD_real,
+                    #     "errG": errG,
+                    # })
+                    restore_outputL, restore_errD_fake, restore_errD_real, restore_errG = checksum_load(
+                        "outputL.npy", "errD_fake.pkl", "errD_real.pkl", "errG.pkl",)
+                    assert np.allclose(restore_outputL, outputL)
+                    assert errD_fake == restore_errD_fake
+                    assert errD_real == restore_errD_real
+                    assert errG == restore_errG
+                    print('assert successed!')
+                    exit()
 
     def define_test_input(self):
         if self.config.crop:
