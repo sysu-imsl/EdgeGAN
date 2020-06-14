@@ -135,3 +135,5 @@ data/
 .vscode/
 checksum/
 *.pkl
+data
+outputs

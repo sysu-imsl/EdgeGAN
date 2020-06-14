@@ -1,54 +1,86 @@
 # -*- coding:utf8 -*-
 # the entry of the project
 
+from model import DCGAN
+from utils import pp, makedirs, to_json, show_all_variables
 import os
+import random
 import numpy as np
 import tensorflow as tf
-os.environ['CUDA_VISIBLE_DEVICES']='3'
+from tfdeterminism import patch
 
-from utils import pp, makedirs, to_json, show_all_variables
-from model import DCGAN
-from numpy.random import seed
+patch()
+SEED = 123
+os.environ['CUDA_VISIBLE_DEVICES'] = '3'
+os.environ['PYTHONHASHSEED'] = str(SEED)
+random.seed(SEED)
+np.random.seed(SEED)
+tf.set_random_seed(SEED)
 
-seed(2333)
-tf.set_random_seed(6666)
 
 flags = tf.app.flags
 flags.DEFINE_integer("epoch", 100, "Epoch to train [25]")
-flags.DEFINE_float("learning_rate", 0.0002, "Learning rate of for adam [0.0002]")
+flags.DEFINE_float("learning_rate", 0.0002,
+                   "Learning rate of for adam [0.0002]")
 flags.DEFINE_float("beta1", 0.5, "Momentum term of adam [0.5]")
 flags.DEFINE_float("train_size", np.inf, "The size of train images [np.inf]")
 flags.DEFINE_integer("batch_size", 64, "The size of batch images [64]")
-flags.DEFINE_integer("input_height", 64, "The size of image to use (will be center cropped). [108]")
-flags.DEFINE_integer("input_width", 128, "The size of image to use (will be center cropped). If None, same value as input_height [None]")
-flags.DEFINE_integer("output_height", 64, "The size of the output images to produce [64]")
-flags.DEFINE_integer("output_width", 128, "The size of the output images to produce. If None, same value as output_height [None]")
-flags.DEFINE_string("dataset", "class14_png_aug", "The name of dataset [celebA, mnist, lsun]")
-flags.DEFINE_string("input_fname_pattern", "*png", "Glob pattern of filename of input images [*]")
-flags.DEFINE_string("checkpoint_dir", "checkpoint_gpwgan_instanceEGD_noOriginD_patch2_128_patch3_128_patchGAN_insN_wgan_2G", "Directory name to save the checkpoints [checkpoint]")
+flags.DEFINE_integer(
+    "input_height", 64, "The size of image to use (will be center cropped). [108]")
+flags.DEFINE_integer(
+    "input_width", 128, "The size of image to use (will be center cropped). If None, same value as input_height [None]")
+flags.DEFINE_integer("output_height", 64,
+                     "The size of the output images to produce [64]")
+flags.DEFINE_integer("output_width", 128,
+                     "The size of the output images to produce. If None, same value as output_height [None]")
+flags.DEFINE_string("dataset", "class14_png_aug",
+                    "The name of dataset [celebA, mnist, lsun]")
+flags.DEFINE_string("input_fname_pattern", "*png",
+                    "Glob pattern of filename of input images [*]")
+flags.DEFINE_string("checkpoint_dir", "checkpoint_gpwgan_instanceEGD_noOriginD_patch2_128_patch3_128_patchGAN_insN_wgan_2G",
+                    "Directory name to save the checkpoints [checkpoint]")
 flags.DEFINE_string("data_dir", "./data", "Root directory of dataset [data]")
-flags.DEFINE_string("sample_dir", "samples_gpwgan_instanceEGD_noOriginD_patch2_128_patch3_128_patchGAN_insN_wgan_2G", "Directory name to save the image samples [samples]")
-flags.DEFINE_boolean("train", False, "True for training, False for testing [False]")
-flags.DEFINE_integer("stage", 1, "1 for train stage 1, and 2 for train stage 2")
-flags.DEFINE_integer("save_checkpoint_frequency", 500, "frequency for saving checkpoint")
-flags.DEFINE_boolean("crop", False, "True for training, False for testing [False]")
-flags.DEFINE_integer("generate_test_images", 100, "Number of images to generate during test. [100]")
+flags.DEFINE_string("sample_dir", "samples_gpwgan_instanceEGD_noOriginD_patch2_128_patch3_128_patchGAN_insN_wgan_2G",
+                    "Directory name to save the image samples [samples]")
+flags.DEFINE_boolean(
+    "train", False, "True for training, False for testing [False]")
+flags.DEFINE_integer(
+    "stage", 1, "1 for train stage 1, and 2 for train stage 2")
+flags.DEFINE_integer("save_checkpoint_frequency", 500,
+                     "frequency for saving checkpoint")
+flags.DEFINE_boolean(
+    "crop", False, "True for training, False for testing [False]")
+flags.DEFINE_integer("generate_test_images", 100,
+                     "Number of images to generate during test. [100]")
 
-flags.DEFINE_boolean("E_stage1", True, "If add Encoder for stage 1, be True on both training stage 1 and 2. Must be False on testing stage 2")
-flags.DEFINE_boolean("E2_stage1", False, "whether to add an encoder to get class vector")
-flags.DEFINE_integer("G_num", 2, "setting 2 generators for edge and image generation seprately")
+flags.DEFINE_boolean(
+    "E_stage1", True, "If add Encoder for stage 1, be True on both training stage 1 and 2. Must be False on testing stage 2")
+flags.DEFINE_boolean("E2_stage1", False,
+                     "whether to add an encoder to get class vector")
+flags.DEFINE_integer(
+    "G_num", 2, "setting 2 generators for edge and image generation seprately")
 
 # setting of testing
-flags.DEFINE_boolean("Random_test", False, "IS effect when E_stage1 is True.True for testing random z, else for input images")
-flags.DEFINE_boolean("Test_singleLabel", True, "IS effect when Random_test is True or False.True for testing single label. For multi-class model")
-flags.DEFINE_boolean("Test_encoderSketch", False, "True for getting class vector by using encoder2")
-flags.DEFINE_boolean("Test_classifierSketch", False, "True for getting class vector by using classifier")
-flags.DEFINE_integer("test_label", 3, "symbol of class, is effect when E_stage1 and Test_singleLabel are true, Random_test is false")
-flags.DEFINE_boolean("Test_allLabel", True, "Highest priority, True for testing all label, Test_singleLabel should be True. For multi-class model")
-flags.DEFINE_boolean("single_model", False, "True for testing single-class model")
-flags.DEFINE_string("output_form", "batch", "The format of output image: batch or single")
-flags.DEFINE_string("output_combination", "full", "The combination of output image: full(input+output), inputL_outputR(the left of input combine the right of output),outputL_inputR, outputR")
-flags.DEFINE_boolean("second_test", False, "whether use the generated edge for the second test")
+flags.DEFINE_boolean("Random_test", False,
+                     "IS effect when E_stage1 is True.True for testing random z, else for input images")
+flags.DEFINE_boolean("Test_singleLabel", True,
+                     "IS effect when Random_test is True or False.True for testing single label. For multi-class model")
+flags.DEFINE_boolean("Test_encoderSketch", False,
+                     "True for getting class vector by using encoder2")
+flags.DEFINE_boolean("Test_classifierSketch", False,
+                     "True for getting class vector by using classifier")
+flags.DEFINE_integer(
+    "test_label", 3, "symbol of class, is effect when E_stage1 and Test_singleLabel are true, Random_test is false")
+flags.DEFINE_boolean("Test_allLabel", True,
+                     "Highest priority, True for testing all label, Test_singleLabel should be True. For multi-class model")
+flags.DEFINE_boolean("single_model", False,
+                     "True for testing single-class model")
+flags.DEFINE_string("output_form", "batch",
+                    "The format of output image: batch or single")
+flags.DEFINE_string("output_combination", "full",
+                    "The combination of output image: full(input+output), inputL_outputR(the left of input combine the right of output),outputL_inputR, outputR")
+flags.DEFINE_boolean("second_test", False,
+                     "whether use the generated edge for the second test")
 
 # weight of loss
 flags.DEFINE_float("stage2_g_loss", 0.0, "weight of g loss")
@@ -58,7 +90,8 @@ flags.DEFINE_float("stage1_zl_loss", 10.0, "weight of z l1 loss")
 
 # multi class
 flags.DEFINE_boolean("if_focal_loss", True, "if use focal loss")
-flags.DEFINE_string("classifier_inputForm", "image", "The format of input of classifier: edge or image. The default is image")
+flags.DEFINE_string("classifier_inputForm", "image",
+                    "The format of input of classifier: edge or image. The default is image")
 flags.DEFINE_integer("num_classes", 14, "num of classes")
 flags.DEFINE_string("SPECTRAL_NORM_UPDATE_OPS", "spectral_norm_update_ops", "")
 
@@ -68,43 +101,66 @@ flags.DEFINE_string("model", "old", "which base model(G and D): [old | new]")
 flags.DEFINE_boolean("if_resnet_e", True, "if use resnet for E")
 flags.DEFINE_boolean("if_resnet_g", False, "if use resnet for G")
 flags.DEFINE_boolean("if_resnet_d", False, "if use resnet for origin D")
-flags.DEFINE_float("lambda_gp", 10.0, "if 'gpwgan' is chosen the corresponding lambda must be filled")
-flags.DEFINE_float("clamp_lower", -0.01, "if 'wgan' is chosen the corresponding lambda must be filled, the upper bound of parameters in disc")
-flags.DEFINE_float("clamp_upper", 0.01, "if 'wgan' is chosen the corresponding lambda must be filled, the upper bound of parameters in disc")
+flags.DEFINE_float("lambda_gp", 10.0,
+                   "if 'gpwgan' is chosen the corresponding lambda must be filled")
+flags.DEFINE_float("clamp_lower", -0.01,
+                   "if 'wgan' is chosen the corresponding lambda must be filled, the upper bound of parameters in disc")
+flags.DEFINE_float("clamp_upper", 0.01,
+                   "if 'wgan' is chosen the corresponding lambda must be filled, the upper bound of parameters in disc")
 
-flags.DEFINE_string("E_norm", "instance", "normalization options:[instance, batch, norm]")
-flags.DEFINE_string("G_norm", "instance", "normalization options:[instance, batch, norm]")
-flags.DEFINE_string("D_norm", "instance", "normalization options:[instance, batch, norm]")
-flags.DEFINE_string("D_patch_norm", "batch", "normalization options:[instance, batch, norm]")
-flags.DEFINE_boolean("use_D_origin", True, "True for using origin discriminator")
+flags.DEFINE_string("E_norm", "instance",
+                    "normalization options:[instance, batch, norm]")
+flags.DEFINE_string("G_norm", "instance",
+                    "normalization options:[instance, batch, norm]")
+flags.DEFINE_string("D_norm", "instance",
+                    "normalization options:[instance, batch, norm]")
+flags.DEFINE_string("D_patch_norm", "batch",
+                    "normalization options:[instance, batch, norm]")
+flags.DEFINE_boolean("use_D_origin", True,
+                     "True for using origin discriminator")
 flags.DEFINE_string("originD_inputForm", "concat_w", "concat_w, concat_n")
 
-flags.DEFINE_boolean("use_D_patch", False, "True for using patch discriminator, modify the network setting")
+flags.DEFINE_boolean("use_D_patch", False,
+                     "True for using patch discriminator, modify the network setting")
 
-flags.DEFINE_boolean("use_D_patch2", True, "True for using patch discriminator, modify the size of input of discriminator")
+flags.DEFINE_boolean("use_D_patch2", True,
+                     "True for using patch discriminator, modify the size of input of discriminator")
 # flags.DEFINE_integer("scale_num", 2, "num of of multi-discriminator")
 flags.DEFINE_integer("sizeOfIn_patch2", 128, "The size of input for D_patch2")
-flags.DEFINE_string("conditional_D2", "single_right", "full_concat_w, full_concat_n, single_right")
+flags.DEFINE_string("conditional_D2", "single_right",
+                    "full_concat_w, full_concat_n, single_right")
 
-flags.DEFINE_boolean("use_D_patch2_2", False, "True for using patch discriminator, modify the size of input of discriminator")
+flags.DEFINE_boolean("use_D_patch2_2", False,
+                     "True for using patch discriminator, modify the size of input of discriminator")
 # flags.DEFINE_integer("scale_num", 2, "num of of multi-discriminator")
-flags.DEFINE_integer("sizeOfIn_patch2_2", 256, "The size of input for D_patch2_2")
+flags.DEFINE_integer("sizeOfIn_patch2_2", 256,
+                     "The size of input for D_patch2_2")
 
-flags.DEFINE_boolean("use_D_patch3", True, "True for using patch discriminator, modify the size of input of discriminator, user for edge discriminator when G_num == 2")
+flags.DEFINE_boolean("use_D_patch3", True,
+                     "True for using patch discriminator, modify the size of input of discriminator, user for edge discriminator when G_num == 2")
 flags.DEFINE_integer("sizeOfIn_patch3", 128, "The size of input for D_patch2")
-flags.DEFINE_string("conditional_D3", "single_right", "full_concat_n, full_concat_w, single_right")
+flags.DEFINE_string("conditional_D3", "single_right",
+                    "full_concat_n, full_concat_w, single_right")
 
 flags.DEFINE_boolean("use_patchGAN_D_full", False, "True for using patchGAN D")
-flags.DEFINE_string("patchGAN_D_norm", "instance", "normalization options:[instance, batch, norm]")
+flags.DEFINE_string("patchGAN_D_norm", "instance",
+                    "normalization options:[instance, batch, norm]")
 flags.DEFINE_string("patchGAN_loss", "origin", "[wgan, gpwgan, origin]")
 
-flags.DEFINE_float("D_origin_loss", 1.0, "weight of origin discriminative loss, is ineffective when use_D_origin is false")
-flags.DEFINE_float("D_patch_loss", 0.0, "weight of patch discriminative loss, is ineffective when use_D_patch is false")
-flags.DEFINE_float("D_patch2_loss", 1.0, "weight of patch discriminative loss, is ineffective when use_D_patch2 is false")
-flags.DEFINE_float("D_patch2_2_loss", 0.5, "weight of patch discriminative loss, is ineffective when use_D_patch2_2 is false")
-flags.DEFINE_float("D_patch3_loss", 1.0, "weight of patch discriminative loss, is ineffective when use_D_patch3 is false")
-flags.DEFINE_float("D_patchGAN_loss", 1.0, "weight of patch discriminative loss, is ineffective when use_D_patchGAN_D_full is false")
+flags.DEFINE_float("D_origin_loss", 1.0,
+                   "weight of origin discriminative loss, is ineffective when use_D_origin is false")
+flags.DEFINE_float("D_patch_loss", 0.0,
+                   "weight of patch discriminative loss, is ineffective when use_D_patch is false")
+flags.DEFINE_float("D_patch2_loss", 1.0,
+                   "weight of patch discriminative loss, is ineffective when use_D_patch2 is false")
+flags.DEFINE_float("D_patch2_2_loss", 0.5,
+                   "weight of patch discriminative loss, is ineffective when use_D_patch2_2 is false")
+flags.DEFINE_float("D_patch3_loss", 1.0,
+                   "weight of patch discriminative loss, is ineffective when use_D_patch3 is false")
+flags.DEFINE_float("D_patchGAN_loss", 1.0,
+                   "weight of patch discriminative loss, is ineffective when use_D_patchGAN_D_full is false")
 FLAGS = flags.FLAGS
+
 
 def main(_):
     pp.pprint(flags.FLAGS.__flags)
@@ -146,7 +202,8 @@ def main(_):
                 dir_tmp += FLAGS.patchGAN_loss
                 dir_tmp += '_'
         dir_tmp += '2G'
-        FLAGS.checkpoint_dir = 'checkpoint_' + FLAGS.type + '_instanceEGD' + '_' + dir_tmp
+        FLAGS.checkpoint_dir = 'checkpoint_' + \
+            FLAGS.type + '_instanceEGD' + '_' + dir_tmp
         FLAGS.sample_dir = 'samples_' + FLAGS.type + '_instanceEGD' + '_' + dir_tmp
         # checkpoint_gpwgan_instanceEGD_noOriginD_patch2_128_patch3_128_patchGAN_insN_wgan_2G
 
@@ -170,14 +227,15 @@ def main(_):
     makedirs(FLAGS.sample_dir+"/stage2")
     makedirs(FLAGS.sample_dir + "/stage1_AddE_specified/")
     makedirs(FLAGS.sample_dir + "/stage1_AddE_random/" + FLAGS.dataset + '/')
-    makedirs(FLAGS.sample_dir + "/stage1_AddE_specified/" + FLAGS.dataset + '/' + str(FLAGS.test_label) + '/')
+    makedirs(FLAGS.sample_dir + "/stage1_AddE_specified/" +
+             FLAGS.dataset + '/' + str(FLAGS.test_label) + '/')
 
     #gpu_options = tf.GPUOptions(per_process_gpu_memory_fraction=0.333)
     run_config = tf.ConfigProto()
     run_config.gpu_options.allow_growth = True
 
     with tf.Session(config=run_config) as sess:
-    # with tf.Session() as sess:
+        # with tf.Session() as sess:
         dcgan = DCGAN(sess, FLAGS)
 
         if FLAGS.train:
@@ -223,6 +281,7 @@ def main(_):
         # # Below is codes for visualization
         # OPTION = 1
         # visualize(sess, dcgan, FLAGS, OPTION)
+
 
 if __name__ == '__main__':
     tf.app.run()
