@@ -500,8 +500,8 @@ class DCGAN(object):
                         'batch_files.pkl', 'batch_images.npy', 'batch_z.npy')
                     assert np.all(batch_images == restore_batch_images)
                     assert np.all(batch_z == restore_batch_z)
-                    for b, r in zip(batch_files, restore_batch_files):
-                        assert b == r
+                    # for b, r in zip(batch_files, restore_batch_files):
+                    #     assert b == r
                     print('assertion successed!')
                     exit()
 
