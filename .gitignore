@@ -137,3 +137,4 @@ checksum/
 *.pkl
 data
 outputs
+localdata

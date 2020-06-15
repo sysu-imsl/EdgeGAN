@@ -1199,19 +1199,20 @@ class DCGAN(object):
 
                 batch_z = np.random.normal(
                     size=(self.config.batch_size, self.z_dim))
-                # checksum_save({
-                #     'batch_files': batch_files,
-                #     'batch_images': batch_images,
-                #     'batch_z': batch_z,
-                # })
+                if idx == 3:
+                    # checksum_save({
+                    #     'batch_files': batch_files,
+                    #     'batch_images': batch_images,
+                    #     'batch_z': batch_z,
+                    # })
 
-                # (restore_batch_files, restore_batch_images, restore_batch_z) = checksum_load(
-                #     'batch_files.pkl', 'batch_images.npy', 'batch_z.npy')
-                # assert np.allclose(batch_images, restore_batch_images)
-                # assert np.allclose(batch_z, restore_batch_z)
-                # for out, tar in zip(restore_batch_files, batch_files):
-                #     assert out == tar
-                # print('assertion successed!')
+                    (restore_batch_files, restore_batch_images, restore_batch_z) = checksum_load(
+                        'batch_files.pkl', 'batch_images.npy', 'batch_z.npy')
+                    assert np.all(batch_images == restore_batch_images)
+                    assert np.all(batch_z == restore_batch_z)
+                    for out, tar in zip(restore_batch_files, batch_files):
+                        assert out == tar
+                    print('assertion successed!')
 
                 if self.config.if_focal_loss:
                     def getClass(filePath):
@@ -1353,7 +1354,7 @@ class DCGAN(object):
                     # })
                     restore_outputL, restore_errD_fake, restore_errD_real, restore_errG = checksum_load(
                         "outputL.npy", "errD_fake.pkl", "errD_real.pkl", "errG.pkl",)
-                    assert np.allclose(restore_outputL, outputL)
+                    assert np.all(restore_outputL == outputL)
                     assert errD_fake == restore_errD_fake
                     assert errD_real == restore_errD_real
                     assert errG == restore_errG
