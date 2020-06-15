@@ -875,38 +875,38 @@ class DCGAN(object):
             if self.config.use_D_origin:
                 self.d_optim = tf.train.RMSPropOptimizer(self.config.learning_rate).minimize(
                     self.d_loss, var_list=self.discriminator.var_list)
-            if self.config.use_D_patch:
-                self.d_optim_patch = tf.train.RMSPropOptimizer(self.config.learning_rate).minimize(
-                    self.d_loss_patch, var_list=self.discriminator_patch.var_list)
-            if self.config.use_D_patch2:
-                self.d_optim_patch2 = tf.train.RMSPropOptimizer(self.config.learning_rate).minimize(
-                    self.d_loss_patch2, var_list=self.discriminator_patch2.var_list)
-            if self.config.use_D_patch2_2:
-                self.d_optim_patch2_2 = tf.train.RMSPropOptimizer(self.config.learning_rate).minimize(
-                    self.d_loss_patch2_2, var_list=self.discriminator_patch2_2.var_list)
+            # if self.config.use_D_patch:
+            #     self.d_optim_patch = tf.train.RMSPropOptimizer(self.config.learning_rate).minimize(
+            #         self.d_loss_patch, var_list=self.discriminator_patch.var_list)
+            # if self.config.use_D_patch2:
+            #     self.d_optim_patch2 = tf.train.RMSPropOptimizer(self.config.learning_rate).minimize(
+            #         self.d_loss_patch2, var_list=self.discriminator_patch2.var_list)
+            # if self.config.use_D_patch2_2:
+            #     self.d_optim_patch2_2 = tf.train.RMSPropOptimizer(self.config.learning_rate).minimize(
+            #         self.d_loss_patch2_2, var_list=self.discriminator_patch2_2.var_list)
 
-            if self.config.use_D_patch3:
-                self.d_optim_patch3 = tf.train.RMSPropOptimizer(self.config.learning_rate).minimize(
-                    self.d_loss_patch3, var_list=self.discriminator_patch3.var_list)
-            if self.config.if_focal_loss:
-                self.d_optim2 = tf.train.RMSPropOptimizer(self.config.learning_rate).minimize(
-                    self.loss_d_ac, var_list=self.discriminator2.var_list)
+            # if self.config.use_D_patch3:
+            #     self.d_optim_patch3 = tf.train.RMSPropOptimizer(self.config.learning_rate).minimize(
+            #         self.d_loss_patch3, var_list=self.discriminator_patch3.var_list)
+            # if self.config.if_focal_loss:
+            #     self.d_optim2 = tf.train.RMSPropOptimizer(self.config.learning_rate).minimize(
+            #         self.loss_d_ac, var_list=self.discriminator2.var_list)
 
-            if self.config.G_num == 2:
-                self.g1_optim = tf.train.RMSPropOptimizer(self.config.learning_rate).minimize(
-                    self.g1_loss, var_list=self.generator1.var_list)
-                self.g2_optim = tf.train.RMSPropOptimizer(self.config.learning_rate).minimize(
-                    self.g2_loss, var_list=self.generator2.var_list)
-            else:
-                self.g_optim = tf.train.RMSPropOptimizer(self.config.learning_rate).minimize(
-                    self.g_loss, var_list=self.generator.var_list)
+            # if self.config.G_num == 2:
+            #     self.g1_optim = tf.train.RMSPropOptimizer(self.config.learning_rate).minimize(
+            #         self.g1_loss, var_list=self.generator1.var_list)
+            #     self.g2_optim = tf.train.RMSPropOptimizer(self.config.learning_rate).minimize(
+            #         self.g2_loss, var_list=self.generator2.var_list)
+            # else:
+            #     self.g_optim = tf.train.RMSPropOptimizer(self.config.learning_rate).minimize(
+            #         self.g_loss, var_list=self.generator.var_list)
 
-            if self.config.E_stage1:
-                self.e_optim = tf.train.RMSPropOptimizer(self.config.learning_rate).minimize(
-                    self.zl_loss, var_list=self.encoder.var_list)
-                if self.config.if_focal_loss and self.config.E2_stage1:
-                    self.e_optim2 = tf.train.RMSPropOptimizer(self.config.learning_rate).minimize(
-                        self.class_loss, var_list=self.encoder2.var_list)
+            # if self.config.E_stage1:
+            #     self.e_optim = tf.train.RMSPropOptimizer(self.config.learning_rate).minimize(
+            #         self.zl_loss, var_list=self.encoder.var_list)
+            #     if self.config.if_focal_loss and self.config.E2_stage1:
+            #         self.e_optim2 = tf.train.RMSPropOptimizer(self.config.learning_rate).minimize(
+            #             self.class_loss, var_list=self.encoder2.var_list)
         # ??? something not understood
         if self.config.type is "wgan":
             if self.config.use_D_origin:
@@ -952,116 +952,116 @@ class DCGAN(object):
                     self.d_optim_patchGAN = tf.tuple(clipped_var_c)
 
         # define sumary
-        self.z_sum = networks.histogram_summary("z", self.z)
-        self.inputs_sum = networks.image_summary("inputs", self.inputs)
+        # self.z_sum = networks.histogram_summary("z", self.z)
+        # self.inputs_sum = networks.image_summary("inputs", self.inputs)
 
-        if self.config.G_num == 2:
-            self.G1_sum = networks.image_summary("G1", self.G1)
-            self.G2_sum = networks.image_summary("G2", self.G2)
-        else:
-            self.G_sum = networks.image_summary("G", self.G)
+        # if self.config.G_num == 2:
+        #     self.G1_sum = networks.image_summary("G1", self.G1)
+        #     self.G2_sum = networks.image_summary("G2", self.G2)
+        # else:
+        #     self.G_sum = networks.image_summary("G", self.G)
 
-        self.d_loss_real_sum = networks.scalar_summary(
-            "d_loss_real", self.d_loss_real)
-        self.d_loss_fake_sum = networks.scalar_summary(
-            "d_loss_fake", self.d_loss_fake)
+        # self.d_loss_real_sum = networks.scalar_summary(
+        #     "d_loss_real", self.d_loss_real)
+        # self.d_loss_fake_sum = networks.scalar_summary(
+        #     "d_loss_fake", self.d_loss_fake)
 
-        if self.config.G_num == 2:
-            self.g1_loss_sum = networks.scalar_summary("g1_loss", self.g1_loss)
-            self.g2_loss_sum = networks.scalar_summary("g2_loss", self.g2_loss)
+        # if self.config.G_num == 2:
+        #     self.g1_loss_sum = networks.scalar_summary("g1_loss", self.g1_loss)
+        #     self.g2_loss_sum = networks.scalar_summary("g2_loss", self.g2_loss)
 
-        self.g_loss_sum = networks.scalar_summary("g_loss", self.g_loss)
+        # self.g_loss_sum = networks.scalar_summary("g_loss", self.g_loss)
 
-        self.d_loss_sum = networks.scalar_summary("d_loss", self.d_loss)
+        # self.d_loss_sum = networks.scalar_summary("d_loss", self.d_loss)
 
-        self.zl_loss_sum = networks.scalar_summary("zl_loss", self.zl_loss)
+        # self.zl_loss_sum = networks.scalar_summary("zl_loss", self.zl_loss)
 
-        self.class_loss_sum = networks.scalar_summary(
-            "class_loss", self.class_loss)
+        # self.class_loss_sum = networks.scalar_summary(
+        #     "class_loss", self.class_loss)
 
-        self.loss_g_ac_sum = networks.scalar_summary(
-            "loss_g_ac", self.loss_g_ac)
-        self.loss_d_ac_sum = networks.scalar_summary(
-            "loss_d_ac", self.loss_d_ac)
+        # self.loss_g_ac_sum = networks.scalar_summary(
+        #     "loss_g_ac", self.loss_g_ac)
+        # self.loss_d_ac_sum = networks.scalar_summary(
+        #     "loss_d_ac", self.loss_d_ac)
 
-        if self.config.G_num == 2:
-            self.g_sum = networks.merge_summary([self.z_sum, self.G1_sum, self.G2_sum,
-                                                 self.d_loss_fake_sum, self.zl_loss_sum, self.g_loss_sum,
-                                                 self.class_loss_sum, self.loss_g_ac_sum, self.g1_loss_sum, self.g2_loss_sum])
-            if self.config.use_patchGAN_D_full:
-                self.d_loss_patchGAN_sum = networks.scalar_summary(
-                    "d_loss_patchGAN", self.d_loss_patchGAN)
-                self.g_sum = networks.merge_summary(
-                    [self.g_sum, self.d_loss_patchGAN_sum])
-        else:
-            self.g_sum = networks.merge_summary([self.z_sum, self.G_sum,
-                                                 self.d_loss_fake_sum, self.g_loss_sum, self.zl_loss_sum,
-                                                 self.class_loss_sum, self.loss_g_ac_sum])
-        self.d_sum = networks.merge_summary([self.z_sum, self.inputs_sum,
-                                             self.d_loss_real_sum, self.d_loss_sum, self.loss_d_ac_sum])
-        if self.config.use_D_origin:
-            self.d_sum_tmp = networks.histogram_summary("d", self.D)
-            self.d__sum_tmp = networks.histogram_summary("d_", self.D_)
-            self.g_sum = networks.merge_summary([self.g_sum, self.d__sum_tmp])
-            self.d_sum = networks.merge_summary([self.d_sum, self.d_sum_tmp])
+        # if self.config.G_num == 2:
+        #     self.g_sum = networks.merge_summary([self.z_sum, self.G1_sum, self.G2_sum,
+        #                                          self.d_loss_fake_sum, self.zl_loss_sum, self.g_loss_sum,
+        #                                          self.class_loss_sum, self.loss_g_ac_sum, self.g1_loss_sum, self.g2_loss_sum])
+        #     if self.config.use_patchGAN_D_full:
+        #         self.d_loss_patchGAN_sum = networks.scalar_summary(
+        #             "d_loss_patchGAN", self.d_loss_patchGAN)
+        #         self.g_sum = networks.merge_summary(
+        #             [self.g_sum, self.d_loss_patchGAN_sum])
+        # else:
+        #     self.g_sum = networks.merge_summary([self.z_sum, self.G_sum,
+        #                                          self.d_loss_fake_sum, self.g_loss_sum, self.zl_loss_sum,
+        #                                          self.class_loss_sum, self.loss_g_ac_sum])
+        # self.d_sum = networks.merge_summary([self.z_sum, self.inputs_sum,
+        #                                      self.d_loss_real_sum, self.d_loss_sum, self.loss_d_ac_sum])
+        # if self.config.use_D_origin:
+        #     self.d_sum_tmp = networks.histogram_summary("d", self.D)
+        #     self.d__sum_tmp = networks.histogram_summary("d_", self.D_)
+        #     self.g_sum = networks.merge_summary([self.g_sum, self.d__sum_tmp])
+        #     self.d_sum = networks.merge_summary([self.d_sum, self.d_sum_tmp])
 
-        if self.config.use_D_patch:
-            self.d_patch_sum = networks.histogram_summary(
-                "patch_d", self.patch_D)
-            self.d__patch_sum = networks.histogram_summary(
-                "patch_d_", self.patch_D_)
-            self.d_loss_patch_sum = networks.scalar_summary(
-                "d_loss_patch", self.d_loss_patch)
-            self.g_loss_patch_sum = networks.scalar_summary(
-                "g_loss_patch", self.g_loss_patch)
-            self.g_sum = networks.merge_summary(
-                [self.g_sum, self.d__patch_sum, self.g_loss_patch_sum])
-            self.d_sum = networks.merge_summary(
-                [self.d_sum, self.d_patch_sum, self.d_loss_patch_sum])
+        # if self.config.use_D_patch:
+        #     self.d_patch_sum = networks.histogram_summary(
+        #         "patch_d", self.patch_D)
+        #     self.d__patch_sum = networks.histogram_summary(
+        #         "patch_d_", self.patch_D_)
+        #     self.d_loss_patch_sum = networks.scalar_summary(
+        #         "d_loss_patch", self.d_loss_patch)
+        #     self.g_loss_patch_sum = networks.scalar_summary(
+        #         "g_loss_patch", self.g_loss_patch)
+        #     self.g_sum = networks.merge_summary(
+        #         [self.g_sum, self.d__patch_sum, self.g_loss_patch_sum])
+        #     self.d_sum = networks.merge_summary(
+        #         [self.d_sum, self.d_patch_sum, self.d_loss_patch_sum])
 
-        if self.config.use_D_patch2:
-            self.d_patch2_sum = networks.histogram_summary(
-                "patch2_d", self.patch2_D)
-            self.d__patch2_sum = networks.histogram_summary(
-                "patch2_d_", self.patch2_D_)
-            self.resized_inputs_sum = networks.image_summary(
-                "resized_inputs_image", self.resized_inputs_image)
-            if self.config.G_num == 2:
-                self.resized_G_sum = networks.image_summary(
-                    "resized_G_image", self.resized_G2_p2)
-            else:
-                self.resized_G_sum = networks.image_summary(
-                    "resized_G_image", self.resized_G_image)
-            self.d_loss_patch2_sum = networks.scalar_summary(
-                "d_loss_patch2", self.d_loss_patch2)
-            self.g_loss_patch2_sum = networks.scalar_summary(
-                "g_loss_patch2", self.g_loss_patch2)
-            self.g_sum = networks.merge_summary(
-                [self.g_sum, self.d__patch2_sum, self.resized_G_sum, self.g_loss_patch2_sum])
-            self.d_sum = networks.merge_summary(
-                [self.d_sum, self.d_patch2_sum, self.resized_inputs_sum, self.d_loss_patch2_sum])
+        # if self.config.use_D_patch2:
+        #     self.d_patch2_sum = networks.histogram_summary(
+        #         "patch2_d", self.patch2_D)
+        #     self.d__patch2_sum = networks.histogram_summary(
+        #         "patch2_d_", self.patch2_D_)
+        #     self.resized_inputs_sum = networks.image_summary(
+        #         "resized_inputs_image", self.resized_inputs_image)
+        #     if self.config.G_num == 2:
+        #         self.resized_G_sum = networks.image_summary(
+        #             "resized_G_image", self.resized_G2_p2)
+        #     else:
+        #         self.resized_G_sum = networks.image_summary(
+        #             "resized_G_image", self.resized_G_image)
+        #     self.d_loss_patch2_sum = networks.scalar_summary(
+        #         "d_loss_patch2", self.d_loss_patch2)
+        #     self.g_loss_patch2_sum = networks.scalar_summary(
+        #         "g_loss_patch2", self.g_loss_patch2)
+        #     self.g_sum = networks.merge_summary(
+        #         [self.g_sum, self.d__patch2_sum, self.resized_G_sum, self.g_loss_patch2_sum])
+        #     self.d_sum = networks.merge_summary(
+        #         [self.d_sum, self.d_patch2_sum, self.resized_inputs_sum, self.d_loss_patch2_sum])
 
-        if self.config.use_D_patch3:
-            self.d_patch3_sum = networks.histogram_summary(
-                "patch3_d", self.patch3_D)
-            self.d__patch3_sum = networks.histogram_summary(
-                "patch3_d_", self.patch3_D_)
-            self.resized_inputs_p3_sum = networks.image_summary(
-                "resized_inputs_p3_image", self.resized_inputs_p3_image)
-            if self.config.G_num == 2:
-                self.resized_G_p3_sum = networks.image_summary(
-                    "resized_G_p3_image", self.resized_G1_p3)
-            else:
-                self.resized_G_p3_sum = networks.image_summary(
-                    "resized_G_p3_image", self.resized_G_p3_image)
-            self.d_loss_patch3_sum = networks.scalar_summary(
-                "d_loss_patch3", self.d_loss_patch3)
-            self.g_loss_patch3_sum = networks.scalar_summary(
-                "g_loss_patch3", self.g_loss_patch3)
-            self.g_sum = networks.merge_summary(
-                [self.g_sum, self.d__patch3_sum, self.resized_G_p3_sum, self.g_loss_patch3_sum])
-            self.d_sum = networks.merge_summary(
-                [self.d_sum, self.d_patch3_sum, self.resized_inputs_p3_sum, self.d_loss_patch3_sum])
+        # if self.config.use_D_patch3:
+        #     self.d_patch3_sum = networks.histogram_summary(
+        #         "patch3_d", self.patch3_D)
+        #     self.d__patch3_sum = networks.histogram_summary(
+        #         "patch3_d_", self.patch3_D_)
+        #     self.resized_inputs_p3_sum = networks.image_summary(
+        #         "resized_inputs_p3_image", self.resized_inputs_p3_image)
+        #     if self.config.G_num == 2:
+        #         self.resized_G_p3_sum = networks.image_summary(
+        #             "resized_G_p3_image", self.resized_G1_p3)
+        #     else:
+        #         self.resized_G_p3_sum = networks.image_summary(
+        #             "resized_G_p3_image", self.resized_G_p3_image)
+        #     self.d_loss_patch3_sum = networks.scalar_summary(
+        #         "d_loss_patch3", self.d_loss_patch3)
+        #     self.g_loss_patch3_sum = networks.scalar_summary(
+        #         "g_loss_patch3", self.g_loss_patch3)
+        #     self.g_sum = networks.merge_summary(
+        #         [self.g_sum, self.d__patch3_sum, self.resized_G_p3_sum, self.g_loss_patch3_sum])
+        #     self.d_sum = networks.merge_summary(
+        #         [self.d_sum, self.d_patch3_sum, self.resized_inputs_p3_sum, self.d_loss_patch3_sum])
 
         if self.config.G_num == 2:
             self.saver = tf.train.Saver(
@@ -1237,59 +1237,51 @@ class DCGAN(object):
                     _ = self.sess.run([self.d_optim],
                                       feed_dict={self.inputs: batch_images, self.z: batch_z})
 
-                if self.config.use_D_patch:
-                    _ = self.sess.run([self.d_optim_patch],
-                                      feed_dict={self.inputs: batch_images, self.z: batch_z})
+                # if self.config.use_D_patch:
+                #     _ = self.sess.run([self.d_optim_patch],
+                #                       feed_dict={self.inputs: batch_images, self.z: batch_z})
 
-                if self.config.use_D_patch2:
-                    _ = self.sess.run([self.d_optim_patch2],
-                                      feed_dict={self.inputs: batch_images, self.z: batch_z})
+                # if self.config.use_D_patch2:
+                #     _ = self.sess.run([self.d_optim_patch2],
+                #                       feed_dict={self.inputs: batch_images, self.z: batch_z})
 
-                if self.config.use_D_patch2_2:
-                    _ = self.sess.run([self.d_optim_patch2_2],
-                                      feed_dict={self.inputs: batch_images, self.z: batch_z})
-                if self.config.use_D_patch3:
-                    _ = self.sess.run([self.d_optim_patch3],
-                                      feed_dict={self.inputs: batch_images, self.z: batch_z})
+                # if self.config.use_D_patch2_2:
+                #     _ = self.sess.run([self.d_optim_patch2_2],
+                #                       feed_dict={self.inputs: batch_images, self.z: batch_z})
+                # if self.config.use_D_patch3:
+                #     _ = self.sess.run([self.d_optim_patch3],
+                #                       feed_dict={self.inputs: batch_images, self.z: batch_z})
 
-                if self.config.use_patchGAN_D_full == True and self.config.G_num == 2:
-                    _ = self.sess.run([self.d_optim_patchGAN],
-                                      feed_dict={self.inputs: batch_images, self.z: batch_z})
+                # if self.config.use_patchGAN_D_full == True and self.config.G_num == 2:
+                #     _ = self.sess.run([self.d_optim_patchGAN],
+                #                       feed_dict={self.inputs: batch_images, self.z: batch_z})
 
-                summary_str_d_sum = self.sess.run(self.d_sum,
-                                                  feed_dict={self.inputs: batch_images, self.z: batch_z})
-                self.writer.add_summary(summary_str_d_sum, counter)
 
-                if self.config.if_focal_loss:
-                    _ = self.sess.run(self.d_optim2,
-                                      feed_dict={self.inputs: batch_images, self.z: batch_z})
+                # if self.config.if_focal_loss:
+                #     _ = self.sess.run(self.d_optim2,
+                #                       feed_dict={self.inputs: batch_images, self.z: batch_z})
 
-                # Update G network
-                if self.config.G_num == 2:
-                    _, _, summary_str = self.sess.run([self.g1_optim, self.g2_optim, self.g_sum],
-                                                      feed_dict={self.z: batch_z, self.inputs: batch_images})
-                else:
-                    _, summary_str = self.sess.run([self.g_optim, self.g_sum],
-                                                   feed_dict={self.z: batch_z})
-                self.writer.add_summary(summary_str, counter)
+                # if self.config.G_num == 2:
+                #     _, _, summary_str = self.sess.run([self.g1_optim, self.g2_optim, self.g_sum],
+                #                                       feed_dict={self.z: batch_z, self.inputs: batch_images})
+                # else:
+                #     _, summary_str = self.sess.run([self.g_optim, self.g_sum],
+                #                                    feed_dict={self.z: batch_z})
 
-                # Update E network
-                if self.config.E_stage1:
-                    _ = self.sess.run([self.e_optim],
-                                      feed_dict={self.z: batch_z})
+                # if self.config.E_stage1:
+                #     _ = self.sess.run([self.e_optim],
+                #                       feed_dict={self.z: batch_z})
 
-                    if self.config.if_focal_loss and self.config.E2_stage1:
-                        _ = self.sess.run([self.e_optim2],
-                                          feed_dict={self.inputs: batch_images, self.z: batch_z})
+                #     if self.config.if_focal_loss and self.config.E2_stage1:
+                #         _ = self.sess.run([self.e_optim2],
+                #                           feed_dict={self.inputs: batch_images, self.z: batch_z})
 
-                # Run g_optim twice to make sure that d_loss does not go to zero (different from paper)
-                if self.config.G_num == 2:
-                    _, _, summary_str = self.sess.run([self.g1_optim, self.g2_optim, self.g_sum],
-                                                      feed_dict={self.z: batch_z, self.inputs: batch_images})
-                else:
-                    _, summary_str = self.sess.run([self.g_optim, self.g_sum],
-                                                   feed_dict={self.z: batch_z})
-                self.writer.add_summary(summary_str, counter)
+                # if self.config.G_num == 2:
+                #     _, _, summary_str = self.sess.run([self.g1_optim, self.g2_optim, self.g_sum],
+                #                                       feed_dict={self.z: batch_z, self.inputs: batch_images})
+                # else:
+                #     _, summary_str = self.sess.run([self.g_optim, self.g_sum],
+                #                                    feed_dict={self.z: batch_z})
 
                 if self.config.type is "dcgan":
                     errD_fake = self.d_loss_fake.eval({self.z: batch_z})
