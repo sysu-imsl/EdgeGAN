@@ -19,8 +19,10 @@ from .discriminator import Discriminator
 from .encoder import Encoder
 from .generator import Generator
 
+
 def extension(filename):
     return os.path.splitext(filename)[-1]
+
 
 def checksum_save(input_dict):
     checksum_path = utils.checksum_path
@@ -36,6 +38,7 @@ def checksum_save(input_dict):
 
     for key, val in input_dict.items():
         save(key, val)
+
 
 def checksum_load(*names):
     def load(filename):
@@ -59,6 +62,7 @@ def checksum_load(*names):
         enforce_exists(path)
         result.append(load(path))
     return result
+
 
 def pathsplit(path):
     path = os.path.normpath(path)
@@ -503,7 +507,6 @@ class DCGAN(object):
                     # for b, r in zip(batch_files, restore_batch_files):
                     #     assert b == r
                     print('assertion successed!')
-                    exit()
 
                 self.update_model(batch_images, batch_z)
                 add_summary(batch_images, batch_z, counter)
