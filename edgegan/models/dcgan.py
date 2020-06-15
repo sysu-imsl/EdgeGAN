@@ -503,7 +503,7 @@ class DCGAN(object):
                     (restore_batch_files, restore_batch_images, restore_batch_z) = checksum_load(
                         'batch_files.pkl', 'batch_images.npy', 'batch_z.npy')
                     assert np.all(batch_images == restore_batch_images)
-                    assert np.all(batch_z == restore_batch_z)
+                    assert np.all(batch_z[:, :100] == restore_batch_z)
                     # for b, r in zip(batch_files, restore_batch_files):
                     #     assert b == r
                     print('assertion successed!')
@@ -544,9 +544,8 @@ class DCGAN(object):
                     restore_outputL, restore_errD_fake, restore_errD_real, restore_errG = checksum_load(
                         "outputL.npy", "errD_fake.pkl", "errD_real.pkl", "errG.pkl",)
                     assert np.allclose(restore_outputL, outputL)
-                    assert errD_fake == restore_errD_fake
-                    assert errD_real == restore_errD_real
-                    assert errG == restore_errG
+                    assert discriminator_err == restore_errD_fake
+                    assert generator_err == restore_errG
                     print('assert successed!')
                     exit()
 
