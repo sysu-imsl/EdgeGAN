@@ -1,6 +1,9 @@
 # EdgeGAN
+### [Project Page](https://sysu-imsl.com/EdgeGAN/) | [Paper](https://arxiv.org/abs/2003.02683)
 SketchyCOCO: Image Generation from Freehand Scene Sketches  
 Chengying Gao, Qi Liu, Qi Xu, Limin Wang, Jianzhuang Liu, Changqing Zou  
+
+**This repo is working in progress! The current version is not the final version!**
 
 # Installation
 Clone this repo.  
@@ -13,6 +16,41 @@ This repo requires TensorFlow 1.13.1 and python 3+.
 After switching to proper conda environment, run `conda install --file requirements.txt`
 
 # Dataset
+## Directory Structure
+For singleclass dataset
+```
+EdegGAN
+└───data
+    └───train
+    |   |    <file00>.png
+    |   |    <file01>.png
+    |   |    ...
+    |   
+    └───test
+        |    <file00>.png
+        |    <file01>.png
+        |    ...
+```
+For multiclass dataset
+
+```
+EdegGAN
+└───data
+    └───train
+    |   └───<class label 0>
+    |   |    |    <file01>.png
+    |   |    |    ...
+    |   └───<class label 1>
+    |   |   ...
+    |   
+    └───test
+    |   └───<class label 0>
+    |   |    |    <file01>.png
+    |   |    |    ...
+    |   └───<class label 1>
+    |   |   ...
+```
+
 
 # Testing Using Pretrained Model
 1. Download the pretrained model from the XXX, and run:
