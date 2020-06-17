@@ -150,8 +150,8 @@ class DCGAN(object):
                 loss=loss(loss_name), var_list=var_list(module_name)
             )
 
-        self.register_optim_if('d_optim', optim_creator(
-            'joint_dis_dloss', 'joint_discriminator'))
+        # self.register_optim_if('d_optim', optim_creator(
+        #     'joint_dis_dloss', 'joint_discriminator'))
         # self.register_optim_if('d_optim_patch2', optim_creator(
         #     'image_dis_dloss', 'image_discriminator'), self.config.use_image_discriminator)
         # self.register_optim_if('d_optim_patch3', optim_creator(
