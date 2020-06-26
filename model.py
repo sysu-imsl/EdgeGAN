@@ -674,7 +674,11 @@ class DCGAN(object):
                     elif self.config.originD_inputForm == "concat_n":
                         interpolated = self.concat_in_n + alpha * \
                             (self.concat_out_n - self.concat_in_n)
+                interpolated = tf.keras.layers.Lambda(
+                    save_tensor('interpolated_origin'))(interpolated)
                 inte_logit = self.discriminator(interpolated, reuse=True)
+                inte_logit = tf.keras.layers.Lambda(
+                    save_tensor('inte_logit_origin'))(inte_logit)
                 gradients = tf.gradients(inte_logit, [interpolated, ])[0]
                 grad_l2 = tf.sqrt(tf.reduce_sum(
                     tf.square(gradients), axis=[1, 2, 3]))
