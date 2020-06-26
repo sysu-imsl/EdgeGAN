@@ -49,7 +49,14 @@ def checksum_load(*names):
                 return pickle.load(f)
         else:
             with open(filename, 'r') as f:
-                return [float(i) for i in f]
+                result = []
+                for i in f:
+                    try:
+                        result.append(float(i))
+                    except:
+                        pass
+                return result
+
             # raise NotImplementedError
 
     def enforce_exists(path):
@@ -84,9 +91,9 @@ def random_blend(a, b, batchsize):
 def penalty(synthesized, real, nn_func, batchsize, weight):
     assert callable(nn_func)
     interpolated = random_blend(synthesized, real, batchsize)
-    inte_logit = nn_func(interpolated, reuse=True)
     interpolated = tf.keras.layers.Lambda(
         save_tensor('interpolated'))(interpolated)
+    inte_logit = nn_func(interpolated, reuse=True)
     inte_logit = tf.keras.layers.Lambda(
         save_tensor('inte_logit'))(inte_logit)
     return weight * F.gradient_penalty(inte_logit, interpolated)
@@ -337,6 +344,8 @@ class DCGAN(object):
     def define_losses(self):
         os.system('rm checksum/d_loss_new')
         os.system('rm checksum/d_loss_gp_new')
+        os.system('rm checksum/interpolated')
+        os.system('rm checksum/interpolated_origin')
         d_loss_grad_penalty = penalty(
             self.joint_output, self.inputs, self.joint_discriminator,
             self.config.batch_size, self.config.lambda_gp
@@ -577,10 +586,12 @@ class DCGAN(object):
                         'd_loss', 'd_loss_gp', 'd_loss_new', 'd_loss_gp_new')
                     assert restore_d_loss == restore_d_loss_new
                     # assert restore_d_loss_gp == restore_d_loss_gp_new
-                    (restore_interpolated, restore_inte_logit, restore_interpolated_origin, restore_inte_logit_origin) = checksum_load(
-                        'interpolated', 'inte_logit' 'interpolated_origin', 'restore_inte_logit_origin')
+                    # (restore_interpolated, restore_inte_logit, restore_interpolated_origin, restore_inte_logit_origin) = checksum_load(
+                    # 'interpolated', 'inte_logit' 'interpolated_origin', 'restore_inte_logit_origin')
+                    (restore_interpolated, restore_interpolated_origin) = checksum_load(
+                        'interpolated', 'interpolated_origin')
                     assert restore_interpolated == restore_interpolated_origin
-                    assert restore_inte_logit == restore_inte_logit_origin
+                    # assert restore_inte_logit == restore_inte_logit_origin
                     print('assert successed!')
                     exit()
 
