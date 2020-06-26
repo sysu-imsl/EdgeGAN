@@ -21,6 +21,15 @@ import pickle
 
 # reload(sys)
 # sys.setdefaultencoding('utf8')
+def save_tensor(name):
+    output_folder = 'checksum'
+
+    @tf.function
+    def wrapper(x):
+        # with open(os.path.join(output_folder, name), 'w') as f:
+        tf.print(x, output_stream='file://' + os.path.join(output_folder, name))
+        return x
+    return wrapper
 
 
 class DCGAN(object):
@@ -667,6 +676,10 @@ class DCGAN(object):
                 grad_l2 = tf.sqrt(tf.reduce_sum(
                     tf.square(gradients), axis=[1, 2, 3]))
                 gradient_penalty = tf.reduce_mean((grad_l2-1)**2)
+                self.d_loss = tf.keras.layers.Lambda(
+                    save_tensor('d_loss'))(self.d_loss)
+                gradient_penalty = tf.keras.layers.Lambda(
+                    save_tensor('d_loss_gp'))(gradient_penalty)
 
                 self.d_loss += self.config.lambda_gp * gradient_penalty
                 self.g_loss = tf.reduce_mean(self.D_logits_ * -1)
