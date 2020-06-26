@@ -48,7 +48,9 @@ def checksum_load(*names):
             with open(filename, 'rb') as f:
                 return pickle.load(f)
         else:
-            raise NotImplementedError
+            with open(filename, 'r') as f:
+                return [float(i) for i in f]
+            # raise NotImplementedError
 
     def enforce_exists(path):
         if not os.path.exists(path):
@@ -84,6 +86,18 @@ def penalty(synthesized, real, nn_func, batchsize, weight):
     interpolated = random_blend(synthesized, real, batchsize)
     inte_logit = nn_func(interpolated, reuse=True)
     return weight * F.gradient_penalty(inte_logit, interpolated)
+
+
+def save_tensor(name):
+    output_folder = 'checksum'
+
+    @tf.function
+    def wrapper(x):
+        # with open(os.path.join(output_folder, name), 'w') as f:
+        tf.print(x, output_stream='file://' +
+                 os.path.join(output_folder, name))
+        return x
+    return wrapper
 
 
 class DCGAN(object):
@@ -317,13 +331,20 @@ class DCGAN(object):
         self.z_recon, _, _ = self.encoder(self.edge_output)
 
     def define_losses(self):
-        self.joint_dis_dloss = (
-            F.discriminator_ganloss(self.fakejoint_dis_output, self.truejoint_dis_output) +
-            penalty(
-                self.joint_output, self.inputs, self.joint_discriminator,
-                self.config.batch_size, self.config.lambda_gp
-            )
+        os.system('rm checksum/d_loss_new')
+        os.system('rm checksum/d_loss_gp_new')
+        d_loss_grad_penalty = penalty(
+            self.joint_output, self.inputs, self.joint_discriminator,
+            self.config.batch_size, self.config.lambda_gp
         )
+        d_loss = F.discriminator_ganloss(self.fakejoint_dis_output,
+                                         self.truejoint_dis_output)
+        d_loss = tf.keras.layers.Lambda(
+            save_tensor('d_loss_new'))(d_loss)
+        d_loss_grad_penalty = tf.keras.layers.Lambda(
+            save_tensor('d_loss_gp_new'))(d_loss_grad_penalty)
+        self.joint_dis_dloss = d_loss + d_loss_grad_penalty
+
         self.joint_dis_gloss = F.generator_ganloss(self.fakejoint_dis_output)
 
         if self.config.use_image_discriminator:
@@ -506,6 +527,7 @@ class DCGAN(object):
                     assert np.all(batch_z[:, :100] == restore_batch_z)
                     # for b, r in zip(batch_files, restore_batch_files):
                     #     assert b == r
+
                     print('assertion successed!')
 
                 self.update_model(batch_images, batch_z)
@@ -541,11 +563,16 @@ class DCGAN(object):
                     #     "errD_real": errD_real,
                     #     "errG": errG,
                     # })
-                    restore_outputL, restore_errD_fake, restore_errD_real, restore_errG = checksum_load(
-                        "outputL.npy", "errD_fake.pkl", "errD_real.pkl", "errG.pkl",)
-                    assert np.allclose(restore_outputL, outputL)
-                    assert discriminator_err == restore_errD_fake
-                    assert generator_err == restore_errG
+                    # restore_outputL, restore_errD_fake, restore_errD_real, restore_errG = checksum_load(
+                    #     "outputL.npy", "errD_fake.pkl", "errD_real.pkl", "errG.pkl",)
+                    # assert np.allclose(restore_outputL, outputL)
+                    # assert discriminator_err == restore_errD_fake
+                    # assert generator_err == restore_errG
+
+                    (restore_d_loss, restore_d_loss_gp, restore_d_loss_new, restore_d_loss_gp_new) = checksum_load(
+                        'd_loss', 'd_loss_gp', 'd_loss_new', 'd_loss_gp_new')
+                    assert restore_d_loss == restore_d_loss_new
+                    assert restore_d_loss_gp == restore_d_loss_gp_new
                     print('assert successed!')
                     exit()
 
