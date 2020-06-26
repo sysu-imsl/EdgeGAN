@@ -345,7 +345,9 @@ class DCGAN(object):
         os.system('rm checksum/d_loss_new')
         os.system('rm checksum/d_loss_gp_new')
         os.system('rm checksum/interpolated')
-        os.system('rm checksum/interpolated_origin')
+        os.system('rm checksum/inte_logit')
+        os.system('rm checksum/gradients')
+        os.system('rm checksum/grad_l2')
         d_loss_grad_penalty = penalty(
             self.joint_output, self.inputs, self.joint_discriminator,
             self.config.batch_size, self.config.lambda_gp
@@ -592,6 +594,12 @@ class DCGAN(object):
                         'interpolated', 'interpolated_origin')
                     assert restore_interpolated == restore_interpolated_origin
                     # assert restore_inte_logit == restore_inte_logit_origin
+
+                    (restore_gradients, restore_gradients_origin, restore_grad_l2, restore_grad_l2_origin) = checksum_load(
+                        'gradients', 'gradients_origin', 'grad_l2', 'grad_l2_origin')
+                    assert restore_gradients == restore_gradients_origin
+                    assert restore_grad_l2 == restore_grad_l2_origin
+
                     print('assert successed!')
                     exit()
 

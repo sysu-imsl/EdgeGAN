@@ -23,9 +23,23 @@ def get_class_loss(logits_out, label, num_classes, ld_focal=2.0):
     return loss
 
 
+def save_tensor(name):
+    output_folder = 'checksum'
+
+    @tf.function
+    def wrapper(x):
+        # with open(os.path.join(output_folder, name), 'w') as f:
+        tf.print(x, output_stream='file://' +
+                 os.path.join(output_folder, name))
+        return x
+    return wrapper
+
+
 def gradient_penalty(output, on):
     gradients = tf.gradients(output, [on, ])[0]
+    gradients = tf.keras.layers(save_tensor('gradients'))(gradients)
     grad_l2 = tf.sqrt(tf.reduce_sum(tf.square(gradients), axis=[1, 2, 3]))
+    grad_l2 = tf.keras.layers(save_tensor('grad_l2'))(grad_l2)
     return tf.reduce_mean((grad_l2-1)**2)
 
 
