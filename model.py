@@ -658,7 +658,7 @@ class DCGAN(object):
 
             if self.config.use_D_origin:
                 os.system('rm checksum/interpolated_origin')
-                os.system('rm checksum/inte_logit')
+                os.system('rm checksum/inte_logit_origin')
                 os.system('rm checksum/d_loss')
                 os.system('rm checksum/d_loss_gp')
                 self.d_loss = tf.reduce_mean(self.D_logits_ - self.D_logits)
