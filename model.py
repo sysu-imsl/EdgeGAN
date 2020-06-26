@@ -657,6 +657,10 @@ class DCGAN(object):
             self.d_loss_fake = 0.0
 
             if self.config.use_D_origin:
+                os.system('rm checksum/interpolated_origin')
+                os.system('rm checksum/inte_logit')
+                os.system('rm checksum/d_loss')
+                os.system('rm checksum/d_loss_gp')
                 self.d_loss = tf.reduce_mean(self.D_logits_ - self.D_logits)
 
                 alpha_dist = tf.contrib.distributions.Uniform(low=0., high=1.)
