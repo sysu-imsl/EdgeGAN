@@ -661,6 +661,8 @@ class DCGAN(object):
                 os.system('rm checksum/inte_logit_origin')
                 os.system('rm checksum/d_loss')
                 os.system('rm checksum/d_loss_gp')
+                os.system('rm checksum/gradients_origin')
+                os.system('rm checksum/grad_l2_origin')
                 self.d_loss = tf.reduce_mean(self.D_logits_ - self.D_logits)
 
                 alpha_dist = tf.contrib.distributions.Uniform(low=0., high=1.)
@@ -684,8 +686,12 @@ class DCGAN(object):
                 inte_logit = tf.keras.layers.Lambda(
                     save_tensor('inte_logit_origin'))(inte_logit)
                 gradients = tf.gradients(inte_logit, [interpolated, ])[0]
+                gradients = tf.keras.layers.Lambda(
+                    save_tensor('gradients_origin'))(gradients)
                 grad_l2 = tf.sqrt(tf.reduce_sum(
                     tf.square(gradients), axis=[1, 2, 3]))
+                grad_l2 = tf.keras.layers.Lambda(
+                    save_tensor('grad_l2_origin'))(grad_l2)
                 gradient_penalty = tf.reduce_mean((grad_l2-1)**2)
                 gradient_penalty = self.config.lambda_gp * gradient_penalty
                 self.d_loss = tf.keras.layers.Lambda(
