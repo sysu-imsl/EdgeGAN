@@ -41,6 +41,12 @@ def checksum_save(input_dict):
 
 
 def checksum_load(*names):
+    def extract_elements(line):
+        ignores = ['...', '[', ']']
+        for ignore in ignores:
+            line = line.replace(ignore, '')
+        return [float(x) for x in line.split(' ')]
+
     def load(filename):
         if extension(filename) == '.npy':
             return np.load(filename)
@@ -50,9 +56,10 @@ def checksum_load(*names):
         else:
             with open(filename, 'r') as f:
                 result = []
-                for i in f:
+                for line in f:
                     try:
-                        result.append(float(i))
+                        # result.append(float(i))
+                        result += extract_elements(line)
                     except:
                         pass
                 return result
