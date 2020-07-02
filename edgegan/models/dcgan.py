@@ -650,6 +650,18 @@ class DCGAN(object):
                         'grad_result', 'grad_result_origin')
                     assert restore_grad_result == restore_grad_result_origin
 
+                    d_loss_patch3, d_loss_patch3_origin = checksum_load(
+                        'd_loss_patch3', 'd_loss_patch3_origin')
+                    assert d_loss_patch3 == d_loss_patch3_origin
+
+                    resized_inputs, resized_inputs_origin = checksum_load(
+                        'resized_inputs', 'resized_inputs_origin')
+                    assert resized_inputs == resized_inputs_origin
+                    
+                    resized_image_output, resized_image_output_origin = checksum_load(
+                        'resized_image_output', 'resized_image_output_origin')
+                    assert resized_image_output == resized_image_output_origin
+
                     patch2_D_logits_, patch2_D_logits__origin = checksum_load(
                         'patch2_D_logits_', 'patch2_D_logits__origin')
                     assert patch2_D_logits_ == patch2_D_logits__origin
@@ -673,10 +685,6 @@ class DCGAN(object):
                     d_loss_patch2, d_loss_patch2_origin = checksum_load(
                         'd_loss_patch2', 'd_loss_patch2_origin')
                     assert d_loss_patch2 == d_loss_patch2_origin
-
-                    d_loss_patch3, d_loss_patch3_origin = checksum_load(
-                        'd_loss_patch3', 'd_loss_patch3_origin')
-                    assert d_loss_patch3 == d_loss_patch3_origin
 
                     print('assert successed!')
                     exit()
