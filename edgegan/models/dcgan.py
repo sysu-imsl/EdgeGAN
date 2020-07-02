@@ -600,6 +600,10 @@ class DCGAN(object):
                     assert restore_gradients == restore_gradients_origin
                     assert restore_grad_l2 == restore_grad_l2_origin
 
+                    (restore_grad_result, restore_grad_result_origin) = checksum_load(
+                        'grad_result', 'grad_result_origin')
+                    assert restore_grad_result == restore_grad_result_origin
+
                     print('assert successed!')
                     exit()
 
