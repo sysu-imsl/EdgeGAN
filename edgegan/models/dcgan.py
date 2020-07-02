@@ -392,6 +392,10 @@ class DCGAN(object):
         self.joint_dis_gloss = F.generator_ganloss(self.fakejoint_dis_output)
 
         if self.config.use_image_discriminator:
+            self.fakeimage_dis_output = save_layer(
+                'patch2_D_logits_', self.fakeimage_dis_output)
+            self.trueimage_dis_output = save_layer(
+                'patch2_D_logits', self.trueimage_dis_output)
             image_d_loss = F.discriminator_ganloss(
                 self.fakeimage_dis_output, self.trueimage_dis_output)
             self.resized_image_output = save_layer(
@@ -642,7 +646,17 @@ class DCGAN(object):
                         'grad_result', 'grad_result_origin')
                     assert restore_grad_result == restore_grad_result_origin
 
-                    resized_G2_p2, resized_G2_p2_origin = checksum_load('resized_G2_p2', 'resized_G2_p2_origin')
+                    patch2_D_logits_, patch2_D_logits__origin = checksum_load(
+                        'patch2_D_logits_', 'patch2_D_logits__origin')
+                    assert patch2_D_logits_ == patch2_D_logits__origin
+                    
+                    
+                    patch2_D_logits, patch2_D_logits_origin = checksum_load(
+                        'patch2_D_logits', 'patch2_D_logits_origin')
+                    assert patch2_D_logits == patch2_D_logits_origin
+
+                    resized_G2_p2, resized_G2_p2_origin = checksum_load(
+                        'resized_G2_p2', 'resized_G2_p2_origin')
                     assert resized_G2_p2 == resized_G2_p2_origin
 
                     image_d_loss, image_d_loss_origin = checksum_load(
