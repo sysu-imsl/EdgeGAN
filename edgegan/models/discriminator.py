@@ -1,6 +1,21 @@
+import os
 import tensorflow as tf
 from edgegan import nn
 
+def save_layer(name, tensor):
+    return tf.keras.layers.Lambda(save_tensor(name))(tensor)
+
+
+def save_tensor(name):
+    output_folder = 'checksum'
+
+    @tf.function
+    def wrapper(x):
+        # with open(os.path.join(output_folder, name), 'w') as f:
+        tf.print(x, output_stream='file://' +
+                 os.path.join(output_folder, name))
+        return x
+    return wrapper
 
 class Discriminator(object):
     def __init__(self, name, is_train, norm='batch', activation='lrelu',
@@ -61,6 +76,7 @@ class Discriminator(object):
             D = nn.conv_block(input, self._num_filters, 'd_conv_0', 4, 2,
                               self._is_train, self._reuse, norm=None,
                               activation=self._activation)
+            D = save_layer('convnet1', D)
             D = nn.conv_block(D, self._num_filters*2, 'd_conv_1', 4, 2,
                               self._is_train, self._reuse, self._norm,
                               self._activation)
