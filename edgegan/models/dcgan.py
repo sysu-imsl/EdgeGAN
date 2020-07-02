@@ -394,6 +394,8 @@ class DCGAN(object):
         if self.config.use_image_discriminator:
             image_d_loss = F.discriminator_ganloss(
                 self.fakeimage_dis_output, self.trueimage_dis_output)
+            self.resized_image_output = save_layer(
+                'resized_G2_p2', self.resized_image_output)
             image_d_loss_grad_penalty = penalty(
                 self.resized_image_output, self.resized_inputs, self.image_discriminator,
                 self.config.batch_size, self.config.lambda_gp
@@ -639,6 +641,9 @@ class DCGAN(object):
                     (restore_grad_result, restore_grad_result_origin) = checksum_load(
                         'grad_result', 'grad_result_origin')
                     assert restore_grad_result == restore_grad_result_origin
+
+                    resized_G2_p2, resized_G2_p2_origin = checksum_load('resized_G2_p2', 'resized_G2_p2_origin')
+                    assert resized_G2_p2 == resized_G2_p2_origin
 
                     image_d_loss, image_d_loss_origin = checksum_load(
                         'image_d_loss', 'image_d_loss_origin')
