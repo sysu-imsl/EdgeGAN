@@ -390,13 +390,16 @@ class DCGAN(object):
         self.joint_dis_gloss = F.generator_ganloss(self.fakejoint_dis_output)
 
         if self.config.use_image_discriminator:
-            self.image_dis_dloss = (
-                F.discriminator_ganloss(self.fakeimage_dis_output, self.trueimage_dis_output) +
-                penalty(
-                    self.resized_image_output, self.resized_inputs, self.image_discriminator,
-                    self.config.batch_size, self.config.lambda_gp
-                )
+            image_d_loss = F.discriminator_ganloss(
+                self.fakeimage_dis_output, self.trueimage_dis_output)
+            image_d_loss_grad_penalty = penalty(
+                self.resized_image_output, self.resized_inputs, self.image_discriminator,
+                self.config.batch_size, self.config.lambda_gp
             )
+            image_d_loss = save_layer('image_d_loss', image_d_loss)
+            image_d_loss_grad_penalty = save_layer(
+                'image_d_loss_grad_penalty', image_d_loss_grad_penalty)
+            self.image_dis_dloss = image_d_loss + image_d_loss_grad_penalty
             self.image_dis_dloss = save_layer(
                 'd_loss_patch2', self.image_dis_dloss)
             self.image_dis_gloss = F.generator_ganloss(
@@ -406,13 +409,13 @@ class DCGAN(object):
             self.image_dis_gloss = 0
 
         if self.config.use_edge_discriminator:
-            self.edge_dis_dloss = (
-                F.discriminator_ganloss(self.fakeedge_dis_output, self.trueedge_dis_output) +
-                penalty(
-                    self.resized_edge_output, self.resized_edges, self.edge_discriminator,
-                    self.config.batch_size, self.config.lambda_gp
-                )
+            edge_d_loss = F.discriminator_ganloss(
+                self.fakeedge_dis_output, self.trueedge_dis_output)
+            edge_d_loss_grad_penalty = penalty(
+                self.resized_edge_output, self.resized_edges, self.edge_discriminator,
+                self.config.batch_size, self.config.lambda_gp
             )
+            self.edge_dis_dloss = edge_d_loss + edge_d_loss_grad_penalty
             self.edge_dis_dloss = save_layer(
                 'd_loss_patch3', self.edge_dis_dloss)
             self.edge_dis_gloss = F.generator_ganloss(self.fakeedge_dis_output)
