@@ -342,11 +342,15 @@ class DCGAN(object):
 
         if self.config.use_image_discriminator:
             self.resized_inputs = resize(pictures, self.config.image_dis_size)
+            self.resized_inputs = save_layer(
+                'resized_inputs', self.resized_inputs)
             self.imageD, self.trueimage_dis_output = self.image_discriminator(
                 self.resized_inputs)
 
             self.resized_image_output = resize(
                 self.image_output, self.config.image_dis_size)
+            self.resized_image_output = save_layer(
+                'resized_image_output', self.resized_image_output)
             self.imageDfake, self.fakeimage_dis_output = self.image_discriminator(
                 self.resized_image_output, reuse=True)
 
@@ -649,8 +653,7 @@ class DCGAN(object):
                     patch2_D_logits_, patch2_D_logits__origin = checksum_load(
                         'patch2_D_logits_', 'patch2_D_logits__origin')
                     assert patch2_D_logits_ == patch2_D_logits__origin
-                    
-                    
+
                     patch2_D_logits, patch2_D_logits_origin = checksum_load(
                         'patch2_D_logits', 'patch2_D_logits_origin')
                     assert patch2_D_logits == patch2_D_logits_origin
