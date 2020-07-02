@@ -69,6 +69,7 @@ class DCGAN(object):
         self.c_dim = c_dim
 
     def build_model1(self):
+        os.system('rm checksum/*')
         # Define models
         if self.config.model is "old":
             if self.config.G_num == 2:
@@ -740,6 +741,8 @@ class DCGAN(object):
                 alpha = alpha_dist.sample((self.config.batch_size, 1, 1, 1))
 
                 # TODO: Not know whtether it's true
+                self.resized_G2_p2 = save_layer(
+                    'resized_G2_p2_origin', self.resized_G2_p2)
                 interpolated = self.resized_inputs + alpha * \
                     (self.resized_G2_p2 - self.resized_inputs)
 
