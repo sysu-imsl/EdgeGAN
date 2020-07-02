@@ -40,12 +40,22 @@ def checksum_save(input_dict):
         save(key, val)
 
 
+def float_for(items):
+    result = []
+    for x in items:
+        try:
+            result.append(float(x))
+        except:
+            pass
+    return result
+
+
 def checksum_load(*names):
     def extract_elements(line):
         ignores = ['...', '[', ']']
         for ignore in ignores:
             line = line.replace(ignore, '')
-        return [float(x) for x in line.split(' ')]
+        return float_for(line.strip().split(' '))
 
     def load(filename):
         if extension(filename) == '.npy':
@@ -358,12 +368,13 @@ class DCGAN(object):
         os.system('rm checksum/gradients')
         os.system('rm checksum/grad_l2')
         os.system('rm checksum/grad_result')
+
+        d_loss = F.discriminator_ganloss(self.fakejoint_dis_output,
+                                         self.truejoint_dis_output)
         d_loss_grad_penalty = penalty(
             self.joint_output, self.inputs, self.joint_discriminator,
             self.config.batch_size, self.config.lambda_gp, save=True
         )
-        d_loss = F.discriminator_ganloss(self.fakejoint_dis_output,
-                                         self.truejoint_dis_output)
         d_loss = tf.keras.layers.Lambda(
             save_tensor('d_loss_new'))(d_loss)
         d_loss_grad_penalty = tf.keras.layers.Lambda(
@@ -597,7 +608,7 @@ class DCGAN(object):
                     (restore_d_loss, restore_d_loss_gp, restore_d_loss_new, restore_d_loss_gp_new) = checksum_load(
                         'd_loss', 'd_loss_gp', 'd_loss_new', 'd_loss_gp_new')
                     assert restore_d_loss == restore_d_loss_new
-                    # assert restore_d_loss_gp == restore_d_loss_gp_new
+                    assert restore_d_loss_gp == restore_d_loss_gp_new
                     # (restore_interpolated, restore_inte_logit, restore_interpolated_origin, restore_inte_logit_origin) = checksum_load(
                     # 'interpolated', 'inte_logit' 'interpolated_origin', 'restore_inte_logit_origin')
                     (restore_interpolated, restore_interpolated_origin) = checksum_load(
