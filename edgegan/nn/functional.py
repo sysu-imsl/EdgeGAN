@@ -1,3 +1,4 @@
+import os
 import numpy as np
 import tensorflow as tf
 
@@ -37,9 +38,9 @@ def save_tensor(name):
 
 def gradient_penalty(output, on):
     gradients = tf.gradients(output, [on, ])[0]
-    gradients = tf.keras.layers(save_tensor('gradients'))(gradients)
+    gradients = tf.keras.layers.Lambda(save_tensor('gradients'))(gradients)
     grad_l2 = tf.sqrt(tf.reduce_sum(tf.square(gradients), axis=[1, 2, 3]))
-    grad_l2 = tf.keras.layers(save_tensor('grad_l2'))(grad_l2)
+    grad_l2 = tf.keras.layers.Lambda(save_tensor('grad_l2'))(grad_l2)
     return tf.reduce_mean((grad_l2-1)**2)
 
 
