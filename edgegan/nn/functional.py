@@ -36,13 +36,16 @@ def save_tensor(name):
     return wrapper
 
 
-def gradient_penalty(output, on):
+def gradient_penalty(output, on, save=False):
     gradients = tf.gradients(output, [on, ])[0]
-    gradients = tf.keras.layers.Lambda(save_tensor('gradients'))(gradients)
+    if save:
+        gradients = tf.keras.layers.Lambda(save_tensor('gradients'))(gradients)
     grad_l2 = tf.sqrt(tf.reduce_sum(tf.square(gradients), axis=[1, 2, 3]))
-    grad_l2 = tf.keras.layers.Lambda(save_tensor('grad_l2'))(grad_l2)
+    if save:
+        grad_l2 = tf.keras.layers.Lambda(save_tensor('grad_l2'))(grad_l2)
     grad_result = tf.reduce_mean((grad_l2-1)**2)
-    grad_result = tf.keras.layers.Lambda(save_tensor('grad_result'))(grad_result)
+    if save:
+        grad_result = tf.keras.layers.Lambda(save_tensor('grad_result'))(grad_result)
     # return tf.reduce_mean((grad_l2-1)**2)
     return grad_result
 

@@ -88,15 +88,17 @@ def random_blend(a, b, batchsize):
     return b + alpha * (a - b)
 
 
-def penalty(synthesized, real, nn_func, batchsize, weight):
+def penalty(synthesized, real, nn_func, batchsize, weight, save=False):
     assert callable(nn_func)
     interpolated = random_blend(synthesized, real, batchsize)
-    interpolated = tf.keras.layers.Lambda(
-        save_tensor('interpolated'))(interpolated)
+    if save:
+        interpolated = tf.keras.layers.Lambda(
+            save_tensor('interpolated'))(interpolated)
     inte_logit = nn_func(interpolated, reuse=True)
-    inte_logit = tf.keras.layers.Lambda(
-        save_tensor('inte_logit'))(inte_logit)
-    return weight * F.gradient_penalty(inte_logit, interpolated)
+    if save:
+        inte_logit = tf.keras.layers.Lambda(
+            save_tensor('inte_logit'))(inte_logit)
+    return weight * F.gradient_penalty(inte_logit, interpolated, save)
 
 
 def save_tensor(name):
@@ -351,7 +353,7 @@ class DCGAN(object):
         os.system('rm checksum/grad_result')
         d_loss_grad_penalty = penalty(
             self.joint_output, self.inputs, self.joint_discriminator,
-            self.config.batch_size, self.config.lambda_gp
+            self.config.batch_size, self.config.lambda_gp, save=True
         )
         d_loss = F.discriminator_ganloss(self.fakejoint_dis_output,
                                          self.truejoint_dis_output)
