@@ -20,6 +20,10 @@ from .encoder import Encoder
 from .generator import Generator
 
 
+def save_layer(name, tensor):
+    return tf.keras.layers.Lambda(save_tensor(name))(tensor)
+
+
 def extension(filename):
     return os.path.splitext(filename)[-1]
 
@@ -368,6 +372,8 @@ class DCGAN(object):
         os.system('rm checksum/gradients')
         os.system('rm checksum/grad_l2')
         os.system('rm checksum/grad_result')
+        os.system('rm checksum/d_loss_patch2')
+        os.system('rm checksum/d_loss_patch3')
 
         d_loss = F.discriminator_ganloss(self.fakejoint_dis_output,
                                          self.truejoint_dis_output)
@@ -391,6 +397,8 @@ class DCGAN(object):
                     self.config.batch_size, self.config.lambda_gp
                 )
             )
+            self.image_dis_dloss = save_layer(
+                'd_loss_patch2', self.image_dis_dloss)
             self.image_dis_gloss = F.generator_ganloss(
                 self.fakeimage_dis_output)
         else:
@@ -405,6 +413,8 @@ class DCGAN(object):
                     self.config.batch_size, self.config.lambda_gp
                 )
             )
+            self.edge_dis_dloss = save_layer(
+                'd_loss_patch3', self.edge_dis_dloss)
             self.edge_dis_gloss = F.generator_ganloss(self.fakeedge_dis_output)
         else:
             self.edge_dis_dloss = 0
@@ -624,6 +634,14 @@ class DCGAN(object):
                     (restore_grad_result, restore_grad_result_origin) = checksum_load(
                         'grad_result', 'grad_result_origin')
                     assert restore_grad_result == restore_grad_result_origin
+
+                    d_loss_patch2, d_loss_patch2_origin = checksum_load(
+                        'd_loss_patch2', 'd_loss_patch2_origin')
+                    assert d_loss_patch2 == d_loss_patch2_origin
+
+                    d_loss_patch3, d_loss_patch3_origin = checksum_load(
+                        'd_loss_patch3', 'd_loss_patch3_origin')
+                    assert d_loss_patch3 == d_loss_patch3_origin
 
                     print('assert successed!')
                     exit()
