@@ -11,7 +11,7 @@ from tfdeterminism import patch
 
 patch()
 SEED = 123
-os.environ['CUDA_VISIBLE_DEVICES'] = '3'
+os.environ['CUDA_VISIBLE_DEVICES'] = '0'
 os.environ['PYTHONHASHSEED'] = str(SEED)
 random.seed(SEED)
 np.random.seed(SEED)
