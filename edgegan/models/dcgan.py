@@ -662,6 +662,9 @@ class DCGAN(object):
                         'resized_image_output', 'resized_image_output_origin')
                     assert resized_image_output == resized_image_output_origin
 
+                    convnet1, convnet1_origin = checksum_load('convnet1', 'convnet1_origin')
+                    assert convnet1 == convnet1_origin
+
                     patch2_D_logits_, patch2_D_logits__origin = checksum_load(
                         'patch2_D_logits_', 'patch2_D_logits__origin')
                     assert patch2_D_logits_ == patch2_D_logits__origin
