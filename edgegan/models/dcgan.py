@@ -348,6 +348,7 @@ class DCGAN(object):
         os.system('rm checksum/inte_logit')
         os.system('rm checksum/gradients')
         os.system('rm checksum/grad_l2')
+        os.system('rm checksum/grad_result')
         d_loss_grad_penalty = penalty(
             self.joint_output, self.inputs, self.joint_discriminator,
             self.config.batch_size, self.config.lambda_gp
