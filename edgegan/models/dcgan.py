@@ -374,6 +374,8 @@ class DCGAN(object):
         os.system('rm checksum/grad_result')
         os.system('rm checksum/d_loss_patch2')
         os.system('rm checksum/d_loss_patch3')
+        os.system('rm checksum/image_d_loss')
+        os.system('rm checksum/image_d_loss_grad_penalty')
 
         d_loss = F.discriminator_ganloss(self.fakejoint_dis_output,
                                          self.truejoint_dis_output)
@@ -637,6 +639,14 @@ class DCGAN(object):
                     (restore_grad_result, restore_grad_result_origin) = checksum_load(
                         'grad_result', 'grad_result_origin')
                     assert restore_grad_result == restore_grad_result_origin
+
+                    image_d_loss, image_d_loss_origin = checksum_load(
+                        'image_d_loss', 'image_d_loss_origin')
+                    assert image_d_loss == image_d_loss_origin
+
+                    image_d_loss_grad_penalty, image_d_loss_grad_penalty_origin = checksum_load(
+                        'image_d_loss_grad_penalty', 'image_d_loss_grad_penalty_origin')
+                    assert image_d_loss_grad_penalty == image_d_loss_grad_penalty_origin
 
                     d_loss_patch2, d_loss_patch2_origin = checksum_load(
                         'd_loss_patch2', 'd_loss_patch2_origin')
