@@ -23,6 +23,10 @@ import pickle
 # sys.setdefaultencoding('utf8')
 
 
+def save_layer(name, tensor):
+    return tf.keras.layers.Lambda(save_tensor(name))(tensor)
+
+
 def save_tensor(name):
     output_folder = 'checksum'
 
@@ -722,6 +726,7 @@ class DCGAN(object):
                 gradient_penalty = tf.reduce_mean((grad_l2 - 1) ** 2)
 
                 self.d_loss_patch += self.config.lambda_gp * gradient_penalty
+
                 self.g_loss_patch = tf.reduce_mean(self.patch_D_logits_ * -1)
             else:
                 self.d_loss_patch = 0
@@ -746,6 +751,8 @@ class DCGAN(object):
                 gradient_penalty = tf.reduce_mean((grad_l2 - 1) ** 2)
 
                 self.d_loss_patch2 += self.config.lambda_gp * gradient_penalty
+                self.d_loss_patch2 = save_layer(
+                    'd_loss_patch2_origin', self.d_loss_patch2)
                 self.g_loss_patch2 = tf.reduce_mean(self.patch2_D_logits_ * -1)
             else:
                 self.d_loss_patch2 = 0
@@ -795,6 +802,8 @@ class DCGAN(object):
                 gradient_penalty = tf.reduce_mean((grad_l2 - 1) ** 2)
 
                 self.d_loss_patch3 += self.config.lambda_gp * gradient_penalty
+                self.d_loss_patch3 = save_layer(
+                    'd_loss_patch3_origin', self.d_loss_patch3)
                 self.g_loss_patch3 = tf.reduce_mean(self.patch3_D_logits_ * -1)
             else:
                 self.d_loss_patch3 = 0
