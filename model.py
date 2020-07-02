@@ -335,6 +335,9 @@ class DCGAN(object):
                                                  method=2)
                 self.resized_inputs = right_i
                 self.resized_inputs_image = self.resized_inputs
+                self.resized_inputs = save_layer(
+                    'resized_inputs_origin', self.resized_inputs)
+
                 self.patch2_D, self.patch2_D_logits = self.discriminator_patch2(
                     self.resized_inputs)
 
@@ -352,6 +355,9 @@ class DCGAN(object):
                                                      method=2)
                     self.resized_G = right_G
                     self.resized_G_image = self.resized_G
+                    self.resized_G = save_layer(
+                        'resized_image_output_origin', self.resized_G)
+
                     self.patch2_D_, self.patch2_D_logits_ = self.discriminator_patch2(
                         self.resized_G, reuse=True)
 
