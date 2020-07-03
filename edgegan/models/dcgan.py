@@ -408,12 +408,7 @@ class DCGAN(object):
                 self.resized_image_output, self.resized_inputs, self.image_discriminator,
                 self.config.batch_size, self.config.lambda_gp
             )
-            image_d_loss = save_layer('image_d_loss', image_d_loss)
-            image_d_loss_grad_penalty = save_layer(
-                'image_d_loss_grad_penalty', image_d_loss_grad_penalty)
             self.image_dis_dloss = image_d_loss + image_d_loss_grad_penalty
-            self.image_dis_dloss = save_layer(
-                'd_loss_patch2', self.image_dis_dloss)
             self.image_dis_gloss = F.generator_ganloss(
                 self.fakeimage_dis_output)
         else:
@@ -428,8 +423,6 @@ class DCGAN(object):
                 self.config.batch_size, self.config.lambda_gp
             )
             self.edge_dis_dloss = edge_d_loss + edge_d_loss_grad_penalty
-            self.edge_dis_dloss = save_layer(
-                'd_loss_patch3', self.edge_dis_dloss)
             self.edge_dis_gloss = F.generator_ganloss(self.fakeedge_dis_output)
         else:
             self.edge_dis_dloss = 0
