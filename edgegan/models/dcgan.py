@@ -404,8 +404,6 @@ class DCGAN(object):
                 'patch2_D_logits', self.trueimage_dis_output)
             image_d_loss = F.discriminator_ganloss(
                 self.fakeimage_dis_output, self.trueimage_dis_output)
-            self.resized_image_output = save_layer(
-                'resized_G2_p2', self.resized_image_output)
             image_d_loss_grad_penalty = penalty(
                 self.resized_image_output, self.resized_inputs, self.image_discriminator,
                 self.config.batch_size, self.config.lambda_gp
