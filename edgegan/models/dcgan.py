@@ -623,7 +623,7 @@ class DCGAN(object):
                         {self.inputs: batch_images, self.z: batch_z})
                 else:
                     errD_fake_tmp4 = 0
-                discriminator_err = errD_fake_tmp1 + errD_fake_tmp3 + errD_fake_tmp4
+                discriminator_err = errD_fake_tmp1 + 0 + errD_fake_tmp3 + errD_fake_tmp4
 
                 generator_err = evaluate(
                     self.edge_gloss) + evaluate(self.image_gloss)
