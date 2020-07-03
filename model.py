@@ -23,8 +23,6 @@ import pickle
 # sys.setdefaultencoding('utf8')
 
 
-def save_layer(name, tensor):
-    return tf.keras.layers.Lambda(save_tensor(name))(tensor)
 
 
 def save_tensor(name):
@@ -335,8 +333,6 @@ class DCGAN(object):
                                                  method=2)
                 self.resized_inputs = right_i
                 self.resized_inputs_image = self.resized_inputs
-                self.resized_inputs = save_layer(
-                    'resized_inputs_origin', self.resized_inputs)
 
                 self.patch2_D, self.patch2_D_logits = self.discriminator_patch2(
                     self.resized_inputs, save=True)
@@ -346,8 +342,6 @@ class DCGAN(object):
                                                                 [self.config.sizeOfIn_patch2,
                                                                  self.config.sizeOfIn_patch2],
                                                                 method=2)
-                    self.resized_G2_p2 = save_layer(
-                        'resized_image_output_origin', self.resized_G2_p2)
                     self.patch2_D_, self.patch2_D_logits_ = self.discriminator_patch2(
                         self.resized_G2_p2, reuse=True)
                 else:
@@ -740,12 +734,8 @@ class DCGAN(object):
                 self.g_loss_patch = 0
 
             if self.config.use_D_patch2:
-                self.patch2_D_logits_ = save_layer('patch2_D_logits__origin', self.patch2_D_logits_)
-                self.patch2_D_logits = save_layer('patch2_D_logits_origin', self.patch2_D_logits)
                 self.d_loss_patch2 = tf.reduce_mean(
                     self.patch2_D_logits_ - self.patch2_D_logits)
-                self.resized_G2_p2 = save_layer(
-                    'resized_G2_p2_origin', self.resized_G2_p2)
                 alpha_dist = tf.contrib.distributions.Uniform(low=0., high=1.)
                 alpha = alpha_dist.sample((self.config.batch_size, 1, 1, 1))
 
@@ -761,14 +751,8 @@ class DCGAN(object):
                     tf.square(gradients), axis=[1, 2, 3]))
                 gradient_penalty = tf.reduce_mean((grad_l2 - 1) ** 2)
                 grad_pen = self.config.lambda_gp * gradient_penalty
-                self.d_loss_patch2 = save_layer(
-                    'image_d_loss_origin', self.d_loss_patch2)
-                grad_pen = save_layer(
-                    'image_d_loss_grad_penalty_origin', grad_pen)
 
                 self.d_loss_patch2 += grad_pen
-                self.d_loss_patch2 = save_layer(
-                    'd_loss_patch2_origin', self.d_loss_patch2)
                 self.g_loss_patch2 = tf.reduce_mean(self.patch2_D_logits_ * -1)
             else:
                 self.d_loss_patch2 = 0
@@ -818,8 +802,6 @@ class DCGAN(object):
                 gradient_penalty = tf.reduce_mean((grad_l2 - 1) ** 2)
 
                 self.d_loss_patch3 += self.config.lambda_gp * gradient_penalty
-                self.d_loss_patch3 = save_layer(
-                    'd_loss_patch3_origin', self.d_loss_patch3)
                 self.g_loss_patch3 = tf.reduce_mean(self.patch3_D_logits_ * -1)
             else:
                 self.d_loss_patch3 = 0

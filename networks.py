@@ -21,8 +21,6 @@ except:
     merge_summary = tf.summary.merge
     SummaryWriter = tf.summary.FileWriter
 
-def save_layer(name, tensor):
-    return tf.keras.layers.Lambda(save_tensor(name))(tensor)
 
 
 def save_tensor(name):
@@ -99,8 +97,6 @@ def _conv2d(input, output_dim, filter_size=5, stride=2, reuse=False,
         w = tf.get_variable('w', filter_shape,
                             initializer=tf.truncated_normal_initializer(
                                 stddev=0.02))
-        if save:
-            w = save_layer('conv2d_weight_origin', w)
         if pad == 'REFLECT':
             p = (filter_size - 1) // 2
             x = tf.pad(input, [[0, 0], [p, p], [p, p], [0, 0]], 'REFLECT')
