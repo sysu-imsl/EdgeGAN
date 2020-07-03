@@ -608,18 +608,18 @@ class DCGAN(object):
                 #     discriminator_err += evaluate(self.edge_dis_dloss)
                 errD_fake_tmp1 = self.joint_dis_dloss.eval(
                     {self.inputs: batch_images, self.z: batch_z})
-                if self.config.use_edge_discriminator:
-                    errD_fake_tmp4 = self.edge_dis_dloss.eval(
-                        {self.inputs: batch_images, self.z: batch_z})
-                else:
-                    errD_fake_tmp4 = 0
+
                 if self.config.use_image_discriminator:
                     errD_fake_tmp3 = self.image_dis_dloss.eval(
                         {self.inputs: batch_images, self.z: batch_z})
                 else:
                     errD_fake_tmp3 = 0
 
-                
+                if self.config.use_edge_discriminator:
+                    errD_fake_tmp4 = self.edge_dis_dloss.eval(
+                        {self.inputs: batch_images, self.z: batch_z})
+                else:
+                    errD_fake_tmp4 = 0
                 discriminator_err = errD_fake_tmp1 + errD_fake_tmp3 + errD_fake_tmp4
 
                 generator_err = evaluate(
