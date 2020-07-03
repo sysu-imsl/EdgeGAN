@@ -263,7 +263,7 @@ class Discriminator(object):
         self._reuse = False
         # self.scale_num = scale_num
 
-    def __call__(self, input, reuse=False):
+    def __call__(self, input, reuse=False, save=False):
         if self._use_resnet:
             # _, h, w, _ = input.get_shape()
             # image = input
@@ -291,7 +291,7 @@ class Discriminator(object):
             #         D_logit = tf.concat([D_logit, D_logit_tmp], 0)
             #         D_result = tf.concat([D_result, D_result_tmp], 0)
             # return D_logit, D_result
-            return self._convnet(input)
+            return self._convnet(input, save)
 
     def _resnet(self, input):
         # return None
@@ -329,13 +329,14 @@ class Discriminator(object):
             return tf.nn.sigmoid(D), D
 
 
-    def _convnet(self, input):
+    def _convnet(self, input, save=False):
 
         with tf.variable_scope(self.name, reuse=self._reuse):
             D = networks.conv_block(input, self._num_filters, 'd_conv_0', 4, 2,
                                    self._is_train, self._reuse, norm=None,
                                    activation=self._activation)
-            D = save_layer('convnet1_origin', D)
+            if save:
+                D = save_layer('convnet1_origin', D)
             D = networks.conv_block(D, self._num_filters*2, 'd_conv_1', 4, 2,
                                    self._is_train, self._reuse, self._norm,
                                    self._activation)

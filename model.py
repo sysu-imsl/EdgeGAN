@@ -339,7 +339,7 @@ class DCGAN(object):
                     'resized_inputs_origin', self.resized_inputs)
 
                 self.patch2_D, self.patch2_D_logits = self.discriminator_patch2(
-                    self.resized_inputs)
+                    self.resized_inputs, save=True)
 
                 if self.config.G_num == 2:
                     self.resized_G2_p2 = tf.image.resize_images(self.G2,
