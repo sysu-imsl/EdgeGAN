@@ -400,8 +400,6 @@ class DCGAN(object):
         if self.config.use_image_discriminator:
             self.fakeimage_dis_output = save_layer(
                 'patch2_D_logits_', self.fakeimage_dis_output)
-            self.trueimage_dis_output = save_layer(
-                'patch2_D_logits', self.trueimage_dis_output)
             image_d_loss = F.discriminator_ganloss(
                 self.fakeimage_dis_output, self.trueimage_dis_output)
             image_d_loss_grad_penalty = penalty(
