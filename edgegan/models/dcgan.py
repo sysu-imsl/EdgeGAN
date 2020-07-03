@@ -345,7 +345,7 @@ class DCGAN(object):
             self.resized_inputs = save_layer(
                 'resized_inputs', self.resized_inputs)
             self.imageD, self.trueimage_dis_output = self.image_discriminator(
-                self.resized_inputs)
+                self.resized_inputs, save=True)
 
             self.resized_image_output = resize(
                 self.image_output, self.config.image_dis_size)
