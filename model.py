@@ -1403,6 +1403,8 @@ class DCGAN(object):
                         "errD_real": errD_real,
                         "errG": errG,
                     })
+                    resized_inputs = self.resized_inputs.eval({self.inputs: batch_images})
+                    checksum_save({"resized_inputs_whole_origin": resized_inputs})
                     # restore_outputL, restore_errD_fake, restore_errD_real, restore_errG = checksum_load(
                     #     "outputL.npy", "errD_fake.pkl", "errD_real.pkl", "errG.pkl",)
                     # assert np.all(restore_outputL == outputL)
