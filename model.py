@@ -688,12 +688,26 @@ class DCGAN(object):
                     elif self.config.originD_inputForm == "concat_n":
                         interpolated = self.concat_in_n + alpha * \
                             (self.concat_out_n - self.concat_in_n)
+                interpolated = tf.keras.layers.Lambda(
+                    save_tensor('interpolated_origin'))(interpolated)
                 inte_logit = self.discriminator(interpolated, reuse=True)
+                inte_logit = tf.keras.layers.Lambda(
+                    save_tensor('inte_logit_origin'))(inte_logit)
                 gradients = tf.gradients(inte_logit, [interpolated, ])[0]
+                gradients = tf.keras.layers.Lambda(
+                    save_tensor('gradients_origin'))(gradients)
                 grad_l2 = tf.sqrt(tf.reduce_sum(
                     tf.square(gradients), axis=[1, 2, 3]))
+                grad_l2 = tf.keras.layers.Lambda(
+                    save_tensor('grad_l2_origin'))(grad_l2)
                 gradient_penalty = tf.reduce_mean((grad_l2-1)**2)
+                gradient_penalty = tf.keras.layers.Lambda(
+                    save_tensor('grad_result_origin'))(gradient_penalty)
                 gradient_penalty = self.config.lambda_gp * gradient_penalty
+                self.d_loss = tf.keras.layers.Lambda(
+                    save_tensor('d_loss'))(self.d_loss)
+                gradient_penalty = tf.keras.layers.Lambda(
+                    save_tensor('d_loss_gp'))(gradient_penalty)
 
                 self.d_loss += gradient_penalty
                 self.g_loss = tf.reduce_mean(self.D_logits_ * -1)
