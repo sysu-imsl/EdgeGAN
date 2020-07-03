@@ -124,7 +124,11 @@ class DCGAN(object):
                                                            norm=self.config.D_patch_norm,
                                                            num_filters=self.df_dim,
                                                            use_resnet=False)
-
+        if self.config.use_D_patch3 is True:
+            self.discriminator_patch3 = Discriminator('D_patch3', is_train=True,
+                                                      norm=self.config.D_norm,
+                                                      num_filters=self.df_dim,
+                                                      use_resnet=self.config.if_resnet_d)
         if self.config.use_D_patch2 is True:
             self.discriminator_patch2 = Discriminator('D_patch2', is_train=True,
                                                       norm=self.config.D_norm,
@@ -137,11 +141,7 @@ class DCGAN(object):
                                                         num_filters=self.df_dim,
                                                         use_resnet=self.config.if_resnet_d)
 
-        if self.config.use_D_patch3 is True:
-            self.discriminator_patch3 = Discriminator('D_patch3', is_train=True,
-                                                      norm=self.config.D_norm,
-                                                      num_filters=self.df_dim,
-                                                      use_resnet=self.config.if_resnet_d)
+
 
         if self.config.G_num == 2 and self.config.use_patchGAN_D_full == True:
             self.discriminator_patchGAN = patchGAN_D(
