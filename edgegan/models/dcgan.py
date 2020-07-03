@@ -351,8 +351,6 @@ class DCGAN(object):
 
             self.resized_image_output = resize(
                 self.image_output, self.config.image_dis_size)
-            self.resized_image_output = save_layer(
-                'resized_image_output', self.resized_image_output)
             self.imageDfake, self.fakeimage_dis_output = self.image_discriminator(
                 self.resized_image_output, reuse=True)
 
