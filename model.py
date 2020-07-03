@@ -755,14 +755,8 @@ class DCGAN(object):
                     tf.square(gradients), axis=[1, 2, 3]))
                 gradient_penalty = tf.reduce_mean((grad_l2 - 1) ** 2)
                 grad_pen = self.config.lambda_gp * gradient_penalty
-                self.d_loss_patch2 = save_layer(
-                    'image_d_loss_origin', self.d_loss_patch2)
-                grad_pen = save_layer(
-                    'image_d_loss_grad_penalty_origin', grad_pen)
 
                 self.d_loss_patch2 += grad_pen
-                self.d_loss_patch2 = save_layer(
-                    'd_loss_patch2_origin', self.d_loss_patch2)
                 self.g_loss_patch2 = tf.reduce_mean(self.patch2_D_logits_ * -1)
             else:
                 self.d_loss_patch2 = 0
@@ -812,8 +806,6 @@ class DCGAN(object):
                 gradient_penalty = tf.reduce_mean((grad_l2 - 1) ** 2)
 
                 self.d_loss_patch3 += self.config.lambda_gp * gradient_penalty
-                self.d_loss_patch3 = save_layer(
-                    'd_loss_patch3_origin', self.d_loss_patch3)
                 self.g_loss_patch3 = tf.reduce_mean(self.patch3_D_logits_ * -1)
             else:
                 self.d_loss_patch3 = 0
