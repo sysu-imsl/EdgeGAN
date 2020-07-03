@@ -645,11 +645,11 @@ class DCGAN(object):
                     #     "errD_real": errD_real,
                     #     "errG": errG,
                     # })
-                    # restore_outputL, restore_errD_fake, restore_errD_real, restore_errG = checksum_load(
-                    #     "outputL.npy", "errD_fake.pkl", "errD_real.pkl", "errG.pkl",)
-                    # assert np.allclose(restore_outputL, outputL)
-                    # assert discriminator_err == restore_errD_fake
-                    # assert generator_err == restore_errG
+                    restore_outputL, restore_errD_fake, restore_errD_real, restore_errG = checksum_load(
+                        "outputL.npy", "errD_fake.pkl", "errD_real.pkl", "errG.pkl",)
+                    assert np.all(restore_outputL == outputL)
+                    assert discriminator_err == restore_errD_fake
+                    assert generator_err == restore_errG
 
                     (restore_d_loss, restore_d_loss_gp, restore_d_loss_new, restore_d_loss_gp_new) = checksum_load(
                         'd_loss', 'd_loss_gp', 'd_loss_new', 'd_loss_gp_new')
