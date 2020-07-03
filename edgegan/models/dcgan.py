@@ -250,7 +250,11 @@ class DCGAN(object):
                                                  norm=self.config.D_norm,
                                                  num_filters=self.df_dim,
                                                  use_resnet=self.config.if_resnet_d)
-
+        if self.config.use_edge_discriminator is True:
+            self.edge_discriminator = Discriminator('D_patch3', is_train=True,
+                                                    norm=self.config.D_norm,
+                                                    num_filters=self.df_dim,
+                                                    use_resnet=self.config.if_resnet_d)
         if self.config.use_image_discriminator is True:
             # self.image_discriminator = Discriminator('D_patch2', is_train=True,
             #                                          norm=self.config.D_norm,
@@ -260,11 +264,7 @@ class DCGAN(object):
                                                       norm=self.config.D_norm,
                                                       num_filters=self.df_dim,
                                                       use_resnet=self.config.if_resnet_d)
-        if self.config.use_edge_discriminator is True:
-            self.edge_discriminator = Discriminator('D_patch3', is_train=True,
-                                                    norm=self.config.D_norm,
-                                                    num_filters=self.df_dim,
-                                                    use_resnet=self.config.if_resnet_d)
+
 
         self.encoder = Encoder('E', is_train=True,
                                norm=self.config.E_norm,
