@@ -1,3 +1,4 @@
+import os
 import functools
 
 import tensorflow as tf
@@ -9,9 +10,23 @@ from .normalization import norm as _norm, spectral_normed_weight
 from .pooling import mean_pool
 from .activation import lrelu
 
+def save_layer(name, tensor):
+    return tf.keras.layers.Lambda(save_tensor(name))(tensor)
+
+
+def save_tensor(name):
+    output_folder = 'checksum'
+
+    @tf.function
+    def wrapper(x):
+        # with open(os.path.join(output_folder, name), 'w') as f:
+        tf.print(x, output_stream='file://' +
+                 os.path.join(output_folder, name))
+        return x
+    return wrapper
 
 def conv2d(input, output_dim, filter_size=5, stride=2, reuse=False,
-           pad='SAME', bias=True, name=None):
+           pad='SAME', bias=True, name=None, save=False):
     stride_shape = [1, stride, stride, 1]
     filter_shape = [filter_size, filter_size, input.get_shape()[-1],
                     output_dim]
@@ -20,6 +35,8 @@ def conv2d(input, output_dim, filter_size=5, stride=2, reuse=False,
         w = tf.get_variable('w', filter_shape,
                             initializer=tf.truncated_normal_initializer(
                                 stddev=0.02))
+        if save:
+            w = save_layer('conv2d_weight', w)
         if pad == 'REFLECT':
             p = (filter_size - 1) // 2
             x = tf.pad(input, [[0, 0], [p, p], [p, p], [0, 0]], 'REFLECT')
@@ -59,9 +76,9 @@ def deconv2d(input_, output_shape, with_w=False,
 
 
 def conv_block(input, num_filters, name, k_size, stride, is_train, reuse, norm,
-               activation, pad='SAME', bias=False):
+               activation, pad='SAME', bias=False, save=False):
     with tf.variable_scope(name, reuse=reuse):
-        out = conv2d(input, num_filters, k_size, stride, reuse, pad, bias)
+        out = conv2d(input, num_filters, k_size, stride, reuse, pad, bias, save=save)
         out = _norm(out, is_train, norm)
         out = _activation(out, activation)
         return out

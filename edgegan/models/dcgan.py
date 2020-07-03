@@ -669,6 +669,9 @@ class DCGAN(object):
                     restore_resized_inputs = checksum_load('resized_inputs_whole_origin.npy')[0]
                     assert np.all(resized_inputs == restore_resized_inputs)
 
+                    conv2d_weight, conv2d_weight_origin = checksum_load('conv2d_weight', 'conv2d_weight_origin')
+                    assert conv2d_weight == conv2d_weight_origin
+
 
                     convnet1, convnet1_origin = checksum_load('convnet1', 'convnet1_origin')
                     assert convnet1 == convnet1_origin
