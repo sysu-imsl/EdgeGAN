@@ -654,13 +654,18 @@ class DCGAN(object):
                         'd_loss_patch3', 'd_loss_patch3_origin')
                     assert d_loss_patch3 == d_loss_patch3_origin
 
-                    resized_inputs, resized_inputs_origin = checksum_load(
-                        'resized_inputs', 'resized_inputs_origin')
-                    assert resized_inputs == resized_inputs_origin
+                    # resized_inputs, resized_inputs_origin = checksum_load(
+                    #     'resized_inputs', 'resized_inputs_origin')
+                    # assert resized_inputs == resized_inputs_origin
                     
                     resized_image_output, resized_image_output_origin = checksum_load(
                         'resized_image_output', 'resized_image_output_origin')
                     assert resized_image_output == resized_image_output_origin
+
+                    resized_inputs = self.resized_inputs.eval({self.inputs: batch_images})
+                    restore_resized_inputs = checksum_load('resized_inputs_whole_origin.npy')[0]
+                    assert np.all(resized_inputs == restore_resized_inputs)
+
 
                     convnet1, convnet1_origin = checksum_load('convnet1', 'convnet1_origin')
                     assert convnet1 == convnet1_origin
