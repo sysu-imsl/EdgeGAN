@@ -737,7 +737,6 @@ class DCGAN(object):
 
             if self.config.use_D_patch2:
                 self.patch2_D_logits_ = save_layer('patch2_D_logits__origin', self.patch2_D_logits_)
-                self.patch2_D_logits = save_layer('patch2_D_logits_origin', self.patch2_D_logits)
                 self.d_loss_patch2 = tf.reduce_mean(
                     self.patch2_D_logits_ - self.patch2_D_logits)
                 alpha_dist = tf.contrib.distributions.Uniform(low=0., high=1.)

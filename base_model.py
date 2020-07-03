@@ -335,8 +335,6 @@ class Discriminator(object):
             D = networks.conv_block(input, self._num_filters, 'd_conv_0', 4, 2,
                                    self._is_train, self._reuse, norm=None,
                                    activation=self._activation, save=save)
-            if save:
-                D = save_layer('convnet1_origin', D)
             D = networks.conv_block(D, self._num_filters*2, 'd_conv_1', 4, 2,
                                    self._is_train, self._reuse, self._norm,
                                    self._activation)
