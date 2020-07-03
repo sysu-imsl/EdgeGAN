@@ -344,8 +344,6 @@ class DCGAN(object):
                                                                 [self.config.sizeOfIn_patch2,
                                                                  self.config.sizeOfIn_patch2],
                                                                 method=2)
-                    self.resized_G2_p2 = save_layer(
-                        'resized_image_output_origin', self.resized_G2_p2)
                     self.patch2_D_, self.patch2_D_logits_ = self.discriminator_patch2(
                         self.resized_G2_p2, reuse=True)
                 else:
