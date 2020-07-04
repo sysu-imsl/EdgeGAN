@@ -20,50 +20,6 @@ from .encoder import Encoder
 from .generator import Generator
 
 
-def extension(filename):
-    return os.path.splitext(filename)[-1]
-
-
-def checksum_save(input_dict):
-    checksum_path = utils.checksum_path
-    utils.makedirs(checksum_path)
-
-    def save(filename, obj):
-        p = os.path.join(checksum_path, filename)
-        if isinstance(obj, np.ndarray):
-            np.save(p + '.npy', val)
-        else:
-            with open(p + '.pkl', 'wb') as f:
-                pickle.dump(obj, f)
-
-    for key, val in input_dict.items():
-        save(key, val)
-
-
-def checksum_load(*names):
-    def load(filename):
-        if extension(filename) == '.npy':
-            return np.load(filename)
-        elif extension(filename) == '.pkl':
-            with open(filename, 'rb') as f:
-                return pickle.load(f)
-        else:
-            raise NotImplementedError
-
-    def enforce_exists(path):
-        if not os.path.exists(path):
-            print('missing loading item: {}'.format(path))
-            raise ValueError
-
-    checksum_path = utils.checksum_path
-    result = []
-    for name in names:
-        path = os.path.join(checksum_path, name)
-        enforce_exists(path)
-        result.append(load(path))
-    return result
-
-
 def pathsplit(path):
     path = os.path.normpath(path)
     return path.split(os.sep)
@@ -488,30 +444,22 @@ class DCGAN(object):
 
         counter = 1
         start_time = time.time()
-        # loaded, checkpoint_counter = self.load(
-        #     self.saver, self.config.checkpoint_dir)
-        # if loaded:
-        #     counter = checkpoint_counter
-        #     print(" [*] Load SUCCESS")
-        # else:
-        #     print(" [!] Load failed...")
+        loaded, checkpoint_counter = self.load(
+            self.saver, self.config.checkpoint_dir)
+        if loaded:
+            counter = checkpoint_counter
+            print(" [*] Load SUCCESS")
+        else:
+            print(" [!] Load failed...")
 
         # train
         for epoch in range(self.config.epoch):
             self.dataset.shuffle()
             for idx in range(len(self.dataset)):
                 batch_images, batch_z, batch_files = self.dataset[idx]
-                if idx == 3:
-                    (restore_batch_files, restore_batch_images, restore_batch_z) = checksum_load(
-                        'batch_files.pkl', 'batch_images.npy', 'batch_z.npy')
-                    assert np.all(batch_images == restore_batch_images)
-                    assert np.all(batch_z[:, :100] == restore_batch_z)
-                    # for b, r in zip(batch_files, restore_batch_files):
-                    #     assert b == r
-                    print('assertion successed!')
 
                 self.update_model(batch_images, batch_z)
-                # add_summary(batch_images, batch_z, counter)
+                add_summary(batch_images, batch_z, counter)
 
                 def evaluate(obj):
                     return getattr(obj, 'eval')(
@@ -536,31 +484,10 @@ class DCGAN(object):
                 print("Epoch: [%2d/%2d] [%4d/%4d] time: %4.4f, joint_dis_dloss: %.8f, joint_dis_gloss: %.8f"
                       % (epoch, self.config.epoch, idx, len(self.dataset),
                          time.time() - start_time, 2 * discriminator_err, generator_err))
-                # if np.mod(counter, self.config.save_checkpoint_frequency) == 2:
-                #     self.save(self.saver, self.config.checkpoint_dir,
-                #               counter)
+                if np.mod(counter, self.config.save_checkpoint_frequency) == 2:
+                    self.save(self.saver, self.config.checkpoint_dir,
+                              counter)
 
-                outputL = self.sess.run(self.edge_output,
-                                        feed_dict={self.z: batch_z, self.inputs: batch_images})
-                if idx == 3:
-                    restore_outputL, restore_errD_fake, restore_errD_real, restore_errG = checksum_load(
-                        "outputL.npy", "errD_fake.pkl", "errD_real.pkl", "errG.pkl",)
-                    restore_joint_dloss, restore_image_dloss, restore_edge_dloss = checksum_load(
-                        "joint_dloss.pkl", "image_dloss.pkl", "edge_dloss.pkl"
-                    )
-                    restore_g1loss, restore_g2loss = checksum_load(
-                        "g1loss.pkl", "g2loss.pkl"
-                    )
-                    assert np.all(restore_outputL == outputL)
-                    assert discriminator_err == restore_errD_fake
-                    assert generator_err == restore_errG
-                    assert restore_joint_dloss == joint_dloss
-                    assert restore_image_dloss == image_dloss
-                    assert restore_edge_dloss == edge_dloss
-                    assert restore_g1loss == g1loss
-                    assert restore_g2loss == g2loss
-                    print('assert successed!')
-                    exit()
 
     def define_test_input(self):
         if self.config.crop:

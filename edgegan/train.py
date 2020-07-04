@@ -2,23 +2,12 @@ import json
 import os
 
 import numpy as np
-import random
 import tensorflow as tf
 from numpy.random import seed
 
 from edgegan.models import DCGAN
 from edgegan.utils import makedirs, pp
 from edgegan.utils.data import Dataset
-from tfdeterminism import patch
-
-patch()
-SEED = 123
-os.environ['CUDA_VISIBLE_DEVICES'] = '3'
-os.environ['PYTHONHASHSEED'] = str(SEED)
-random.seed(SEED)
-np.random.seed(SEED)
-tf.set_random_seed(SEED)
-
 
 
 _FLAGS = tf.app.flags
