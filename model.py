@@ -1316,8 +1316,9 @@ class DCGAN(object):
                     errD_fake = errD_fake_tmp1 + errD_fake_tmp2 + errD_fake_tmp3 + errD_fake_tmp4
                     errD_real = errD_fake
                     if self.config.G_num == 2:
-                        errG = self.g1_loss.eval({self.z: batch_z, self.inputs: batch_images}) + self.g2_loss.eval(
-                            {self.z: batch_z, self.inputs: batch_images})
+                        g1loss = self.g1_loss.eval({self.z: batch_z, self.inputs: batch_images})
+                        g2loss = self.g2_loss.eval({self.z: batch_z, self.inputs: batch_images})
+                        errG = g1loss + g2loss
                         if self.config.use_patchGAN_D_full == True:
                             errD_patchGAN = self.d_loss_patchGAN.eval(
                                 {self.inputs: batch_images, self.z: batch_z})
@@ -1343,6 +1344,11 @@ class DCGAN(object):
                         "errD_fake": errD_fake,
                         "errD_real": errD_real,
                         "errG": errG,
+                        "joint_dloss": errD_fake_tmp1,
+                        "image_dloss": errD_fake_tmp3,
+                        "edge_dloss": errD_fake_tmp4,
+                        "g1loss": g1loss,
+                        "g2loss": g2loss,
                     })
                     # restore_outputL, restore_errD_fake, restore_errD_real, restore_errG = checksum_load(
                     #     "outputL.npy", "errD_fake.pkl", "errD_real.pkl", "errG.pkl",)
