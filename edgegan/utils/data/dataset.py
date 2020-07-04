@@ -85,4 +85,4 @@ class Dataset():
         if self.phase == 'test':
             assert batch_images.shape[0] == len(filenames)
 
-        return (batch_images, batch_z) if self.phase == 'train' else (batch_images, filenames)
+        return (batch_images, batch_z, filenames) if self.phase == 'train' else (batch_images, filenames)

@@ -19,6 +19,31 @@ from .discriminator import Discriminator
 from .encoder import Encoder
 from .generator import Generator
 
+def extension(filename):
+    return os.path.splitext(filename)[-1]
+
+def checksum_load(*names):
+    def load(filename):
+        if extension(path) == '.npy':
+            return np.load(path)
+        elif extension(path) == '.pkl':
+            with open(path, 'rb') as f:
+                return pickle.load(f)
+        else:
+            raise NotImplementedError
+
+    def enforce_exists(path):
+        if not os.path.exists(path):
+            print('missing loading item: {}'.format(path))
+            raise ValueError
+
+    checksum_path = utils.checksum_path
+    result = []
+    for name in names:
+        path = os.path.join(checksum_path, name)
+        enforce_exists(path)
+        result.append(load(path))
+    return result
 
 def pathsplit(path):
     path = os.path.normpath(path)
@@ -458,7 +483,7 @@ class DCGAN(object):
         for epoch in range(self.config.epoch):
             self.dataset.shuffle()
             for idx in range(len(self.dataset)):
-                batch_images, batch_z = self.dataset[idx]
+                batch_images, batch_z, fnames = self.dataset[idx]
 
                 if idx == 3:
                     (restore_batch_files, restore_batch_images, restore_batch_z) = checksum_load(
