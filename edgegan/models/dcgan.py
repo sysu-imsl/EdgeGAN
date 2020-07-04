@@ -156,8 +156,8 @@ class DCGAN(object):
             'image_dis_dloss', 'image_discriminator'), self.config.use_image_discriminator)
         self.register_optim_if('d_optim_patch3', optim_creator(
             'edge_dis_dloss', 'edge_discriminator'), self.config.use_edge_discriminator)
-        # self.register_optim_if('d_optim2', optim_creator(
-        #     'loss_d_ac', 'classifier'), self.config.multiclasses)
+        self.register_optim_if('d_optim2', optim_creator(
+            'loss_d_ac', 'classifier'), self.config.multiclasses)
         # g_optim = [
         #     tf.train.RMSPropOptimizer(self.config.learning_rate).minimize(
         #         self.edge_gloss, var_list=self.edge_generator.var_list),
