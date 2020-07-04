@@ -888,9 +888,9 @@ class DCGAN(object):
             if self.config.use_D_patch3:
                 self.d_optim_patch3 = tf.train.RMSPropOptimizer(self.config.learning_rate).minimize(
                     self.d_loss_patch3, var_list=self.discriminator_patch3.var_list)
-            # if self.config.if_focal_loss:
-            #     self.d_optim2 = tf.train.RMSPropOptimizer(self.config.learning_rate).minimize(
-            #         self.loss_d_ac, var_list=self.discriminator2.var_list)
+            if self.config.if_focal_loss:
+                self.d_optim2 = tf.train.RMSPropOptimizer(self.config.learning_rate).minimize(
+                    self.loss_d_ac, var_list=self.discriminator2.var_list)
 
             # if self.config.G_num == 2:
             #     self.g1_optim = tf.train.RMSPropOptimizer(self.config.learning_rate).minimize(
@@ -1256,9 +1256,9 @@ class DCGAN(object):
                 #     _ = self.sess.run([self.d_optim_patchGAN],
                 #                       feed_dict={self.inputs: batch_images, self.z: batch_z})
 
-                # if self.config.if_focal_loss:
-                #     _ = self.sess.run(self.d_optim2,
-                #                       feed_dict={self.inputs: batch_images, self.z: batch_z})
+                if self.config.if_focal_loss:
+                    _ = self.sess.run(self.d_optim2,
+                                      feed_dict={self.inputs: batch_images, self.z: batch_z})
 
                 # if self.config.G_num == 2:
                 #     _, _, summary_str = self.sess.run([self.g1_optim, self.g2_optim, self.g_sum],
