@@ -460,7 +460,7 @@ class DCGAN(object):
         self.forward()
         self.define_losses()
         self.construct_optimizers()
-        # self.define_summaries()
+        self.define_summaries()
 
         self.saver = tf.train.Saver()
 
