@@ -150,8 +150,8 @@ class DCGAN(object):
                 loss=loss(loss_name), var_list=var_list(module_name)
             )
 
-        # self.register_optim_if('d_optim', optim_creator(
-        #     'joint_dis_dloss', 'joint_discriminator'))
+        self.register_optim_if('d_optim', optim_creator(
+            'joint_dis_dloss', 'joint_discriminator'))
         # self.register_optim_if('d_optim_patch2', optim_creator(
         #     'image_dis_dloss', 'image_discriminator'), self.config.use_image_discriminator)
         # self.register_optim_if('d_optim_patch3', optim_creator(
@@ -537,9 +537,9 @@ class DCGAN(object):
                 print("Epoch: [%2d/%2d] [%4d/%4d] time: %4.4f, joint_dis_dloss: %.8f, joint_dis_gloss: %.8f"
                       % (epoch, self.config.epoch, idx, len(self.dataset),
                          time.time() - start_time, 2 * discriminator_err, generator_err))
-                if np.mod(counter, self.config.save_checkpoint_frequency) == 2:
-                    self.save(self.saver, self.config.checkpoint_dir,
-                              counter)
+                # if np.mod(counter, self.config.save_checkpoint_frequency) == 2:
+                #     self.save(self.saver, self.config.checkpoint_dir,
+                #               counter)
 
                 outputL = self.sess.run(self.edge_output,
                                         feed_dict={self.z: batch_z, self.inputs: batch_images})
@@ -552,7 +552,7 @@ class DCGAN(object):
                     restore_g1loss, restore_g2loss = checksum_load(
                         "g1loss.pkl", "g2loss.pkl"
                     )
-                    assert np.allclose(restore_outputL, outputL)
+                    assert np.all(restore_outputL == outputL)
                     assert discriminator_err == restore_errD_fake
                     assert generator_err == restore_errG
                     assert restore_joint_dloss == joint_dloss
