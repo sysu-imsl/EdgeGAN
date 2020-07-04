@@ -114,12 +114,11 @@ class DCGAN(object):
             'edge_dis_dloss', 'edge_discriminator'), self.config.use_edge_discriminator)
         self.register_optim_if('d_optim2', optim_creator(
             'loss_d_ac', 'classifier'), self.config.multiclasses)
-        g_optim = [
-            tf.train.RMSPropOptimizer(self.config.learning_rate).minimize(
-                self.edge_gloss, var_list=self.edge_generator.var_list),
-            tf.train.RMSPropOptimizer(self.config.learning_rate).minimize(
+        edge_goptim = tf.train.RMSPropOptimizer(self.config.learning_rate).minimize(
+                self.edge_gloss, var_list=self.edge_generator.var_list)
+        image_goptim =  tf.train.RMSPropOptimizer(self.config.learning_rate).minimize(
                 self.image_gloss, var_list=self.image_generator.var_list)
-        ]
+        g_optim = [edge_goptim, image_goptim]
         self.register_optim_if('g_optim_u', lambda: g_optim)
         self.register_optim_if('e_optim', optim_creator('zl_loss', 'encoder'))
         self.register_optim_if('g_optim_b', lambda: g_optim)
@@ -246,9 +245,10 @@ class DCGAN(object):
         self.joint_output = tf.concat([self.edge_output, self.image_output], 2)
         self.D_, self.fakejoint_dis_output = self.joint_discriminator(
             self.joint_output, reuse=True)
-        edges, pictures = split_inputs(self.inputs)
 
         if self.config.use_image_discriminator:
+            pictures = self.inputs[:, :, int(
+                self.config.output_width / 2):self.config.output_width, :]
             self.resized_inputs = resize(pictures, self.config.image_dis_size)
             self.imageD, self.trueimage_dis_output = self.image_discriminator(
                 self.resized_inputs)
@@ -259,6 +259,8 @@ class DCGAN(object):
                 self.resized_image_output, reuse=True)
 
         if self.config.use_edge_discriminator:
+            edges = self.inputs[:, :, 0:int(
+                self.config.output_width / 2), :]
             self.resized_edges = resize(edges, self.config.edge_dis_size)
 
             delete_it_later()
@@ -311,11 +313,11 @@ class DCGAN(object):
 
         self.edge_gloss = (
             self.config.joint_dweight * self.joint_dis_gloss +
-            self.config.edge_dweight * self.edge_dis_gloss
+            self.config.edge_dweight * self.edge_dis_gloss + 0
         )
         self.image_gloss = (
-            self.config.joint_dweight * self.joint_dis_gloss +
-            self.config.image_dweight * self.image_dis_gloss
+            self.config.joint_dweight * self.joint_dis_gloss + 0 +
+            self.config.image_dweight * self.image_dis_gloss + 0 + 0
         )
 
         # focal loss
@@ -454,7 +456,7 @@ class DCGAN(object):
         for epoch in range(self.config.epoch):
             self.dataset.shuffle()
             for idx in range(len(self.dataset)):
-                batch_images, batch_z = self.dataset[idx]
+                batch_images, batch_z, batch_files = self.dataset[idx]
 
                 self.update_model(batch_images, batch_z)
                 add_summary(batch_images, batch_z, counter)
@@ -463,14 +465,20 @@ class DCGAN(object):
                     return getattr(obj, 'eval')(
                         {self.inputs: batch_images, self.z: batch_z})
 
-                discriminator_err = evaluate(self.joint_dis_dloss)
+                joint_dloss = evaluate(self.joint_dis_dloss)
                 if self.config.use_image_discriminator:
-                    discriminator_err += evaluate(self.image_dis_dloss)
+                    image_dloss = evaluate(self.image_dis_dloss)
+                else:
+                    image_dloss = 0
                 if self.config.use_edge_discriminator:
-                    discriminator_err += evaluate(self.edge_dis_dloss)
+                    edge_dloss = evaluate(self.edge_dis_dloss)
+                else:
+                    edge_dloss = 0
+                discriminator_err = joint_dloss + 0 + image_dloss + edge_dloss
 
-                generator_err = evaluate(
-                    self.edge_gloss) + evaluate(self.image_gloss)
+                g1loss =  evaluate(self.edge_gloss)
+                g2loss =  evaluate(self.image_gloss)
+                generator_err = g1loss + g2loss
 
                 counter += 1
                 print("Epoch: [%2d/%2d] [%4d/%4d] time: %4.4f, joint_dis_dloss: %.8f, joint_dis_gloss: %.8f"
@@ -479,6 +487,7 @@ class DCGAN(object):
                 if np.mod(counter, self.config.save_checkpoint_frequency) == 2:
                     self.save(self.saver, self.config.checkpoint_dir,
                               counter)
+
 
     def define_test_input(self):
         if self.config.crop:

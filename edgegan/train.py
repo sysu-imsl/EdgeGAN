@@ -10,8 +10,6 @@ from edgegan.utils import makedirs, pp
 from edgegan.utils.data import Dataset
 
 
-
-
 _FLAGS = tf.app.flags
 _FLAGS.DEFINE_string("gpu", "0", "Gpu ID")
 _FLAGS.DEFINE_string("name", "edgegan", "Folder for all outputs")
