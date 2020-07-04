@@ -872,10 +872,9 @@ class DCGAN(object):
                                                            beta1=self.config.beta1).minimize(
                         self.class_loss, var_list=self.encoder2.var_list)
         elif self.config.optim == "rmsprop":
-            pass
-            # if self.config.use_D_origin:
-            #     self.d_optim = tf.train.RMSPropOptimizer(self.config.learning_rate).minimize(
-            #         self.d_loss, var_list=self.discriminator.var_list)
+            if self.config.use_D_origin:
+                self.d_optim = tf.train.RMSPropOptimizer(self.config.learning_rate).minimize(
+                    self.d_loss, var_list=self.discriminator.var_list)
             # if self.config.use_D_patch:
             #     self.d_optim_patch = tf.train.RMSPropOptimizer(self.config.learning_rate).minimize(
             #         self.d_loss_patch, var_list=self.discriminator_patch.var_list)
@@ -1234,9 +1233,9 @@ class DCGAN(object):
                 #               "/stage1", self.model_dir, counter)
 
                 # # Update D network
-                # if self.config.use_D_origin:
-                #     _ = self.sess.run([self.d_optim],
-                #                       feed_dict={self.inputs: batch_images, self.z: batch_z})
+                if self.config.use_D_origin:
+                    _ = self.sess.run([self.d_optim],
+                                      feed_dict={self.inputs: batch_images, self.z: batch_z})
 
                 # if self.config.use_D_patch:
                 #     _ = self.sess.run([self.d_optim_patch],
