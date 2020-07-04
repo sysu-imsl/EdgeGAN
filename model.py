@@ -901,12 +901,12 @@ class DCGAN(object):
                 self.g_optim = tf.train.RMSPropOptimizer(self.config.learning_rate).minimize(
                     self.g_loss, var_list=self.generator.var_list)
 
-            # if self.config.E_stage1:
-            #     self.e_optim = tf.train.RMSPropOptimizer(self.config.learning_rate).minimize(
-            #         self.zl_loss, var_list=self.encoder.var_list)
-            #     if self.config.if_focal_loss and self.config.E2_stage1:
-            #         self.e_optim2 = tf.train.RMSPropOptimizer(self.config.learning_rate).minimize(
-            #             self.class_loss, var_list=self.encoder2.var_list)
+            if self.config.E_stage1:
+                self.e_optim = tf.train.RMSPropOptimizer(self.config.learning_rate).minimize(
+                    self.zl_loss, var_list=self.encoder.var_list)
+                if self.config.if_focal_loss and self.config.E2_stage1:
+                    self.e_optim2 = tf.train.RMSPropOptimizer(self.config.learning_rate).minimize(
+                        self.class_loss, var_list=self.encoder2.var_list)
         # ??? something not understood
         if self.config.type is "wgan":
             if self.config.use_D_origin:
@@ -1252,9 +1252,9 @@ class DCGAN(object):
                     _ = self.sess.run([self.d_optim_patch3],
                                       feed_dict={self.inputs: batch_images, self.z: batch_z})
 
-                # if self.config.use_patchGAN_D_full == True and self.config.G_num == 2:
-                #     _ = self.sess.run([self.d_optim_patchGAN],
-                #                       feed_dict={self.inputs: batch_images, self.z: batch_z})
+                if self.config.use_patchGAN_D_full == True and self.config.G_num == 2:
+                    _ = self.sess.run([self.d_optim_patchGAN],
+                                      feed_dict={self.inputs: batch_images, self.z: batch_z})
 
                 if self.config.if_focal_loss:
                     _ = self.sess.run(self.d_optim2,
@@ -1267,20 +1267,20 @@ class DCGAN(object):
                     _, summary_str = self.sess.run([self.g_optim, self.g_sum],
                                                    feed_dict={self.z: batch_z})
 
-                # if self.config.E_stage1:
-                #     _ = self.sess.run([self.e_optim],
-                #                       feed_dict={self.z: batch_z})
+                if self.config.E_stage1:
+                    _ = self.sess.run([self.e_optim],
+                                      feed_dict={self.z: batch_z})
 
-                #     if self.config.if_focal_loss and self.config.E2_stage1:
-                #         _ = self.sess.run([self.e_optim2],
-                #                           feed_dict={self.inputs: batch_images, self.z: batch_z})
+                    if self.config.if_focal_loss and self.config.E2_stage1:
+                        _ = self.sess.run([self.e_optim2],
+                                          feed_dict={self.inputs: batch_images, self.z: batch_z})
 
-                # if self.config.G_num == 2:
-                #     _, _, summary_str = self.sess.run([self.g1_optim, self.g2_optim, self.g_sum],
-                #                                       feed_dict={self.z: batch_z, self.inputs: batch_images})
-                # else:
-                #     _, summary_str = self.sess.run([self.g_optim, self.g_sum],
-                #                                    feed_dict={self.z: batch_z})
+                if self.config.G_num == 2:
+                    _, _, summary_str = self.sess.run([self.g1_optim, self.g2_optim, self.g_sum],
+                                                      feed_dict={self.z: batch_z, self.inputs: batch_images})
+                else:
+                    _, summary_str = self.sess.run([self.g_optim, self.g_sum],
+                                                   feed_dict={self.z: batch_z})
 
                 if self.config.type is "dcgan":
                     errD_fake = self.d_loss_fake.eval({self.z: batch_z})
