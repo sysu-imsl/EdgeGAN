@@ -152,10 +152,10 @@ class DCGAN(object):
 
         self.register_optim_if('d_optim', optim_creator(
             'joint_dis_dloss', 'joint_discriminator'))
-        # self.register_optim_if('d_optim_patch2', optim_creator(
-        #     'image_dis_dloss', 'image_discriminator'), self.config.use_image_discriminator)
-        # self.register_optim_if('d_optim_patch3', optim_creator(
-        #     'edge_dis_dloss', 'edge_discriminator'), self.config.use_edge_discriminator)
+        self.register_optim_if('d_optim_patch2', optim_creator(
+            'image_dis_dloss', 'image_discriminator'), self.config.use_image_discriminator)
+        self.register_optim_if('d_optim_patch3', optim_creator(
+            'edge_dis_dloss', 'edge_discriminator'), self.config.use_edge_discriminator)
         # self.register_optim_if('d_optim2', optim_creator(
         #     'loss_d_ac', 'classifier'), self.config.multiclasses)
         # g_optim = [
