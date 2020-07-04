@@ -164,8 +164,8 @@ class DCGAN(object):
                 self.image_gloss, var_list=self.image_generator.var_list)
         g_optim = [edge_goptim, image_goptim]
         self.register_optim_if('g_optim_u', lambda: g_optim)
-        # self.register_optim_if('e_optim', optim_creator('zl_loss', 'encoder'))
-        # self.register_optim_if('g_optim_b', lambda: g_optim)
+        self.register_optim_if('e_optim', optim_creator('zl_loss', 'encoder'))
+        self.register_optim_if('g_optim_b', lambda: g_optim)
 
     def update_model(self, images, z):
         for optim_param in self.optimizers:
