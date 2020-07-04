@@ -875,19 +875,19 @@ class DCGAN(object):
             if self.config.use_D_origin:
                 self.d_optim = tf.train.RMSPropOptimizer(self.config.learning_rate).minimize(
                     self.d_loss, var_list=self.discriminator.var_list)
-            # if self.config.use_D_patch:
-            #     self.d_optim_patch = tf.train.RMSPropOptimizer(self.config.learning_rate).minimize(
-            #         self.d_loss_patch, var_list=self.discriminator_patch.var_list)
-            # if self.config.use_D_patch2:
-            #     self.d_optim_patch2 = tf.train.RMSPropOptimizer(self.config.learning_rate).minimize(
-            #         self.d_loss_patch2, var_list=self.discriminator_patch2.var_list)
-            # if self.config.use_D_patch2_2:
-            #     self.d_optim_patch2_2 = tf.train.RMSPropOptimizer(self.config.learning_rate).minimize(
-            #         self.d_loss_patch2_2, var_list=self.discriminator_patch2_2.var_list)
+            if self.config.use_D_patch:
+                self.d_optim_patch = tf.train.RMSPropOptimizer(self.config.learning_rate).minimize(
+                    self.d_loss_patch, var_list=self.discriminator_patch.var_list)
+            if self.config.use_D_patch2:
+                self.d_optim_patch2 = tf.train.RMSPropOptimizer(self.config.learning_rate).minimize(
+                    self.d_loss_patch2, var_list=self.discriminator_patch2.var_list)
+            if self.config.use_D_patch2_2:
+                self.d_optim_patch2_2 = tf.train.RMSPropOptimizer(self.config.learning_rate).minimize(
+                    self.d_loss_patch2_2, var_list=self.discriminator_patch2_2.var_list)
 
-            # if self.config.use_D_patch3:
-            #     self.d_optim_patch3 = tf.train.RMSPropOptimizer(self.config.learning_rate).minimize(
-            #         self.d_loss_patch3, var_list=self.discriminator_patch3.var_list)
+            if self.config.use_D_patch3:
+                self.d_optim_patch3 = tf.train.RMSPropOptimizer(self.config.learning_rate).minimize(
+                    self.d_loss_patch3, var_list=self.discriminator_patch3.var_list)
             # if self.config.if_focal_loss:
             #     self.d_optim2 = tf.train.RMSPropOptimizer(self.config.learning_rate).minimize(
             #         self.loss_d_ac, var_list=self.discriminator2.var_list)
@@ -1237,20 +1237,20 @@ class DCGAN(object):
                     _ = self.sess.run([self.d_optim],
                                       feed_dict={self.inputs: batch_images, self.z: batch_z})
 
-                # if self.config.use_D_patch:
-                #     _ = self.sess.run([self.d_optim_patch],
-                #                       feed_dict={self.inputs: batch_images, self.z: batch_z})
+                if self.config.use_D_patch:
+                    _ = self.sess.run([self.d_optim_patch],
+                                      feed_dict={self.inputs: batch_images, self.z: batch_z})
 
-                # if self.config.use_D_patch2:
-                #     _ = self.sess.run([self.d_optim_patch2],
-                #                       feed_dict={self.inputs: batch_images, self.z: batch_z})
+                if self.config.use_D_patch2:
+                    _ = self.sess.run([self.d_optim_patch2],
+                                      feed_dict={self.inputs: batch_images, self.z: batch_z})
 
-                # if self.config.use_D_patch2_2:
-                #     _ = self.sess.run([self.d_optim_patch2_2],
-                #                       feed_dict={self.inputs: batch_images, self.z: batch_z})
-                # if self.config.use_D_patch3:
-                #     _ = self.sess.run([self.d_optim_patch3],
-                #                       feed_dict={self.inputs: batch_images, self.z: batch_z})
+                if self.config.use_D_patch2_2:
+                    _ = self.sess.run([self.d_optim_patch2_2],
+                                      feed_dict={self.inputs: batch_images, self.z: batch_z})
+                if self.config.use_D_patch3:
+                    _ = self.sess.run([self.d_optim_patch3],
+                                      feed_dict={self.inputs: batch_images, self.z: batch_z})
 
                 # if self.config.use_patchGAN_D_full == True and self.config.G_num == 2:
                 #     _ = self.sess.run([self.d_optim_patchGAN],
