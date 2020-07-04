@@ -446,19 +446,25 @@ class DCGAN(object):
 
         counter = 1
         start_time = time.time()
-        loaded, checkpoint_counter = self.load(
-            self.saver, self.config.checkpoint_dir)
-        if loaded:
-            counter = checkpoint_counter
-            print(" [*] Load SUCCESS")
-        else:
-            print(" [!] Load failed...")
+        # loaded, checkpoint_counter = self.load(
+        #     self.saver, self.config.checkpoint_dir)
+        # if loaded:
+        #     counter = checkpoint_counter
+        #     print(" [*] Load SUCCESS")
+        # else:
+        #     print(" [!] Load failed...")
 
         # train
         for epoch in range(self.config.epoch):
             self.dataset.shuffle()
             for idx in range(len(self.dataset)):
                 batch_images, batch_z = self.dataset[idx]
+
+                if idx == 3:
+                    (restore_batch_files, restore_batch_images, restore_batch_z) = checksum_load(
+                        'batch_files.pkl', 'batch_images.npy', 'batch_z.npy')
+                    assert np.all(batch_images == restore_batch_images)
+                    assert np.all(batch_z[:, :100] == restore_batch_z)
 
                 self.update_model(batch_images, batch_z)
                 add_summary(batch_images, batch_z, counter)
@@ -483,6 +489,17 @@ class DCGAN(object):
                 if np.mod(counter, self.config.save_checkpoint_frequency) == 2:
                     self.save(self.saver, self.config.checkpoint_dir,
                               counter)
+                outputL = self.sess.run(self.edge_output,
+                        feed_dict={self.z: batch_z, self.inputs: batch_images})
+                if idx == 3:
+                    restore_outputL, restore_errD_fake, restore_errD_real, restore_errG = checksum_load(
+                        "outputL.npy", "errD_fake.pkl", "errD_real.pkl", "errG.pkl",)
+                    assert np.all(restore_outputL == outputL)
+                    assert discriminator_err == restore_errD_fake
+                    assert generator_err == restore_errG
+
+                    print('assert successed!')
+                    exit()
 
     def define_test_input(self):
         if self.config.crop:
