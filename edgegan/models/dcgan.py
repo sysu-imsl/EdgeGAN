@@ -290,9 +290,10 @@ class DCGAN(object):
         self.joint_output = tf.concat([self.edge_output, self.image_output], 2)
         self.D_, self.fakejoint_dis_output = self.joint_discriminator(
             self.joint_output, reuse=True)
-        edges, pictures = split_inputs(self.inputs)
 
         if self.config.use_image_discriminator:
+            pictures = self.inputs[:, :, int(
+                self.config.output_width / 2):self.config.output_width, :]
             self.resized_inputs = resize(pictures, self.config.image_dis_size)
             self.imageD, self.trueimage_dis_output = self.image_discriminator(
                 self.resized_inputs)
@@ -303,6 +304,8 @@ class DCGAN(object):
                 self.resized_image_output, reuse=True)
 
         if self.config.use_edge_discriminator:
+            edges = self.inputs[:, :, 0:int(
+                self.config.output_width / 2), :]
             self.resized_edges = resize(edges, self.config.edge_dis_size)
 
             delete_it_later()
