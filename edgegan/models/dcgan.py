@@ -158,13 +158,12 @@ class DCGAN(object):
             'edge_dis_dloss', 'edge_discriminator'), self.config.use_edge_discriminator)
         self.register_optim_if('d_optim2', optim_creator(
             'loss_d_ac', 'classifier'), self.config.multiclasses)
-        # g_optim = [
-        #     tf.train.RMSPropOptimizer(self.config.learning_rate).minimize(
-        #         self.edge_gloss, var_list=self.edge_generator.var_list),
-        #     tf.train.RMSPropOptimizer(self.config.learning_rate).minimize(
-        #         self.image_gloss, var_list=self.image_generator.var_list)
-        # ]
-        # self.register_optim_if('g_optim_u', lambda: g_optim)
+        edge_goptim = tf.train.RMSPropOptimizer(self.config.learning_rate).minimize(
+                self.edge_gloss, var_list=self.edge_generator.var_list)
+        image_goptim =  tf.train.RMSPropOptimizer(self.config.learning_rate).minimize(
+                self.image_gloss, var_list=self.image_generator.var_list)
+        g_optim = [edge_goptim, image_goptim]
+        self.register_optim_if('g_optim_u', lambda: g_optim)
         # self.register_optim_if('e_optim', optim_creator('zl_loss', 'encoder'))
         # self.register_optim_if('g_optim_b', lambda: g_optim)
 
@@ -358,11 +357,11 @@ class DCGAN(object):
 
         self.edge_gloss = (
             self.config.joint_dweight * self.joint_dis_gloss +
-            self.config.edge_dweight * self.edge_dis_gloss
+            self.config.edge_dweight * self.edge_dis_gloss + 0
         )
         self.image_gloss = (
-            self.config.joint_dweight * self.joint_dis_gloss +
-            self.config.image_dweight * self.image_dis_gloss
+            self.config.joint_dweight * self.joint_dis_gloss + 0 +
+            self.config.image_dweight * self.image_dis_gloss + 0 + 0
         )
 
         # focal loss
