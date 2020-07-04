@@ -892,14 +892,14 @@ class DCGAN(object):
                 self.d_optim2 = tf.train.RMSPropOptimizer(self.config.learning_rate).minimize(
                     self.loss_d_ac, var_list=self.discriminator2.var_list)
 
-            # if self.config.G_num == 2:
-            #     self.g1_optim = tf.train.RMSPropOptimizer(self.config.learning_rate).minimize(
-            #         self.g1_loss, var_list=self.generator1.var_list)
-            #     self.g2_optim = tf.train.RMSPropOptimizer(self.config.learning_rate).minimize(
-            #         self.g2_loss, var_list=self.generator2.var_list)
-            # else:
-            #     self.g_optim = tf.train.RMSPropOptimizer(self.config.learning_rate).minimize(
-            #         self.g_loss, var_list=self.generator.var_list)
+            if self.config.G_num == 2:
+                self.g1_optim = tf.train.RMSPropOptimizer(self.config.learning_rate).minimize(
+                    self.g1_loss, var_list=self.generator1.var_list)
+                self.g2_optim = tf.train.RMSPropOptimizer(self.config.learning_rate).minimize(
+                    self.g2_loss, var_list=self.generator2.var_list)
+            else:
+                self.g_optim = tf.train.RMSPropOptimizer(self.config.learning_rate).minimize(
+                    self.g_loss, var_list=self.generator.var_list)
 
             # if self.config.E_stage1:
             #     self.e_optim = tf.train.RMSPropOptimizer(self.config.learning_rate).minimize(
@@ -1260,12 +1260,12 @@ class DCGAN(object):
                     _ = self.sess.run(self.d_optim2,
                                       feed_dict={self.inputs: batch_images, self.z: batch_z})
 
-                # if self.config.G_num == 2:
-                #     _, _, summary_str = self.sess.run([self.g1_optim, self.g2_optim, self.g_sum],
-                #                                       feed_dict={self.z: batch_z, self.inputs: batch_images})
-                # else:
-                #     _, summary_str = self.sess.run([self.g_optim, self.g_sum],
-                #                                    feed_dict={self.z: batch_z})
+                if self.config.G_num == 2:
+                    _, _ = self.sess.run([self.g1_optim, self.g2_optim],
+                                                      feed_dict={self.z: batch_z, self.inputs: batch_images})
+                else:
+                    _ = self.sess.run([self.g_optim],
+                                                   feed_dict={self.z: batch_z})
 
                 # if self.config.E_stage1:
                 #     _ = self.sess.run([self.e_optim],
