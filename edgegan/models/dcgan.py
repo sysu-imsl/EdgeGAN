@@ -246,10 +246,9 @@ class DCGAN(object):
         self.joint_output = tf.concat([self.edge_output, self.image_output], 2)
         self.D_, self.fakejoint_dis_output = self.joint_discriminator(
             self.joint_output, reuse=True)
+        edges, pictures = split_inputs(self.inputs)
 
         if self.config.use_image_discriminator:
-            pictures = self.inputs[:, :, int(
-                self.config.output_width / 2):self.config.output_width, :]
             self.resized_inputs = resize(pictures, self.config.image_dis_size)
             self.imageD, self.trueimage_dis_output = self.image_discriminator(
                 self.resized_inputs)
@@ -260,8 +259,6 @@ class DCGAN(object):
                 self.resized_image_output, reuse=True)
 
         if self.config.use_edge_discriminator:
-            edges = self.inputs[:, :, 0:int(
-                self.config.output_width / 2), :]
             self.resized_edges = resize(edges, self.config.edge_dis_size)
 
             delete_it_later()
@@ -276,24 +273,23 @@ class DCGAN(object):
         self.z_recon, _, _ = self.encoder(self.edge_output)
 
     def define_losses(self):
-        d_loss = F.discriminator_ganloss(self.fakejoint_dis_output,
-                                         self.truejoint_dis_output)
-        d_loss_grad_penalty = penalty(
-            self.joint_output, self.inputs, self.joint_discriminator,
-            self.config.batch_size, self.config.lambda_gp
+        self.joint_dis_dloss = (
+            F.discriminator_ganloss(self.fakejoint_dis_output, self.truejoint_dis_output) +
+            penalty(
+                self.joint_output, self.inputs, self.joint_discriminator,
+                self.config.batch_size, self.config.lambda_gp
+            )
         )
-        self.joint_dis_dloss = d_loss + d_loss_grad_penalty
-
         self.joint_dis_gloss = F.generator_ganloss(self.fakejoint_dis_output)
 
         if self.config.use_image_discriminator:
-            image_d_loss = F.discriminator_ganloss(
-                self.fakeimage_dis_output, self.trueimage_dis_output)
-            image_d_loss_grad_penalty = penalty(
-                self.resized_image_output, self.resized_inputs, self.image_discriminator,
-                self.config.batch_size, self.config.lambda_gp
+            self.image_dis_dloss = (
+                F.discriminator_ganloss(self.fakeimage_dis_output, self.trueimage_dis_output) +
+                penalty(
+                    self.resized_image_output, self.resized_inputs, self.image_discriminator,
+                    self.config.batch_size, self.config.lambda_gp
+                )
             )
-            self.image_dis_dloss = image_d_loss + image_d_loss_grad_penalty
             self.image_dis_gloss = F.generator_ganloss(
                 self.fakeimage_dis_output)
         else:
@@ -301,13 +297,13 @@ class DCGAN(object):
             self.image_dis_gloss = 0
 
         if self.config.use_edge_discriminator:
-            edge_d_loss = F.discriminator_ganloss(
-                self.fakeedge_dis_output, self.trueedge_dis_output)
-            edge_d_loss_grad_penalty = penalty(
-                self.resized_edge_output, self.resized_edges, self.edge_discriminator,
-                self.config.batch_size, self.config.lambda_gp
+            self.edge_dis_dloss = (
+                F.discriminator_ganloss(self.fakeedge_dis_output, self.trueedge_dis_output) +
+                penalty(
+                    self.resized_edge_output, self.resized_edges, self.edge_discriminator,
+                    self.config.batch_size, self.config.lambda_gp
+                )
             )
-            self.edge_dis_dloss = edge_d_loss + edge_d_loss_grad_penalty
             self.edge_dis_gloss = F.generator_ganloss(self.fakeedge_dis_output)
         else:
             self.edge_dis_dloss = 0
