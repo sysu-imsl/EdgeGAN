@@ -515,14 +515,20 @@ class DCGAN(object):
                     return getattr(obj, 'eval')(
                         {self.inputs: batch_images, self.z: batch_z})
 
-                discriminator_err = evaluate(self.joint_dis_dloss)
+                joint_dloss = evaluate(self.joint_dis_dloss)
                 if self.config.use_image_discriminator:
-                    discriminator_err += evaluate(self.image_dis_dloss)
+                    image_dloss = evaluate(self.image_dis_dloss)
+                else:
+                    image_dloss = 0
                 if self.config.use_edge_discriminator:
-                    discriminator_err += evaluate(self.edge_dis_dloss)
+                    edge_dloss = evaluate(self.edge_dis_dloss)
+                else:
+                    edge_dloss = 0
+                discriminator_err = joint_dloss + 0 + image_dloss + edge_dloss
 
-                generator_err = evaluate(
-                    self.edge_gloss) + evaluate(self.image_gloss)
+                g1loss =  evaluate(self.edge_gloss)
+                g2loss =  evaluate(self.image_gloss)
+                generator_err = g1loss + g2loss
 
                 counter += 1
                 print("Epoch: [%2d/%2d] [%4d/%4d] time: %4.4f, joint_dis_dloss: %.8f, joint_dis_gloss: %.8f"
@@ -535,17 +541,22 @@ class DCGAN(object):
                 outputL = self.sess.run(self.edge_output,
                                         feed_dict={self.z: batch_z, self.inputs: batch_images})
                 if idx == 3:
-                    # checksum_save({
-                    #     "outputL": outputL,
-                    #     "errD_fake": errD_fake,
-                    #     "errD_real": errD_real,
-                    #     "errG": errG,
-                    # })
                     restore_outputL, restore_errD_fake, restore_errD_real, restore_errG = checksum_load(
                         "outputL.npy", "errD_fake.pkl", "errD_real.pkl", "errG.pkl",)
+                    restore_joint_dloss, restore_image_dloss, restore_edge_dloss = checksum_load(
+                        "joint_dloss.pkl", "image_dloss.pkl", "edge_dloss.pkl"
+                    )
+                    restore_g1loss, restore_g2loss = checksum_load(
+                        "g1loss.pkl", "g2loss.pkl"
+                    )
                     assert np.allclose(restore_outputL, outputL)
                     assert discriminator_err == restore_errD_fake
                     assert generator_err == restore_errG
+                    assert restore_joint_dloss == joint_dloss
+                    assert restore_image_dloss == image_dloss
+                    assert restore_edge_dloss == edge_dloss
+                    assert restore_g1loss == g1loss
+                    assert restore_g2loss == g2loss
                     print('assert successed!')
                     exit()
 
