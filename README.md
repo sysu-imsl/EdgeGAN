@@ -8,14 +8,16 @@ Chengying Gao, Qi Liu, Qi Xu, Limin Wang, Jianzhuang Liu, Changqing Zou
 # Installation
 Clone this repo.  
 ```
-git@github.com:liuq99/EdgeGAN.git
+git@github.com:sysu-imsl/EdgeGAN.git
 cd EdgeGAN
 ```
-This repo requires TensorFlow 1.13.1 and python 3+.  
+This repo requires TensorFlow 1.14.0 and python 3+.  
 `conda create/activate` is suggested to manage multiple versions of tensorflow.  
 After switching to proper conda environment, run `conda install --file requirements.txt`
 
 # Dataset
+Our dataset can be found in [SketchyCOCO](https://github.com/sysu-imsl/SketchyCOCO). Follow the guide and prepare the dataset.
+
 ## Directory Structure
 For singleclass dataset
 ```
@@ -59,7 +61,7 @@ mkdir -p outputs/edgegan/checkpoints
 tar -zxvf checkpoints.tar.gz
 cd ..
 ```
-2. Generate images uinsg pretrained model:
+2. Generate images using pretrained model:
 ``` bash
 python -m edgegan.test --name=edgegan --dataroot=<root of dataset> --dataset=<dataset> --gpu=<gpuid> #(with multi-classes)
 python -m edgegan.test --name=edgegan --dataroot=<root of dataset> --dataset=<dataset> --nomulticlasses --gpu=<gpuid> #(without multi-classes)
