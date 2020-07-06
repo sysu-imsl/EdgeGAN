@@ -60,11 +60,10 @@ EdegGAN
 ![60991.png](images/dataset_example/train/60991.png?raw=true)
 ![60994.png](images/dataset_example/train/60994.png?raw=true)
 ### Test
-![14801.png](images/dataset_example/test/14801.png?raw=true)
-![14802.png](images/dataset_example/test/14802.png?raw=true)
-![14803.png](images/dataset_example/test/14803.png?raw=true)
-![14804.png](images/dataset_example/test/14804.png?raw=true)
-![14805.png](images/dataset_example/test/14805.png?raw=true)
+![14809.png](images/dataset_example/test/14809.png?raw=true)
+![14810.png](images/dataset_example/test/14810.png?raw=true)
+![14811.png](images/dataset_example/test/14811.png?raw=true)
+![14812.png](images/dataset_example/test/14812.png?raw=true)
 
 # Testing Using Pretrained Model
 1. Download the pretrained model from the XXX, and run:
