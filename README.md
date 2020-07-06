@@ -80,6 +80,8 @@ python -m edgegan.test --name=edgegan --dataroot=<root of dataset> --dataset=<da
 3. the outputs will be located at `outputs/edgegan/test_output/` by default
 
 # Training
+It will cost about fifteen hours to run on a single Nvidia RTX 2080 Ti card.
+
 ``` bash
 python -m edgegan.train --name=<new_name> --dataroot=<root of dataset> --dataset=<datsaet_name> --gpu=<gpuid> #(with multi-classes)
 python -m edgegan.train --name=<new_name> --dataroot=<root of dataset> --dataset=<datsaet_name> --nomulticlasses --gpu=<gpuid> #(with single class)
