@@ -59,7 +59,7 @@ mkdir -p outputs/edgegan/checkpoints
 tar -zxvf checkpoints.tar.gz
 cd ..
 ```
-2. Generate images uinsg pretrained model:
+2. Generate images using pretrained model:
 ``` bash
 python -m edgegan.test --name=edgegan --dataroot=<root of dataset> --dataset=<dataset> --gpu=<gpuid> #(with multi-classes)
 python -m edgegan.test --name=edgegan --dataroot=<root of dataset> --dataset=<dataset> --nomulticlasses --gpu=<gpuid> #(without multi-classes)
