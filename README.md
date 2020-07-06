@@ -16,6 +16,8 @@ This repo requires TensorFlow 1.14.0 and python 3+.
 After switching to proper conda environment, run `conda install --file requirements.txt`
 
 # Dataset
+Our dataset can be found in [SketchyCOCO](https://github.com/sysu-imsl/SketchyCOCO). Follow the guide and prepare the dataset.
+
 ## Directory Structure
 For singleclass dataset
 ```
