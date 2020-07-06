@@ -8,7 +8,7 @@ Chengying Gao, Qi Liu, Qi Xu, Limin Wang, Jianzhuang Liu, Changqing Zou
 # Installation
 Clone this repo.  
 ```
-git@github.com:liuq99/EdgeGAN.git
+git@github.com:sysu-imsl/EdgeGAN.git
 cd EdgeGAN
 ```
 This repo requires TensorFlow 1.14.0 and python 3+.  
