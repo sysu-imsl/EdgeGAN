@@ -5,7 +5,7 @@ import numpy as np
 import tensorflow as tf
 from numpy.random import seed
 
-from edgegan.models import DCGAN
+from edgegan.models import EdgeGAN
 from edgegan.utils import makedirs, pp
 from edgegan.utils.data import Dataset
 
@@ -143,8 +143,8 @@ def main(_):
             flags.dataroot, flags.dataset,
             flags.train_size, flags.batch_size,
             dataset_config, flags.num_classes, phase)
-        dcgan = DCGAN(sess, flags, dataset, z_dim=flags.z_dim)
-        dcgan.train()
+        edgegan_model = EdgeGAN(sess, flags, dataset, z_dim=flags.z_dim)
+        edgegan_model.train()
 
 
 if __name__ == '__main__':

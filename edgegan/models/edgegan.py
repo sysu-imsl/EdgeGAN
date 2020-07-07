@@ -42,7 +42,7 @@ def penalty(synthesized, real, nn_func, batchsize, weight):
     return weight * F.gradient_penalty(inte_logit, interpolated)
 
 
-class DCGAN(object):
+class EdgeGAN(object):
     def __init__(self, sess, config, dataset,
                  z_dim=100, gf_dim=64, df_dim=64,
                  gfc_dim=1024, dfc_dim=1024, c_dim=3):

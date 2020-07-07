@@ -4,7 +4,7 @@ import numpy as np
 import tensorflow as tf
 from numpy.random import seed
 
-from edgegan.models import DCGAN
+from edgegan.models import EdgeGAN
 from edgegan.utils import makedirs, pp
 from edgegan.utils.data import Dataset
 
@@ -127,9 +127,9 @@ def main(_):
     run_config.gpu_options.allow_growth = True
 
     with tf.Session(config=run_config) as sess:
-        dcgan = DCGAN(sess, flags, None)
-        dcgan.dataset = create_dataset(flags)
-        dcgan.test()
+        edgegan_model = EdgeGAN(sess, flags, None)
+        edgegan_model.dataset = create_dataset(flags)
+        edgegan_model.test()
 
 
 if __name__ == '__main__':
