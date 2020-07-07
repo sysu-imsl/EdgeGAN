@@ -66,11 +66,13 @@ EdegGAN
 ![14812.png](images/dataset_example/test/14812.png?raw=true)
 
 # Testing Using Pretrained Model
-1. Download the pretrained model from the XXX, and run:
+1. Download the pretrained model from [Google Drive](https://drive.google.com/file/d/1ilxx_mLKaiMRhwzzcrXjIaNlsmfqR6MT/view?usp=sharing), and run:
 ``` bash
-mkdir -p outputs/edgegan/checkpoints
-tar -zxvf checkpoints.tar.gz
-cd ..
+mkdir -p outputs/edgegan
+cd outputs/edgegan
+cp <checkpoints download path> .
+unzip checkpoints.zip
+cd ../..
 ```
 2. Generate images using pretrained model:
 ``` bash
