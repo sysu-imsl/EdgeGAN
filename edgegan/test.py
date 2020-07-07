@@ -19,9 +19,7 @@ _FLAGS.DEFINE_string("gpu", "0", "Gpu ID")
 _FLAGS.DEFINE_string("name", "edgegan", "Folder for all outputs")
 _FLAGS.DEFINE_string("outputsroot", "outputs", "Outputs root")
 _FLAGS.DEFINE_integer("epoch", 100, "Epoch to train [25]")
-_FLAGS.DEFINE_float("learning_rate", 0.0002,
-                    "Learning rate of for adam [0.0002]")
-_FLAGS.DEFINE_float("beta1", 0.5, "Momentum term of adam [0.5]")
+_FLAGS.DEFINE_float("learning_rate", 0.0002, "")
 _FLAGS.DEFINE_float("train_size", np.inf, "The size of train images [np.inf]")
 _FLAGS.DEFINE_integer("batch_size", 64, "The size of batch images [64]")
 _FLAGS.DEFINE_integer(
@@ -32,19 +30,15 @@ _FLAGS.DEFINE_integer("output_height", 64,
                       "The size of the output images to produce [64]")
 _FLAGS.DEFINE_integer("output_width", 128,
                       "The size of the output images to produce. If None, same value as output_height [None]")
-_FLAGS.DEFINE_string("dataset", "class14",
-                     "The name of dataset [celebA, mnist, lsun]")
+_FLAGS.DEFINE_string("dataset", "class14", "")
 _FLAGS.DEFINE_string("input_fname_pattern", "*png",
                      "Glob pattern of filename of input images [*]")
-_FLAGS.DEFINE_string("checkpoint_dir", None,
-                     "Directory name to save the checkpoints [checkpoint]")
-_FLAGS.DEFINE_string("logdir", None,
-                     "Directory name to save the logs")
+_FLAGS.DEFINE_string("checkpoint_dir", None, "")
+_FLAGS.DEFINE_string("logdir", None, "")
 _FLAGS.DEFINE_string("dataroot", "./data", "Root directory of dataset [data]")
 _FLAGS.DEFINE_string("test_output_dir", "test_output",
                      "Directory name to save the image samples [samples]")
-_FLAGS.DEFINE_boolean(
-    "crop", False, "True for training, False for testing [False]")
+_FLAGS.DEFINE_boolean("crop", False, "")
 
 
 # setting of testing

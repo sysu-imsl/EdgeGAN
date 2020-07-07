@@ -15,9 +15,7 @@ _FLAGS.DEFINE_string("gpu", "0", "Gpu ID")
 _FLAGS.DEFINE_string("name", "edgegan", "Folder for all outputs")
 _FLAGS.DEFINE_string("outputsroot", "outputs", "Outputs root")
 _FLAGS.DEFINE_integer("epoch", 100, "Epoch to train [25]")
-_FLAGS.DEFINE_float("learning_rate", 0.0002,
-                    "Learning rate of for adam [0.0002]")
-_FLAGS.DEFINE_float("beta1", 0.5, "Momentum term of adam [0.5]")
+_FLAGS.DEFINE_float("learning_rate", 0.0002, "")
 _FLAGS.DEFINE_float("train_size", np.inf, "The size of train images [np.inf]")
 _FLAGS.DEFINE_integer("batch_size", 64, "The size of batch images [64]")
 _FLAGS.DEFINE_integer(
@@ -28,19 +26,15 @@ _FLAGS.DEFINE_integer("output_height", 64,
                       "The size of the output images to produce [64]")
 _FLAGS.DEFINE_integer("output_width", 128,
                       "The size of the output images to produce. If None, same value as output_height [None]")
-_FLAGS.DEFINE_string("dataset", "class14",
-                     "The name of dataset [class14_png_aug,]")
+_FLAGS.DEFINE_string("dataset", "class14", "")
 _FLAGS.DEFINE_string("input_fname_pattern", "*png",
                      "Glob pattern of filename of input images [*]")
-_FLAGS.DEFINE_string("checkpoint_dir", None,
-                     "Directory name to save the checkpoints [checkpoint]")
-_FLAGS.DEFINE_string("logdir", None,
-                     "Directory name to save the logs")
+_FLAGS.DEFINE_string("checkpoint_dir", None, "")
+_FLAGS.DEFINE_string("logdir", None, "")
 _FLAGS.DEFINE_string("dataroot", "./data", "Root directory of dataset [data]")
 _FLAGS.DEFINE_integer("save_checkpoint_frequency", 500,
                       "frequency for saving checkpoint")
-_FLAGS.DEFINE_boolean(
-    "crop", False, "True for training, False for testing [False]")
+_FLAGS.DEFINE_boolean("crop", False, "")
 
 
 # weight of loss
@@ -54,13 +48,8 @@ _FLAGS.DEFINE_string("SPECTRAL_NORM_UPDATE_OPS",
 
 _FLAGS.DEFINE_boolean("if_resnet_e", True, "if use resnet for E")
 _FLAGS.DEFINE_boolean("if_resnet_g", False, "if use resnet for G")
-_FLAGS.DEFINE_boolean("if_resnet_d", False, "if use resnet for origin D")
-_FLAGS.DEFINE_float("lambda_gp", 10.0,
-                    "if 'gpwgan' is chosen the corresponding lambda must be filled")
-_FLAGS.DEFINE_float("clamp_lower", -0.01,
-                    "if 'wgan' is chosen the corresponding lambda must be filled, the upper bound of parameters in disc")
-_FLAGS.DEFINE_float("clamp_upper", 0.01,
-                    "if 'wgan' is chosen the corresponding lambda must be filled, the upper bound of parameters in disc")
+_FLAGS.DEFINE_boolean("if_resnet_d", False, "if use resnet for D")
+_FLAGS.DEFINE_float("lambda_gp", 10.0, "")
 
 _FLAGS.DEFINE_string("E_norm", "instance",
                      "normalization options:[instance, batch, norm]")
@@ -72,18 +61,16 @@ _FLAGS.DEFINE_string("D_norm", "instance",
 
 _FLAGS.DEFINE_boolean("use_image_discriminator", True,
                       "True for using patch discriminator, modify the size of input of discriminator")
-_FLAGS.DEFINE_integer("image_dis_size", 128, "The size of input for D_patch2")
-# _FLAGS.DEFINE_integer("sizeOfIn_patch2_2", 256,
-#                       "The size of input for D_patch2_2")
+_FLAGS.DEFINE_integer("image_dis_size", 128, "The size of input for image discriminator")
 _FLAGS.DEFINE_boolean("use_edge_discriminator", True,
                       "True for using patch discriminator, modify the size of input of discriminator, user for edge discriminator when G_num == 2")
-_FLAGS.DEFINE_integer("edge_dis_size", 128, "The size of input for D_patch2")
+_FLAGS.DEFINE_integer("edge_dis_size", 128, "The size of input for edge discriminator")
 _FLAGS.DEFINE_float("joint_dweight", 1.0,
-                    "weight of origin discriminative loss, is ineffective when use_D_origin is false")
+                    "weight of origin discriminative loss")
 _FLAGS.DEFINE_float("image_dweight", 1.0,
-                    "weight of patch discriminative loss, is ineffective when use_edge_discriminator is false")
+                    "weight of image discriminative loss, is ineffective when use_image_discriminator is false")
 _FLAGS.DEFINE_float("edge_dweight", 1.0,
-                    "weight of patch discriminative loss, is ineffective when use_edge_discriminator is false")
+                    "weight of edge discriminative loss, is ineffective when use_edge_discriminator is false")
 _FLAGS.DEFINE_integer("z_dim", 100, "dimension of random vector z")
 FLAGS = _FLAGS.FLAGS
 
