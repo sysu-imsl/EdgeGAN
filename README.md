@@ -1,9 +1,7 @@
 # EdgeGAN
 ### [Project Page](https://sysu-imsl.com/EdgeGAN/) | [Paper](https://arxiv.org/abs/2003.02683)
 SketchyCOCO: Image Generation from Freehand Scene Sketches  
-Chengying Gao, Qi Liu, Qi Xu, Limin Wang, Jianzhuang Liu, Changqing Zou  
-
-**This repo is working in progress! The current version is not the final version!**
+Chengying Gao, Qi Liu, Qi Xu, Limin Wang, Jianzhuang Liu, Changqing Zou
 
 # Installation
 Clone this repo.  
@@ -39,19 +37,21 @@ For multiclass dataset
 EdegGAN
 └───data
     └───train
-    |   └───<class label 0>
+    |   └───<0>
     |   |    |    <file01>.png
     |   |    |    ...
-    |   └───<class label 1>
+    |   └───<1>
     |   |   ...
     |   
     └───test
-    |   └───<class label 0>
+    |   └───<0>
     |   |    |    <file01>.png
     |   |    |    ...
-    |   └───<class label 1>
+    |   └───<1>
     |   |   ...
 ```
+For our pretrained model, the class label 0 to 13 correspond to "airplane, cat, giraffe, zebra, dog, elephant, fire hydrant, horse, bicycle, car, traffic light, cow, motorcycle, sheep".
+
 ## Example
 ### Train
 ![60975.png](images/dataset_example/train/60975.png?raw=true)
@@ -65,24 +65,28 @@ EdegGAN
 ![14811.png](images/dataset_example/test/14811.png?raw=true)
 ![14812.png](images/dataset_example/test/14812.png?raw=true)
 
-# Testing Using Pretrained Model
-1. Download the pretrained model from the XXX, and run:
+# Testing
+1. Download the pretrained model from [Google Drive](https://drive.google.com/file/d/1ilxx_mLKaiMRhwzzcrXjIaNlsmfqR6MT/view?usp=sharing) trained with 14 classes, and run:
 ``` bash
-mkdir -p outputs/edgegan/checkpoints
-tar -zxvf checkpoints.tar.gz
-cd ..
+mkdir -p outputs/edgegan
+cd outputs/edgegan
+cp <checkpoints download path> .
+unzip checkpoints.zip
+cd ../..
 ```
-2. Generate images using pretrained model:
+2. Generate images with models:
 ``` bash
-python -m edgegan.test --name=edgegan --dataroot=<root of dataset> --dataset=<dataset> --gpu=<gpuid> #(with multi-classes)
-python -m edgegan.test --name=edgegan --dataroot=<root of dataset> --dataset=<dataset> --nomulticlasses --gpu=<gpuid> #(without multi-classes)
+python -m edgegan.test --name=edgegan --dataroot=<root of dataset> --dataset=<dataset> --gpu=<gpuid> #(model trained with multi-classes)
+python -m edgegan.test --name=[model_name] --dataroot=<root of dataset> --dataset=<dataset> --nomulticlasses --gpu=<gpuid> #(model trained with single class)
 ```
 3. the outputs will be located at `outputs/edgegan/test_output/` by default
 
 # Training
+It will cost about fifteen hours to run on a single Nvidia RTX 2080 Ti card.
+
 ``` bash
 python -m edgegan.train --name=<new_name> --dataroot=<root of dataset> --dataset=<datsaet_name> --gpu=<gpuid> #(with multi-classes)
-python -m edgegan.train --name=<new_name> --dataroot=<root of dataset> --dataset=<datsaet_name> --nomulticlasses --gpu=<gpuid> #(without multi-classes)
+python -m edgegan.train --name=<new_name> --dataroot=<root of dataset> --dataset=<datsaet_name> --nomulticlasses --gpu=<gpuid> #(with single class)
 
 ```
 
