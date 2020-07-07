@@ -65,8 +65,8 @@ EdegGAN
 ![14811.png](images/dataset_example/test/14811.png?raw=true)
 ![14812.png](images/dataset_example/test/14812.png?raw=true)
 
-# Testing Using Pretrained Model
-1. Download the pretrained model from [Google Drive](https://drive.google.com/file/d/1ilxx_mLKaiMRhwzzcrXjIaNlsmfqR6MT/view?usp=sharing), and run:
+# Testing
+1. Download the pretrained model from [Google Drive](https://drive.google.com/file/d/1ilxx_mLKaiMRhwzzcrXjIaNlsmfqR6MT/view?usp=sharing) trained with 14 classes, and run:
 ``` bash
 mkdir -p outputs/edgegan
 cd outputs/edgegan
@@ -74,10 +74,10 @@ cp <checkpoints download path> .
 unzip checkpoints.zip
 cd ../..
 ```
-2. Generate images using pretrained model:
+2. Generate images with models:
 ``` bash
-python -m edgegan.test --name=edgegan --dataroot=<root of dataset> --dataset=<dataset> --gpu=<gpuid> #(with multi-classes)
-python -m edgegan.test --name=edgegan --dataroot=<root of dataset> --dataset=<dataset> --nomulticlasses --gpu=<gpuid> #(with single class)
+python -m edgegan.test --name=edgegan --dataroot=<root of dataset> --dataset=<dataset> --gpu=<gpuid> #(model trained with multi-classes)
+python -m edgegan.test --name=[model_name] --dataroot=<root of dataset> --dataset=<dataset> --nomulticlasses --gpu=<gpuid> #(model trained with single class)
 ```
 3. the outputs will be located at `outputs/edgegan/test_output/` by default
 
