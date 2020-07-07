@@ -37,19 +37,21 @@ For multiclass dataset
 EdegGAN
 └───data
     └───train
-    |   └───<class label 0>
+    |   └───<0>
     |   |    |    <file01>.png
     |   |    |    ...
-    |   └───<class label 1>
+    |   └───<1>
     |   |   ...
     |   
     └───test
-    |   └───<class label 0>
+    |   └───<0>
     |   |    |    <file01>.png
     |   |    |    ...
-    |   └───<class label 1>
+    |   └───<1>
     |   |   ...
 ```
+For our pretrained model, the class label 0 to 13 correspond to "airplane, cat, giraffe, zebra, dog, elephant, fire hydrant, horse, bicycle, car, traffic light, cow, motorcycle, sheep".
+
 ## Example
 ### Train
 ![60975.png](images/dataset_example/train/60975.png?raw=true)
