@@ -1,9 +1,7 @@
 # EdgeGAN
 ### [Project Page](https://sysu-imsl.com/EdgeGAN/) | [Paper](https://arxiv.org/abs/2003.02683)
 SketchyCOCO: Image Generation from Freehand Scene Sketches  
-Chengying Gao, Qi Liu, Qi Xu, Limin Wang, Jianzhuang Liu, Changqing Zou  
-
-**This repo is working in progress! The current version is not the final version!**
+Chengying Gao, Qi Liu, Qi Xu, Limin Wang, Jianzhuang Liu, Changqing Zou
 
 # Installation
 Clone this repo.  
