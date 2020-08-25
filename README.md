@@ -50,7 +50,7 @@ EdegGAN
     |   └───<1>
     |   |   ...
 ```
-For our pretrained model, the class label 0 to 13 correspond to "airplane, cat, giraffe, zebra, dog, elephant, fire hydrant, horse, bicycle, car, traffic light, cow, motorcycle, sheep".
+For our pretrained model, the class label 0 to 13 correspond to "airplane, cat, giraffe, zebra, dog, elephant, fire hydrant, horse, bicycle, car, traffic light, cow, motorcycle, sheep". Please prepare the input as similar as the examples of training images and test images in [images/dataset_example](https://github.com/sysu-imsl/EdgeGAN/tree/master/images/dataset_example).
 
 ## Example
 ### Train
