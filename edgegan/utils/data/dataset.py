@@ -35,8 +35,9 @@ class Dataset():
                     dataroot, name, phase, '*.png')
                 self.data = glob(data_path)
         else:
+            data_path = os.path.join(dataroot, name, phase)
             self.data = extension_match_recursive(
-                os.path.join(dataroot, name, phase),
+                data_path,
                 ['*.png', '*.jpg']
             )
             self.data = sorted(self.data)
