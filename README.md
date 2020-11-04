@@ -93,10 +93,11 @@ python -m edgegan.train --name=<new_name> --dataroot=<root of dataset> --dataset
 # Citation
 If you use this code for your research, please cite our papers.  
 ```
-@article{gao2020image,  
-  title={Image Generation from Freehand Scene Sketches},  
-  author={Gao, Chengying and Liu, Qi and Xu, Qi and Liu, Jianzhuang and Wang, Limin and Zou, Changqing},  
-  journal={arXiv preprint arXiv:2003.02683},  
-  year={2020}  
+@inproceedings{gao2020sketchycoco,
+  title={SketchyCOCO: Image Generation From Freehand Scene Sketches},
+  author={Gao, Chengying and Liu, Qi and Xu, Qi and Wang, Limin and Liu, Jianzhuang and Zou, Changqing},
+  booktitle={Proceedings of the IEEE/CVF Conference on Computer Vision and Pattern Recognition},
+  pages={5174--5183},
+  year={2020}
 }
 ```
