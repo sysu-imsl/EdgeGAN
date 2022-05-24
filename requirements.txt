@@ -1,6 +1,6 @@
 numpy==1.18.1
 imageio==2.6.1
-tensorflow_gpu==1.14.0
+tensorflow_gpu==2.6.4
 scipy==1.2.2
 moviepy==1.0.3
 Pillow==7.2.0
